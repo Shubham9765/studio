@@ -1,5 +1,4 @@
 
-// All the UI components are imported from the same codebase
 'use client';
 import {
   Dialog,
@@ -21,16 +20,21 @@ import { useEffect, useState } from 'react';
 // We need to lazy load the firebaseui component, so it doesn't try to access
 // the window object on the server.
 import dynamic from 'next/dynamic';
+
+const FirebaseAuth = ({ uiConfig, firebaseAuth }: { uiConfig: firebaseui.auth.Config; firebaseAuth: any }) => {
+  useEffect(() => {
+    const ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(firebaseAuth);
+    ui.start('#firebaseui-auth-container', uiConfig);
+  }, [uiConfig, firebaseAuth]);
+
+  return <div id="firebaseui-auth-container"></div>;
+};
+
 const StyledFirebaseAuth = dynamic(
-  () => import('react-firebaseui/StyledFirebaseAuth').then((mod) => mod.default),
-  { ssr: false, load: () => Promise.resolve((props: any) => {
-    useEffect(() => {
-      const ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(props.firebaseAuth);
-      ui.start('#firebaseui-auth-container', props.uiConfig);
-    }, [props]);
-    return <div id="firebaseui-auth-container"></div>;
-  }) }
+  () => Promise.resolve(FirebaseAuth),
+  { ssr: false }
 );
+
 
 interface Props {
   open: boolean;
@@ -41,13 +45,17 @@ export function AuthDialog(props: Props) {
   const { open, onOpenChange } = props;
 
   const [_, setLoggedIn] = useState(false);
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      setLoggedIn(true);
-    } else {
-      setLoggedIn(false);
-    }
-  });
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setLoggedIn(true);
+      } else {
+        setLoggedIn(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
