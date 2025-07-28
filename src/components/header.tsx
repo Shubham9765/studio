@@ -1,4 +1,5 @@
-import { UtensilsCrossed, Search, User } from 'lucide-react';
+
+import { UtensilsCrossed, Search, User, Shield, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/use-auth';
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 
 export function Header() {
   const { user, signOut } = useAuth();
@@ -25,6 +27,17 @@ export function Header() {
       return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
     }
     return name[0].toUpperCase();
+  }
+  
+  const getRoleIcon = () => {
+    switch (user?.role) {
+      case 'admin':
+        return <Crown className="w-4 h-4 text-accent" />;
+      case 'owner':
+        return <Shield className="w-4 h-4 text-primary" />;
+      default:
+        return <User className="w-4 h-4 text-muted-foreground" />;
+    }
   }
 
   return (
@@ -52,11 +65,15 @@ export function Header() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                    <div className="flex flex-col space-y-2">
+                       <div className="flex items-center gap-2">
+                         {getRoleIcon()}
+                         <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                       </div>
                       <p className="text-xs leading-none text-muted-foreground">
                         {user.email}
                       </p>
+                      {user.role && <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'} className="capitalize w-fit">{user.role}</Badge>}
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />

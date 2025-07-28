@@ -1,3 +1,4 @@
+
 'use client';
 import {
   User,
@@ -11,10 +12,15 @@ import {
   useState,
   ReactNode,
 } from 'react';
-import { auth } from '@/services/firebase';
+import { auth, db } from '@/services/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+
+interface AppUser extends User {
+  role?: 'customer' | 'owner' | 'admin';
+}
 
 interface AuthContextType {
-  user: User | null;
+  user: AppUser | null;
   loading: boolean;
   signOut: () => void;
 }
@@ -22,12 +28,28 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+          const appUser: AppUser = {
+            ...user,
+            role: docSnap.data()?.role,
+          };
+          setUser(appUser);
+        } else {
+          // This case might happen if user document creation fails on signup.
+          // Or for existing users before roles were introduced.
+          setUser(user);
+        }
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
 
