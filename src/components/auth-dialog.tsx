@@ -9,38 +9,31 @@ import {
 } from '@/components/ui/dialog';
 import { auth, db } from '@/services/firebase';
 import 'firebaseui/dist/firebaseui.css';
-import type firebase from 'firebase/app';
 import {
-  GoogleAuthProvider,
-  EmailAuthProvider,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   onAuthStateChanged,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-
-// We need to lazy load the firebaseui component, so it doesn't try to access
-// the window object on the server.
-import dynamic from 'next/dynamic';
-
-const FirebaseAuth = ({ uiConfig, firebaseAuth }: { uiConfig: firebaseui.auth.Config; firebaseAuth: typeof auth }) => {
-  useEffect(() => {
-    // FirebaseUI relies on the window object, so we need to import it here
-    // to ensure it only runs on the client side.
-    import('firebaseui').then(firebaseui => {
-        const ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(firebaseAuth);
-        ui.start('#firebaseui-auth-container', uiConfig);
-    });
-  }, [uiConfig, firebaseAuth]);
-
-  return <div id="firebaseui-auth-container"></div>;
-};
-
-const StyledFirebaseAuth = dynamic(
-  () => Promise.resolve(FirebaseAuth),
-  { ssr: false }
-);
+import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 interface Props {
@@ -50,78 +43,262 @@ interface Props {
 
 type Role = 'customer' | 'owner';
 
+const signUpSchema = z.object({
+  username: z.string().min(3, { message: 'Username must be at least 3 characters.' }).max(20),
+  email: z.string().email({ message: 'Please enter a valid email.' }),
+  phone: z.string().min(10, { message: 'Please enter a valid phone number.' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+  role: z.enum(['customer', 'owner']),
+});
+
+const loginSchema = z.object({
+  email: z.string().email({ message: 'Please enter a valid email.' }),
+  password: z.string().min(1, { message: 'Password is required.' }),
+});
+
+async function isUsernameUnique(username: string): Promise<boolean> {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('username', '==', username));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.empty;
+}
+
 export function AuthDialog(props: Props) {
   const { open, onOpenChange } = props;
-  const [role, setRole] = useState<Role>('customer');
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [_, setLoggedIn] = useState(false);
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setLoggedIn(true);
-      } else {
-        setLoggedIn(false);
+  const signUpForm = useForm<z.infer<typeof signUpSchema>>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      username: '',
+      email: '',
+      phone: '+91',
+      password: '',
+      role: 'customer',
+    },
+  });
+
+  const loginForm = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const handleSignUp = async (values: z.infer<typeof signUpSchema>) => {
+    setIsSubmitting(true);
+    try {
+      // Check if username is unique
+      const unique = await isUsernameUnique(values.username);
+      if (!unique) {
+        signUpForm.setError('username', { type: 'manual', message: 'Username is already taken.' });
+        setIsSubmitting(false);
+        return;
       }
-    });
-    return () => unsubscribe();
-  }, []);
+      
+      const authResult = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const user = authResult.user;
+
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        await setDoc(userRef, {
+          uid: user.uid,
+          username: values.username,
+          email: user.email,
+          phone: values.phone,
+          role: values.role,
+          createdAt: new Date(),
+        });
+      }
+      toast({ title: "Sign up successful!", description: "Welcome to Village Eats." });
+      onOpenChange(false);
+
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: error.message || "There was a problem with your request.",
+      });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+  const handleLogin = async (values: z.infer<typeof loginSchema>) => {
+     setIsSubmitting(true);
+    try {
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      toast({ title: "Login successful!" });
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: "Invalid email or password. Please try again.",
+      });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+
+  useEffect(() => {
+    // Reset forms when dialog is closed
+    if (!open) {
+      signUpForm.reset();
+      loginForm.reset();
+    }
+  }, [open, signUpForm, loginForm]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Login or sign up</DialogTitle>
-          <DialogDescription>
-            To get started, please login or create a new account.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-            <RadioGroup defaultValue="customer" onValueChange={(value: Role) => setRole(value)}>
-                <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="customer" id="r1" />
-                    <Label htmlFor="r1">I'm a Customer</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="owner" id="r2" />
-                    <Label htmlFor="r2">I'm a Restaurant Owner</Label>
-                </div>
-            </RadioGroup>
-            <StyledFirebaseAuth
-              uiConfig={{
-                signInFlow: 'popup',
-                signInOptions: [
-                  GoogleAuthProvider.PROVIDER_ID,
-                  EmailAuthProvider.PROVIDER_ID,
-                ],
-                callbacks: {
-                  signInSuccessWithAuthResult: (authResult) => {
-                    if (authResult.user) {
-                      const user = authResult.user;
-                      const userRef = doc(db, 'users', user.uid);
-                      
-                      // Check if the user document already exists
-                      getDoc(userRef).then(docSnap => {
-                        if (!docSnap.exists() && authResult.additionalUserInfo?.isNewUser) {
-                           // New user, so create their document with the selected role
-                           setDoc(userRef, {
-                            uid: user.uid,
-                            email: user.email,
-                            displayName: user.displayName,
-                            photoURL: user.photoURL,
-                            role: role,
-                            createdAt: new Date(),
-                          });
-                        }
-                      });
-                    }
-                    onOpenChange(false);
-                    return false;
-                  }
-                }
-              }}
-              firebaseAuth={auth}
-            />
-        </div>
+      <DialogContent className="sm:max-w-md">
+         <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            </TabsList>
+            <TabsContent value="login">
+                <DialogHeader className="mb-4">
+                    <DialogTitle>Welcome Back!</DialogTitle>
+                    <DialogDescription>
+                        Sign in to continue to Village Eats.
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...loginForm}>
+                    <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+                        <FormField
+                        control={loginForm.control}
+                        name="email"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                                <Input placeholder="you@email.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <FormField
+                        control={loginForm.control}
+                        name="password"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                                <Input type="password" placeholder="••••••••" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <Button type="submit" className="w-full" disabled={isSubmitting}>
+                           {isSubmitting ? 'Logging in...' : 'Login'}
+                        </Button>
+                    </form>
+                </Form>
+            </TabsContent>
+            <TabsContent value="signup">
+                 <DialogHeader className="mb-4">
+                    <DialogTitle>Create an Account</DialogTitle>
+                    <DialogDescription>
+                        To get started, please create a new account.
+                    </DialogDescription>
+                </DialogHeader>
+                 <Form {...signUpForm}>
+                    <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-2">
+                        <FormField
+                            control={signUpForm.control}
+                            name="username"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Username</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="your_username" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={signUpForm.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="you@email.com" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={signUpForm.control}
+                            name="phone"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Phone Number</FormLabel>
+                                <FormControl>
+                                    <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={signUpForm.control}
+                            name="password"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Password</FormLabel>
+                                <FormControl>
+                                    <Input type="password" placeholder="••••••••" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={signUpForm.control}
+                            name="role"
+                            render={({ field }) => (
+                                <FormItem className="space-y-3 pt-2">
+                                <FormLabel>I am a...</FormLabel>
+                                <FormControl>
+                                    <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex items-center space-x-4"
+                                    >
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="customer" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">Customer</FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="owner" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">Restaurant Owner</FormLabel>
+                                    </FormItem>
+                                    </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="submit" className="w-full !mt-6" disabled={isSubmitting}>
+                            {isSubmitting ? 'Creating Account...' : 'Create Account'}
+                        </Button>
+                    </form>
+                </Form>
+            </TabsContent>
+         </Tabs>
       </DialogContent>
     </Dialog>
   );

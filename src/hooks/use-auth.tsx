@@ -17,6 +17,8 @@ import { doc, getDoc } from 'firebase/firestore';
 
 interface AppUser extends User {
   role?: 'customer' | 'owner' | 'admin';
+  username?: string;
+  phone?: string;
 }
 
 interface AuthContextType {
@@ -37,9 +39,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userRef = doc(db, 'users', user.uid);
         const docSnap = await getDoc(userRef);
         if (docSnap.exists()) {
+          const userData = docSnap.data();
           const appUser: AppUser = {
             ...user,
-            role: docSnap.data()?.role,
+            role: userData?.role,
+            username: userData?.username,
+            displayName: userData?.username || user.displayName, // Fallback to username
+            phone: userData?.phone,
           };
           setUser(appUser);
         } else {
