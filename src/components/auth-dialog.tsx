@@ -1,3 +1,4 @@
+
 // All the UI components are imported from the same codebase
 'use client';
 import {
@@ -9,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { auth } from '@/services/firebase';
 import 'firebaseui/dist/firebaseui.css';
+import * as firebaseui from 'firebaseui';
 import {
   GoogleAuthProvider,
   EmailAuthProvider,
@@ -20,8 +22,14 @@ import { useEffect, useState } from 'react';
 // the window object on the server.
 import dynamic from 'next/dynamic';
 const StyledFirebaseAuth = dynamic(
-  () => import('react-firebaseui/StyledFirebaseAuth'),
-  { ssr: false }
+  () => import('react-firebaseui/StyledFirebaseAuth').then((mod) => mod.default),
+  { ssr: false, load: () => Promise.resolve((props: any) => {
+    useEffect(() => {
+      const ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(props.firebaseAuth);
+      ui.start('#firebaseui-auth-container', props.uiConfig);
+    }, [props]);
+    return <div id="firebaseui-auth-container"></div>;
+  }) }
 );
 
 interface Props {
@@ -31,14 +39,7 @@ interface Props {
 
 export function AuthDialog(props: Props) {
   const { open, onOpenChange } = props;
-  const [render, setRender] = useState(false);
-  useEffect(() => {
-    // We need to delay the rendering of the firebaseui component, so it doesn't
-    // throw a hydration error.
-    setTimeout(() => {
-      setRender(true);
-    }, 500);
-  }, []);
+
   const [_, setLoggedIn] = useState(false);
   onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -57,7 +58,6 @@ export function AuthDialog(props: Props) {
           </DialogDescription>
         </DialogHeader>
         <div className="firebase-auth-container">
-          {render ? (
             <StyledFirebaseAuth
               uiConfig={{
                 signInFlow: 'popup',
@@ -65,10 +65,15 @@ export function AuthDialog(props: Props) {
                   GoogleAuthProvider.PROVIDER_ID,
                   EmailAuthProvider.PROVIDER_ID,
                 ],
+                callbacks: {
+                  signInSuccessWithAuthResult: () => {
+                    onOpenChange(false);
+                    return false;
+                  }
+                }
               }}
               firebaseAuth={auth}
             />
-          ) : null}
         </div>
       </DialogContent>
     </Dialog>
