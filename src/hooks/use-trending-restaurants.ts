@@ -5,8 +5,11 @@ import { useState, useEffect } from 'react';
 import { getTrendingRestaurantRecommendations, type TrendingRestaurantRecommendationsOutput } from '@/ai/flows/trending-restaurant-recommendations';
 import type { Restaurant } from '@/lib/types';
 import { getRestaurants } from '@/services/restaurantService';
+import { useAuth } from './use-auth';
 
-export function useTrendingRestaurants(customerId: string) {
+export function useTrendingRestaurants() {
+  const { user } = useAuth();
+  const customerId = user?.uid ?? 'guest';
   const [data, setData] = useState<Restaurant[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);

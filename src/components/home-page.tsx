@@ -27,7 +27,7 @@ function LoadingSkeleton() {
 }
 
 export function HomePage() {
-  const { data: trendingRestaurants, loading: trendingLoading, error: trendingError } = useTrendingRestaurants('customer-123');
+  const { data: trendingRestaurants, loading: trendingLoading, error: trendingError } = useTrendingRestaurants();
   const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
   const [allRestaurantsLoading, setAllRestaurantsLoading] = useState(true);
 
