@@ -52,7 +52,7 @@ const signUpSchema = z.object({
 });
 
 const loginSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email.' }),
+  emailOrUsername: z.string().min(1, { message: 'Please enter your email or username.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
 });
 
@@ -82,7 +82,7 @@ export function AuthDialog(props: Props) {
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
+      emailOrUsername: '',
       password: '',
     },
   });
@@ -127,16 +127,38 @@ export function AuthDialog(props: Props) {
   };
 
   const handleLogin = async (values: z.infer<typeof loginSchema>) => {
-     setIsSubmitting(true);
+    setIsSubmitting(true);
+    let email = values.emailOrUsername;
+
+    // Check if the input is a username
+    if (!email.includes('@')) {
+      try {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('username', '==', email));
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+          toast({ variant: "destructive", title: "Login Failed", description: "User not found." });
+          setIsSubmitting(false);
+          return;
+        }
+        const userData = querySnapshot.docs[0].data();
+        email = userData.email;
+      } catch (error) {
+        toast({ variant: "destructive", title: "Login Error", description: "Could not verify username." });
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      await signInWithEmailAndPassword(auth, email, values.password);
       toast({ title: "Login successful!" });
       onOpenChange(false);
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: "Invalid email or password. Please try again.",
+        description: "Invalid credentials. Please try again.",
       });
     } finally {
         setIsSubmitting(false);
@@ -171,12 +193,12 @@ export function AuthDialog(props: Props) {
                     <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                         <FormField
                         control={loginForm.control}
-                        name="email"
+                        name="emailOrUsername"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Email</FormLabel>
+                            <FormLabel>Email or Username</FormLabel>
                             <FormControl>
-                                <Input placeholder="you@email.com" {...field} />
+                                <Input placeholder="you@email.com or your_username" {...field} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -303,3 +325,5 @@ export function AuthDialog(props: Props) {
     </Dialog>
   );
 }
+
+    
