@@ -33,18 +33,18 @@ export function Header() {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
             <UtensilsCrossed className="h-7 w-7 text-primary" />
-            <h1 className="text-xl font-bold font-headline text-primary">Village Eats</h1>
+            <h1 className="text-2xl font-bold font-headline text-primary">Village Eats</h1>
           </div>
-          <div className="hidden md:flex flex-1 max-w-md items-center relative">
+          <div className="hidden md:flex flex-1 max-w-sm items-center relative">
             <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
-            <Input placeholder="Search restaurants..." className="pl-10" />
+            <Input placeholder="Search restaurants..." className="pl-10 rounded-full" />
           </div>
           <div className="flex items-center gap-2">
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-9 w-9">
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar className="h-10 w-10">
                       <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
                       <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
                     </Avatar>
@@ -67,10 +67,13 @@ export function Header() {
               </DropdownMenu>
             ) : (
               <>
-                <Button variant="ghost" size="sm" onClick={() => setAuthDialogOpen(true)}>Login</Button>
+                <Button variant="ghost" size="sm" className="hidden md:flex" onClick={() => setAuthDialogOpen(true)}>Login</Button>
                 <Button size="sm" onClick={() => setAuthDialogOpen(true)}>Sign Up</Button>
               </>
             )}
+             <Button variant="ghost" size="icon" className="md:hidden">
+              <Search className="h-5 w-5" />
+            </Button>
           </div>
         </div>
       </header>
