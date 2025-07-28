@@ -48,7 +48,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
-type Role = 'customer' | 'owner' | 'admin';
+type Role = 'customer' | 'owner';
 
 export function AuthDialog(props: Props) {
   const { open, onOpenChange } = props;
@@ -84,10 +84,6 @@ export function AuthDialog(props: Props) {
                 <div className="flex items-center space-x-2">
                     <RadioGroupItem value="owner" id="r2" />
                     <Label htmlFor="r2">I'm a Restaurant Owner</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="admin" id="r3" />
-                    <Label htmlFor="r3">I'm an Admin</Label>
                 </div>
             </RadioGroup>
             <StyledFirebaseAuth
