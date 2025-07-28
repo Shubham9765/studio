@@ -9,7 +9,8 @@ import {
 } from '@/components/ui/dialog';
 import { auth } from '@/services/firebase';
 import 'firebaseui/dist/firebaseui.css';
-import * as firebaseui from 'firebaseui';
+import type firebase from 'firebase/app';
+import type * as firebaseui from 'firebaseui';
 import {
   GoogleAuthProvider,
   EmailAuthProvider,
@@ -21,10 +22,14 @@ import { useEffect, useState } from 'react';
 // the window object on the server.
 import dynamic from 'next/dynamic';
 
-const FirebaseAuth = ({ uiConfig, firebaseAuth }: { uiConfig: firebaseui.auth.Config; firebaseAuth: any }) => {
+const FirebaseAuth = ({ uiConfig, firebaseAuth }: { uiConfig: firebaseui.auth.Config; firebaseAuth: typeof auth }) => {
   useEffect(() => {
-    const ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(firebaseAuth);
-    ui.start('#firebaseui-auth-container', uiConfig);
+    // FirebaseUI relies on the window object, so we need to import it here
+    // to ensure it only runs on the client side.
+    import('firebaseui').then(firebaseui => {
+        const ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(firebaseAuth);
+        ui.start('#firebaseui-auth-container', uiConfig);
+    });
   }, [uiConfig, firebaseAuth]);
 
   return <div id="firebaseui-auth-container"></div>;
