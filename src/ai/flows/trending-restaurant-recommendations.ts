@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { getRestaurants } from '@/services/restaurantService';
 
 const TrendingRestaurantRecommendationsInputSchema = z.object({
   customerId: z.string().describe('The ID of the customer requesting recommendations.'),
@@ -51,24 +52,16 @@ const getTrendingRestaurants = ai.defineTool({
     })
   ),
   run: async (input) => {
-    // TODO: Replace with actual implementation to fetch trending restaurants.
-    // This is a placeholder implementation.
-    return [
-      {
-        restaurantId: '1',
-        restaurantName: 'Village Pizza',
-        cuisine: 'Italian',
-        averageRating: 4.5,
-        estimatedDeliveryTime: '30-40 minutes'
-      },
-      {
-        restaurantId: '2',
-        restaurantName: 'Spice Paradise',
-        cuisine: 'Indian',
-        averageRating: 4.2,
-        estimatedDeliveryTime: '35-45 minutes'
-      },
-    ];
+    const restaurants = await getRestaurants();
+    
+    // Return the first 2 restaurants as trending for now.
+    return restaurants.slice(0, 2).map(r => ({
+      restaurantId: r.id,
+      restaurantName: r.name,
+      cuisine: r.cuisine,
+      averageRating: r.rating,
+      estimatedDeliveryTime: r.deliveryTime,
+    }));
   },
 });
 
