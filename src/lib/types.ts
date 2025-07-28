@@ -6,4 +6,5 @@ export interface Restaurant {
   deliveryTime: string;
   image: string;
   dataAiHint?: string;
+  status: 'pending' | 'approved' | 'rejected';
 }

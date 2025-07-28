@@ -15,10 +15,11 @@ import {
 import { auth, db } from '@/services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
-interface AppUser extends User {
+export interface AppUser extends User {
   role?: 'customer' | 'owner' | 'admin';
   username?: string;
   phone?: string;
+  status?: 'active' | 'inactive';
 }
 
 interface AuthContextType {
@@ -42,10 +43,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const userData = docSnap.data();
           const appUser: AppUser = {
             ...user,
+            uid: user.uid,
             role: userData?.role,
             username: userData?.username,
             displayName: userData?.username || user.displayName, // Fallback to username
             phone: userData?.phone,
+            status: userData?.status || 'active',
           };
           setUser(appUser);
         } else {
