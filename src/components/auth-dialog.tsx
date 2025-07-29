@@ -8,7 +8,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { auth, db } from '@/services/firebase';
-import 'firebaseui/dist/firebaseui.css';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
