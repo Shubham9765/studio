@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Star, Clock } from 'lucide-react';
 import type { Restaurant } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
@@ -32,17 +33,28 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
   };
 
   return (
-    <Card className="overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1.5 cursor-pointer group border-0 shadow-sm">
+    <Card className={cn(
+        "overflow-hidden transition-all duration-300 ease-in-out group border-0 shadow-sm",
+        restaurant.isOpen ? "hover:shadow-xl hover:-translate-y-1.5 cursor-pointer" : "cursor-not-allowed"
+    )}>
       <div className="relative">
         <Image
           src={restaurant.image}
           alt={restaurant.name}
           width={600}
           height={400}
-          className="object-cover w-full h-56 rounded-t-lg"
+          className={cn("object-cover w-full h-56 rounded-t-lg", !restaurant.isOpen && "grayscale")}
           data-ai-hint={restaurant.dataAiHint}
         />
-         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent group-hover:from-black/60 transition-all duration-300" />
+         <div className={cn(
+             "absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent",
+             restaurant.isOpen && "group-hover:from-black/60 transition-all duration-300"
+         )} />
+         {!restaurant.isOpen && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                <span className="text-white font-bold text-xl tracking-wider">CLOSED</span>
+            </div>
+         )}
          <Badge variant="destructive" className="absolute top-3 right-3">{restaurant.deliveryTime}</Badge>
       </div>
       <CardHeader className="p-4">
@@ -55,6 +67,9 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
             {renderStars()}
             <span className="font-semibold text-foreground ml-1">{restaurant.rating.toFixed(1)}</span>
           </div>
+           <div className="text-sm font-medium">
+             {restaurant.deliveryCharge > 0 ? `$${restaurant.deliveryCharge.toFixed(2)}` : 'Free'} Delivery
+           </div>
         </div>
       </CardContent>
     </Card>

@@ -15,6 +15,8 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       dataAiHint: 'italian food',
       ownerId: MOCK_OWNER_ID,
       status: 'approved',
+      deliveryCharge: 2.50,
+      isOpen: true,
     },
     {
       id: '2',
@@ -25,6 +27,8 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       image: 'https://placehold.co/600x400',
       dataAiHint: 'indian food',
       status: 'approved',
+      deliveryCharge: 1.99,
+      isOpen: true,
     },
     {
       id: '3',
@@ -35,6 +39,8 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       image: 'https://placehold.co/600x400',
       dataAiHint: 'indian food',
       status: 'approved',
+      deliveryCharge: 0,
+      isOpen: true,
     },
     {
       id: '4',
@@ -45,6 +51,8 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       image: 'https://placehold.co/600x400',
       dataAiHint: 'pizza',
       status: 'approved',
+      deliveryCharge: 3.00,
+      isOpen: false,
     },
     {
       id: '5',
@@ -55,6 +63,8 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       image: 'https://placehold.co/600x400',
       dataAiHint: 'sushi',
       status: 'approved',
+      deliveryCharge: 5.00,
+      isOpen: true,
     },
     {
       id: '6',
@@ -66,6 +76,8 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       dataAiHint: 'burger',
       ownerId: 'mock-owner-uid-456',
       status: 'approved',
+      deliveryCharge: 0,
+      isOpen: true,
     },
     {
       id: '7',
@@ -76,6 +88,8 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       image: 'https://placehold.co/600x400',
       dataAiHint: 'taco',
       status: 'approved',
+      deliveryCharge: 1.50,
+      isOpen: true,
     },
     {
       id: '8',
@@ -86,5 +100,7 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       image: 'https://placehold.co/600x400',
       dataAiHint: 'noodles',
       status: 'approved',
+      deliveryCharge: 2.00,
+      isOpen: true,
     },
   ];

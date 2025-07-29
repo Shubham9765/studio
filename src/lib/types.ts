@@ -8,4 +8,6 @@ export interface Restaurant {
   dataAiHint?: string;
   status: 'pending' | 'approved' | 'rejected' | 'disabled';
   ownerId?: string;
+  deliveryCharge: number;
+  isOpen: boolean;
 }

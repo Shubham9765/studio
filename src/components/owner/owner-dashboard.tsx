@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 import { RestaurantRegistrationForm } from './restaurant-registration-form';
+import { useState } from 'react';
+import { EditRestaurantForm } from './edit-restaurant-form';
 
 function StatCard({ title, value, description, icon, loading }: { title: string, value: string | number, description: string, icon: React.ReactNode, loading: boolean }) {
     return (
@@ -37,6 +39,7 @@ function StatCard({ title, value, description, icon, loading }: { title: string,
 
 export default function OwnerDashboard() {
   const { data, loading, error, refreshData } = useOwnerDashboardData();
+  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
 
   if (loading) {
       return (
@@ -141,6 +144,7 @@ export default function OwnerDashboard() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container py-8">
@@ -166,11 +170,21 @@ export default function OwnerDashboard() {
                 <CardContent className="flex flex-col sm:flex-row gap-4">
                     <Button disabled><MenuSquare />Manage Menu</Button>
                     <Button disabled><BookOpen />View Orders</Button>
-                    <Button disabled><Edit />Edit Restaurant Profile</Button>
+                    <Button onClick={() => setIsEditFormOpen(true)}><Edit />Edit Restaurant Profile</Button>
                 </CardContent>
             </Card>
         </div>
       </main>
     </div>
+    <EditRestaurantForm
+        isOpen={isEditFormOpen}
+        onOpenChange={setIsEditFormOpen}
+        restaurant={data.restaurant}
+        onRestaurantUpdated={() => {
+            setIsEditFormOpen(false);
+            refreshData();
+        }}
+    />
+    </>
   );
 }

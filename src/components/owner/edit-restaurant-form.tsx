@@ -1,0 +1,180 @@
+
+'use client';
+
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from 'react';
+import type { Restaurant } from '@/lib/types';
+import { Switch } from '../ui/switch';
+import { updateRestaurant } from '@/services/ownerService';
+
+export const EditRestaurantSchema = z.object({
+  name: z.string().min(3, { message: 'Restaurant name must be at least 3 characters.' }),
+  cuisine: z.string().min(3, { message: 'Cuisine type must be at least 3 characters.' }),
+  deliveryTime: z.string().min(1, { message: 'Please provide an estimated delivery time (e.g., 30-45 min).' }),
+  deliveryCharge: z.coerce.number().min(0, { message: 'Delivery charge must be a positive number.' }),
+  isOpen: z.boolean(),
+});
+
+interface EditRestaurantFormProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  restaurant: Restaurant;
+  onRestaurantUpdated: () => void;
+}
+
+export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaurantUpdated }: EditRestaurantFormProps) {
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<z.infer<typeof EditRestaurantSchema>>({
+    resolver: zodResolver(EditRestaurantSchema),
+    defaultValues: {
+      name: '',
+      cuisine: '',
+      deliveryTime: '',
+      deliveryCharge: 0,
+      isOpen: true,
+    },
+  });
+
+  useEffect(() => {
+    if (restaurant && isOpen) {
+      form.reset({
+        name: restaurant.name,
+        cuisine: restaurant.cuisine,
+        deliveryTime: restaurant.deliveryTime,
+        deliveryCharge: restaurant.deliveryCharge,
+        isOpen: restaurant.isOpen,
+      });
+    }
+  }, [restaurant, isOpen, form]);
+
+  const onSubmit = async (values: z.infer<typeof EditRestaurantSchema>) => {
+    setIsSubmitting(true);
+    try {
+      await updateRestaurant(restaurant.id, values);
+      toast({
+        title: 'Restaurant Updated!',
+        description: 'Your restaurant details have been successfully saved.',
+      });
+      onRestaurantUpdated();
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Uh oh! Something went wrong.',
+        description: error.message || 'There was a problem with your request.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Edit Restaurant Profile</DialogTitle>
+          <DialogDescription>
+            Update your restaurant's information. Click save when you're done.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Restaurant Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., The Spicy Spoon" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="cuisine"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cuisine Type</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Indian, Italian, Mexican" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="deliveryTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Estimated Delivery Time</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., 30-45 minutes" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="deliveryCharge"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Delivery Charge ($)</FormLabel>
+                  <FormControl>
+                    <Input type="number" step="0.01" placeholder="e.g., 2.50" {...field} />
+                  </FormControl>
+                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="isOpen"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Open for Orders</FormLabel>
+                     <p className="text-sm text-muted-foreground">
+                        Controls whether customers can place orders.
+                     </p>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
+                </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}

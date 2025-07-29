@@ -1,9 +1,11 @@
 
 import { db } from './firebase';
-import { collection, getDocs, query, where, limit, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import type { Restaurant } from '@/lib/types';
 import type { z } from 'zod';
 import type { RestaurantSchema } from '@/components/owner/restaurant-registration-form';
+import type { EditRestaurantSchema } from '@/components/owner/edit-restaurant-form';
+
 
 export interface OwnerDashboardData {
   restaurant: Restaurant | null;
@@ -25,17 +27,22 @@ export async function createRestaurant(ownerId: string, data: z.infer<typeof Res
         throw new Error('This owner already has a restaurant and cannot create another.');
     }
 
-    const newRestaurant = {
+    const newRestaurant: Omit<Restaurant, 'id'> = {
         ...data,
         ownerId,
         status: 'pending' as const,
         rating: 0,
-        createdAt: serverTimestamp(),
         image: 'https://placehold.co/600x400.png',
         dataAiHint: data.cuisine.toLowerCase().split(' ')[0] || 'food',
+        deliveryCharge: 0,
+        isOpen: true,
     };
 
-    const docRef = await addDoc(collection(db, "restaurants"), newRestaurant);
+    const docRef = await addDoc(collection(db, "restaurants"), {
+      ...newRestaurant,
+      createdAt: serverTimestamp()
+    });
+
     return docRef.id;
 }
 
@@ -78,4 +85,12 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
     menuItemsCount,
     reviewCount
   };
+}
+
+export async function updateRestaurant(restaurantId: string, data: z.infer<typeof EditRestaurantSchema>) {
+    if (!restaurantId) {
+        throw new Error('A restaurant ID is required to update a restaurant.');
+    }
+    const restaurantRef = doc(db, 'restaurants', restaurantId);
+    await updateDoc(restaurantRef, data);
 }
