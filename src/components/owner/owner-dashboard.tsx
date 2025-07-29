@@ -1,13 +1,15 @@
+
 'use client';
 
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Utensils, Truck, Star, ClipboardList, Edit, MenuSquare, BookOpen } from 'lucide-react';
+import { Utensils, Truck, Star, ClipboardList, Edit, MenuSquare, BookOpen, ShieldAlert, BadgeCheck, Clock, ShieldX } from 'lucide-react';
 import { useOwnerDashboardData } from '@/hooks/use-owner-dashboard-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
+import { RestaurantRegistrationForm } from './restaurant-registration-form';
 
 function StatCard({ title, value, description, icon, loading }: { title: string, value: string | number, description: string, icon: React.ReactNode, loading: boolean }) {
     return (
@@ -34,7 +36,7 @@ function StatCard({ title, value, description, icon, loading }: { title: string,
 }
 
 export default function OwnerDashboard() {
-  const { data, loading, error } = useOwnerDashboardData();
+  const { data, loading, error, refreshData } = useOwnerDashboardData();
 
   if (loading) {
       return (
@@ -79,22 +81,76 @@ export default function OwnerDashboard() {
         <div className="min-h-screen bg-background">
           <Header />
            <main className="container py-8">
-                <Alert>
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>No Restaurant Found</AlertTitle>
-                    <AlertDescription>We couldn't find a restaurant associated with your account. Please complete your restaurant profile.</AlertDescription>
-                </Alert>
+                <RestaurantRegistrationForm onRestaurantCreated={refreshData} />
            </main>
         </div>
      )
   }
 
+  if (data.restaurant.status === 'pending') {
+      return (
+          <div className="min-h-screen bg-background">
+              <Header />
+              <main className="container py-8 flex justify-center">
+                  <Card className="w-full max-w-2xl">
+                      <CardHeader className="items-center text-center">
+                         <Clock className="h-12 w-12 text-accent mb-4"/>
+                         <CardTitle className="text-2xl">Application Pending</CardTitle>
+                         <CardDescription className="text-base">
+                            Thank you for submitting your restaurant details. Your application is currently under review by our team. We'll notify you once it's approved.
+                         </CardDescription>
+                      </CardHeader>
+                  </Card>
+              </main>
+          </div>
+      )
+  }
+
+   if (data.restaurant.status === 'rejected') {
+      return (
+          <div className="min-h-screen bg-background">
+              <Header />
+              <main className="container py-8 flex justify-center">
+                  <Alert variant="destructive" className="w-full max-w-2xl">
+                      <ShieldX className="h-5 w-5"/>
+                      <AlertTitle>Application Rejected</AlertTitle>
+                      <AlertDescription>
+                        Unfortunately, your restaurant application was not approved at this time. Please contact support for more information.
+                      </AlertDescription>
+                  </Alert>
+              </main>
+          </div>
+      )
+  }
+
+  if (data.restaurant.status === 'disabled') {
+      return (
+          <div className="min-h-screen bg-background">
+              <Header />
+              <main className="container py-8 flex justify-center">
+                   <Alert variant="destructive" className="w-full max-w-2xl">
+                      <ShieldAlert className="h-5 w-5"/>
+                      <AlertTitle>Restaurant Disabled</AlertTitle>
+                      <AlertDescription>
+                        Your restaurant is currently disabled and not visible to customers. Please contact support if you believe this is an error.
+                      </AlertDescription>
+                  </Alert>
+              </main>
+          </div>
+      )
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container py-8">
-        <h1 className="text-3xl font-bold mb-8">{data.restaurant.name} Dashboard</h1>
+        <div className="flex justify-between items-start mb-8">
+            <h1 className="text-3xl font-bold">{data.restaurant.name} Dashboard</h1>
+            <div className="flex items-center gap-2">
+                <BadgeCheck className="text-green-500 h-6 w-6"/>
+                <span className="text-lg font-semibold text-green-600">Approved</span>
+            </div>
+        </div>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           <StatCard loading={loading} title="Today's Orders" value={data.todaysOrders} description="+5 since yesterday" icon={<ClipboardList className="h-4 w-4 text-muted-foreground" />} />
           <StatCard loading={loading} title="Pending Deliveries" value={data.pendingDeliveries} description="To be picked up" icon={<Truck className="h-4 w-4 text-muted-foreground" />} />
