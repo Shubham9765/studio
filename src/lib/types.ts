@@ -22,3 +22,17 @@ export interface MenuItem {
   imageUrl?: string;
   isAvailable: boolean;
 }
+
+export interface Order {
+    id: string;
+    customerId: string;
+    restaurantId: string;
+    items: (MenuItem & { quantity: number })[];
+    total: number;
+    status: 'pending' | 'accepted' | 'preparing' | 'out-for-delivery' | 'delivered' | 'cancelled';
+    createdAt: Date;
+    deliveryBoy?: {
+        id: string;
+        name: string;
+    };
+}

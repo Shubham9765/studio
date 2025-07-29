@@ -8,11 +8,11 @@ import type { Restaurant, MenuItem } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Star, Clock, ShoppingCart, Utensils } from 'lucide-react';
+import { AlertTriangle, Star, Clock, Utensils } from 'lucide-react';
 import { notFound } from 'next/navigation';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { MenuItemCard } from '@/components/customer/menu-item-card';
+import { Cart } from '@/components/customer/cart';
+
 
 interface RestaurantPageParams {
   params: { id: string };
@@ -150,7 +150,7 @@ export default function RestaurantPage({ params }: RestaurantPageParams) {
                         <h2 className="text-3xl font-bold font-headline mb-6 border-b-2 border-primary pb-2">{category}</h2>
                         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
                             {items.map(item => (
-                                <MenuItemCard key={item.id} item={item} />
+                                <MenuItemCard key={item.id} item={item} restaurantId={restaurant.id} />
                             ))}
                         </div>
                     </section>
@@ -166,17 +166,7 @@ export default function RestaurantPage({ params }: RestaurantPageParams) {
           {/* Cart Section */}
           <aside className="lg:col-span-1">
              <div className="sticky top-24">
-                <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-                    <div className="flex items-center justify-center gap-3 mb-6">
-                        <ShoppingCart className="h-7 w-7"/>
-                        <h2 className="text-2xl font-bold">Your Order</h2>
-                    </div>
-                    <div className="text-center text-muted-foreground py-12">
-                        <p>Your cart is empty.</p>
-                        <p className="text-sm">Add items from the menu to get started.</p>
-                    </div>
-                    <Button className="w-full mt-4" disabled>Checkout</Button>
-                </div>
+                <Cart restaurant={restaurant} />
              </div>
           </aside>
         </div>

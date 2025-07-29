@@ -5,13 +5,39 @@ import Image from 'next/image';
 import type { MenuItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, ShoppingCart } from 'lucide-react';
+import { useCart } from '@/hooks/use-cart';
+import { useToast } from '@/hooks/use-toast';
 
 interface MenuItemCardProps {
     item: MenuItem;
+    restaurantId: string;
 }
 
-export function MenuItemCard({ item }: MenuItemCardProps) {
+export function MenuItemCard({ item, restaurantId }: MenuItemCardProps) {
+    const { addItem, restaurant: cartRestaurant, clearCart } = useCart();
+    const { toast } = useToast();
+
+    const handleAddToCart = () => {
+        if (!item.isAvailable) return;
+
+        const handleAddItem = () => {
+            addItem({ ...item, quantity: 1 }, { id: restaurantId });
+            toast({
+                title: "Added to cart",
+                description: `${item.name} has been added to your order.`,
+            });
+        }
+        
+        if (cartRestaurant && cartRestaurant.id !== restaurantId) {
+             if (confirm('Your cart contains items from another restaurant. Would you like to clear it and add this item instead?')) {
+                clearCart();
+                handleAddItem();
+            }
+        } else {
+            handleAddItem();
+        }
+    }
 
     return (
         <div className={cn(
@@ -40,7 +66,7 @@ export function MenuItemCard({ item }: MenuItemCardProps) {
             </div>
              <div className="flex justify-between items-center p-4 pt-2">
                 <p className="font-semibold text-primary text-lg">${item.price.toFixed(2)}</p>
-                <Button size="sm" disabled={!item.isAvailable}>
+                <Button size="sm" disabled={!item.isAvailable} onClick={handleAddToCart}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add
                 </Button>
@@ -48,4 +74,3 @@ export function MenuItemCard({ item }: MenuItemCardProps) {
         </div>
     );
 }
-
