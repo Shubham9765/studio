@@ -1,5 +1,9 @@
 import type { Restaurant } from './types';
 
+// Let's assign a mock owner ID to some restaurants.
+// In a real app, this would be the UID of a user with the 'owner' role.
+const MOCK_OWNER_ID = 'mock-owner-uid-123';
+
 export const MOCK_RESTAURANTS: Restaurant[] = [
     {
       id: '1',
@@ -9,6 +13,8 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       deliveryTime: '30-40 minutes',
       image: 'https://placehold.co/600x400',
       dataAiHint: 'italian food',
+      ownerId: MOCK_OWNER_ID,
+      status: 'approved',
     },
     {
       id: '2',
@@ -18,6 +24,7 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       deliveryTime: '35-45 minutes',
       image: 'https://placehold.co/600x400',
       dataAiHint: 'indian food',
+      status: 'approved',
     },
     {
       id: '3',
@@ -27,6 +34,7 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       deliveryTime: '25-35 min',
       image: 'https://placehold.co/600x400',
       dataAiHint: 'indian food',
+      status: 'approved',
     },
     {
       id: '4',
@@ -36,6 +44,7 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       deliveryTime: '30-40 min',
       image: 'https://placehold.co/600x400',
       dataAiHint: 'pizza',
+      status: 'approved',
     },
     {
       id: '5',
@@ -45,6 +54,7 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       deliveryTime: '40-50 min',
       image: 'https://placehold.co/600x400',
       dataAiHint: 'sushi',
+      status: 'approved',
     },
     {
       id: '6',
@@ -54,6 +64,8 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       deliveryTime: '20-30 min',
       image: 'https://placehold.co/600x400',
       dataAiHint: 'burger',
+      ownerId: 'mock-owner-uid-456',
+      status: 'approved',
     },
     {
       id: '7',
@@ -63,6 +75,7 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       deliveryTime: '25-35 min',
       image: 'https://placehold.co/600x400',
       dataAiHint: 'taco',
+      status: 'approved',
     },
     {
       id: '8',
@@ -72,5 +85,6 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       deliveryTime: '30-40 min',
       image: 'https://placehold.co/600x400',
       dataAiHint: 'noodles',
+      status: 'approved',
     },
   ];

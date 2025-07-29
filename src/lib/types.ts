@@ -7,4 +7,5 @@ export interface Restaurant {
   image: string;
   dataAiHint?: string;
   status: 'pending' | 'approved' | 'rejected' | 'disabled';
+  ownerId?: string;
 }
