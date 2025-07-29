@@ -17,6 +17,9 @@ import { format } from 'date-fns';
 import { useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
+import { updateUserStatus, updateRestaurantStatus } from '@/services/adminService';
+import { useToast } from '@/hooks/use-toast';
+
 
 function StatCard({ title, value, icon, description, loading }: { title: string, value: string | number, icon: React.ReactNode, description: string, loading: boolean }) {
     return (
@@ -42,7 +45,23 @@ function StatCard({ title, value, icon, description, loading }: { title: string,
     );
 }
 
-function UserTable({ users, loading }: { users: AppUser[], loading: boolean }) {
+function UserTable({ users, loading, onUpdate }: { users: AppUser[], loading: boolean, onUpdate: () => void }) {
+    const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+    const { toast } = useToast();
+
+    const handleUpdateStatus = async (userId: string, status: 'active' | 'inactive') => {
+        setUpdatingUserId(userId);
+        try {
+            await updateUserStatus(userId, status);
+            toast({ title: "User status updated", description: `User has been ${status === 'active' ? 'activated' : 'deactivated'}.` });
+            onUpdate();
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Update failed', description: error.message });
+        } finally {
+            setUpdatingUserId(null);
+        }
+    };
+    
     return (
         <Card>
             <CardHeader>
@@ -80,9 +99,13 @@ function UserTable({ users, loading }: { users: AppUser[], loading: boolean }) {
                                 <TableCell><Badge variant={user.status === 'active' ? 'default' : 'destructive'} className="capitalize">{user.status}</Badge></TableCell>
                                 <TableCell className="text-right">
                                     {user.status === 'active' ? (
-                                        <Button variant="outline" size="sm"><UserX className="mr-2 h-4 w-4" />Deactivate</Button>
+                                        <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(user.uid, 'inactive')} disabled={updatingUserId === user.uid}>
+                                            {updatingUserId === user.uid ? 'Deactivating...' : <><UserX className="mr-2 h-4 w-4" />Deactivate</>}
+                                        </Button>
                                     ) : (
-                                        <Button variant="outline" size="sm"><UserCheck className="mr-2 h-4 w-4" />Activate</Button>
+                                        <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(user.uid, 'active')} disabled={updatingUserId === user.uid}>
+                                           {updatingUserId === user.uid ? 'Activating...' : <><UserCheck className="mr-2 h-4 w-4" />Activate</>}
+                                        </Button>
                                     )}
                                 </TableCell>
                             </TableRow>
@@ -94,7 +117,10 @@ function UserTable({ users, loading }: { users: AppUser[], loading: boolean }) {
     )
 }
 
-function RestaurantTable({ restaurants, loading }: { restaurants: Restaurant[], loading: boolean }) {
+function RestaurantTable({ restaurants, loading, onUpdate }: { restaurants: Restaurant[], loading: boolean, onUpdate: () => void }) {
+    const [updatingRestaurantId, setUpdatingRestaurantId] = useState<string | null>(null);
+    const { toast } = useToast();
+
      const getStatusVariant = (status: Restaurant['status']) => {
         switch (status) {
             case 'approved': return 'default';
@@ -103,7 +129,21 @@ function RestaurantTable({ restaurants, loading }: { restaurants: Restaurant[], 
             case 'disabled': return 'outline';
             default: return 'secondary';
         }
-    }
+    };
+
+    const handleUpdateStatus = async (restaurantId: string, status: Restaurant['status']) => {
+        setUpdatingRestaurantId(restaurantId);
+        try {
+            await updateRestaurantStatus(restaurantId, status);
+            toast({ title: "Restaurant status updated", description: `Restaurant has been ${status}.` });
+            onUpdate();
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Update failed', description: error.message });
+        } finally {
+            setUpdatingRestaurantId(null);
+        }
+    };
+    
     return (
         <Card>
             <CardHeader>
@@ -136,15 +176,28 @@ function RestaurantTable({ restaurants, loading }: { restaurants: Restaurant[], 
                                 <TableCell className="text-right space-x-2">
                                     {restaurant.status === 'pending' && (
                                         <>
-                                         <Button variant="outline" size="sm"><CheckCircle className="mr-2 h-4 w-4" />Approve</Button>
-                                         <Button variant="destructive" size="sm"><XCircle className="mr-2 h-4 w-4" />Reject</Button>
+                                         <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(restaurant.id, 'approved')} disabled={updatingRestaurantId === restaurant.id}>
+                                            {updatingRestaurantId === restaurant.id ? 'Approving...' : <><CheckCircle className="mr-2 h-4 w-4" />Approve</>}
+                                         </Button>
+                                         <Button variant="destructive" size="sm" onClick={() => handleUpdateStatus(restaurant.id, 'rejected')} disabled={updatingRestaurantId === restaurant.id}>
+                                            {updatingRestaurantId === restaurant.id ? 'Rejecting...' : <><XCircle className="mr-2 h-4 w-4" />Reject</>}
+                                         </Button>
                                         </>
                                     )}
                                      {restaurant.status === 'approved' && (
-                                        <Button variant="destructive" size="sm"><PowerOff className="mr-2 h-4 w-4" />Disable</Button>
+                                        <Button variant="destructive" size="sm" onClick={() => handleUpdateStatus(restaurant.id, 'disabled')} disabled={updatingRestaurantId === restaurant.id}>
+                                           {updatingRestaurantId === restaurant.id ? 'Disabling...' : <><PowerOff className="mr-2 h-4 w-4" />Disable</>}
+                                        </Button>
                                     )}
                                      {restaurant.status === 'disabled' && (
-                                        <Button variant="outline" size="sm"><Power className="mr-2 h-4 w-4" />Activate</Button>
+                                        <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(restaurant.id, 'approved')} disabled={updatingRestaurantId === restaurant.id}>
+                                            {updatingRestaurantId === restaurant.id ? 'Activating...' : <><Power className="mr-2 h-4 w-4" />Activate</>}
+                                        </Button>
+                                    )}
+                                     {restaurant.status === 'rejected' && (
+                                        <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(restaurant.id, 'pending')} disabled={updatingRestaurantId === restaurant.id}>
+                                            Re-review
+                                        </Button>
                                     )}
                                 </TableCell>
                             </TableRow>
@@ -224,7 +277,7 @@ function Reports() {
 
 
 export default function AdminDashboard() {
-  const { data, loading } = useAdminDashboardData();
+  const { data, loading, refreshData } = useAdminDashboardData();
 
   return (
     <div className="min-h-screen bg-background">
@@ -240,11 +293,11 @@ export default function AdminDashboard() {
 
         <div className="grid gap-12 lg:grid-cols-3">
              <div className="lg:col-span-2">
-                <RestaurantTable restaurants={data.restaurants} loading={loading} />
+                <RestaurantTable restaurants={data.restaurants} loading={loading} onUpdate={refreshData} />
              </div>
              <div className="space-y-12">
                 <Reports />
-                <UserTable users={data.users} loading={loading} />
+                <UserTable users={data.users} loading={loading} onUpdate={refreshData} />
              </div>
         </div>
       </main>

@@ -1,6 +1,6 @@
 
 import { db } from './firebase';
-import { collection, getDocs, query, where, collectionGroup } from 'firebase/firestore';
+import { collection, getDocs, query, where, collectionGroup, doc, updateDoc } from 'firebase/firestore';
 import type { Restaurant } from '@/lib/types';
 import type { AppUser } from '@/hooks/use-auth';
 
@@ -33,4 +33,14 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     users: allUsers,
     restaurants: allRestaurants,
   };
+}
+
+export async function updateRestaurantStatus(restaurantId: string, status: Restaurant['status']): Promise<void> {
+  const restaurantRef = doc(db, 'restaurants', restaurantId);
+  await updateDoc(restaurantRef, { status });
+}
+
+export async function updateUserStatus(userId: string, status: AppUser['status']): Promise<void> {
+  const userRef = doc(db, 'users', userId);
+  await updateDoc(userRef, { status });
 }

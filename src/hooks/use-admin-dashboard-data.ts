@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getAdminDashboardData, type AdminDashboardData } from '@/services/adminService';
 import type { AppUser } from './use-auth';
 import type { Restaurant } from '@/lib/types';
@@ -19,22 +19,22 @@ export function useAdminDashboardData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const result = await getAdminDashboardData();
-        setData(result);
-      } catch (e: any) {
-        setError(e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await getAdminDashboardData();
+      setData(result);
+    } catch (e: any) {
+      setError(e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  return { data, loading, error };
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, loading, error, refreshData: fetchData };
 }
