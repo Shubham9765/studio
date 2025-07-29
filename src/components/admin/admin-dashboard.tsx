@@ -55,6 +55,7 @@ function UserTable({ users, loading }: { users: AppUser[], loading: boolean }) {
                         <TableRow>
                             <TableHead>Username</TableHead>
                             <TableHead>Email</TableHead>
+                            <TableHead>Phone</TableHead>
                             <TableHead>Role</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
@@ -65,6 +66,7 @@ function UserTable({ users, loading }: { users: AppUser[], loading: boolean }) {
                             <TableRow key={i}>
                                 <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-28" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                                 <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
@@ -73,6 +75,7 @@ function UserTable({ users, loading }: { users: AppUser[], loading: boolean }) {
                             <TableRow key={user.uid}>
                                 <TableCell className="font-medium">{user.username}</TableCell>
                                 <TableCell>{user.email}</TableCell>
+                                <TableCell>{user.phone}</TableCell>
                                 <TableCell><Badge variant="secondary" className="capitalize">{user.role}</Badge></TableCell>
                                 <TableCell><Badge variant={user.status === 'active' ? 'default' : 'destructive'} className="capitalize">{user.status}</Badge></TableCell>
                                 <TableCell className="text-right">
