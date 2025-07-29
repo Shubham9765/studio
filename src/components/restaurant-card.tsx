@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Star, Clock } from 'lucide-react';
 import type { Restaurant } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
@@ -31,10 +32,10 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
     return stars;
   };
 
-  return (
-    <Card className={cn(
-        "overflow-hidden transition-all duration-300 ease-in-out group border-0 shadow-sm",
-        restaurant.isOpen ? "hover:shadow-xl hover:-translate-y-1.5 cursor-pointer" : "cursor-not-allowed"
+  const cardContent = (
+     <Card className={cn(
+        "overflow-hidden transition-all duration-300 ease-in-out group border-0 shadow-sm w-full h-full flex flex-col",
+        restaurant.isOpen ? "hover:shadow-xl hover:-translate-y-1" : "cursor-not-allowed"
     )}>
       <div className="relative">
         <Image
@@ -42,7 +43,7 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
           alt={restaurant.name}
           width={600}
           height={400}
-          className={cn("object-cover w-full h-56 rounded-t-lg", !restaurant.isOpen && "grayscale")}
+          className={cn("object-cover w-full h-56", !restaurant.isOpen && "grayscale")}
           data-ai-hint={restaurant.dataAiHint}
         />
          <div className={cn(
@@ -60,7 +61,7 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
         <CardTitle className="font-headline text-xl font-bold truncate">{restaurant.name}</CardTitle>
         <p className="text-sm text-muted-foreground">{restaurant.cuisine}</p>
       </CardHeader>
-      <CardContent className="p-4 pt-0">
+      <CardContent className="p-4 pt-0 flex-grow flex flex-col justify-end">
         <div className="flex justify-between items-center text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             {renderStars()}
@@ -72,5 +73,15 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
         </div>
       </CardContent>
     </Card>
+  );
+
+   if (!restaurant.isOpen) {
+    return <div className="cursor-not-allowed">{cardContent}</div>;
+  }
+
+  return (
+     <Link href={`/restaurant/${restaurant.id}`} className="h-full">
+        {cardContent}
+    </Link>
   );
 }
