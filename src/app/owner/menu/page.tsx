@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
 import type { MenuItem, Restaurant } from '@/lib/types';
 import { Header } from '@/components/header';
@@ -12,7 +13,7 @@ import { MenuItemForm } from '@/components/owner/menu-item-form';
 import { deleteMenuItem, getMenuItems, getRestaurantByOwnerId } from '@/services/ownerService';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertTriangle, PlusCircle, Trash, Edit, Utensils } from 'lucide-react';
+import { AlertTriangle, PlusCircle, Trash, Edit, Utensils, ImageIcon } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function ManageMenuPage() {
@@ -159,6 +160,7 @@ export default function ManageMenuPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
+                                        <TableHead className="w-20">Image</TableHead>
                                         <TableHead>Name</TableHead>
                                         <TableHead>Category</TableHead>
                                         <TableHead>Price</TableHead>
@@ -169,6 +171,15 @@ export default function ManageMenuPage() {
                                 <TableBody>
                                     {menuItems.map(item => (
                                         <TableRow key={item.id}>
+                                            <TableCell>
+                                                {item.imageUrl ? (
+                                                    <Image src={item.imageUrl} alt={item.name} width={48} height={48} className="rounded-md object-cover h-12 w-12" />
+                                                ) : (
+                                                    <div className="w-12 h-12 flex items-center justify-center bg-muted rounded-md">
+                                                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                                                    </div>
+                                                )}
+                                            </TableCell>
                                             <TableCell className="font-medium">{item.name}</TableCell>
                                             <TableCell>{item.category}</TableCell>
                                             <TableCell>${item.price.toFixed(2)}</TableCell>
@@ -208,4 +219,3 @@ export default function ManageMenuPage() {
         </>
     );
 }
-

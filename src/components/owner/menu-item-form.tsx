@@ -26,6 +26,7 @@ export const MenuItemSchema = z.object({
   description: z.string().min(10, { message: 'Description must be at least 10 characters.' }),
   price: z.coerce.number().min(0, { message: 'Price must be a positive number.' }),
   category: z.string().min(3, { message: 'Category must be at least 3 characters.' }),
+  imageUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
 });
 
 interface MenuItemFormProps {
@@ -48,6 +49,7 @@ export function MenuItemForm({ isOpen, onOpenChange, restaurantId, menuItem, onF
       description: '',
       price: 0,
       category: '',
+      imageUrl: '',
     },
   });
 
@@ -59,6 +61,7 @@ export function MenuItemForm({ isOpen, onOpenChange, restaurantId, menuItem, onF
                 description: menuItem.description,
                 price: menuItem.price,
                 category: menuItem.category,
+                imageUrl: menuItem.imageUrl || '',
             });
         } else {
             form.reset({
@@ -66,6 +69,7 @@ export function MenuItemForm({ isOpen, onOpenChange, restaurantId, menuItem, onF
                 description: '',
                 price: 0,
                 category: '',
+                imageUrl: '',
             });
         }
     }
@@ -158,6 +162,22 @@ export function MenuItemForm({ isOpen, onOpenChange, restaurantId, menuItem, onF
                 )}
                 />
             </div>
+             <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Image URL</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://example.com/image.png" {...field} />
+                  </FormControl>
+                   <FormDescription>
+                    Optional: A link to an image of the menu item.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                 <Button type="submit" disabled={isSubmitting}>
