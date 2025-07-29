@@ -3,7 +3,7 @@
 
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle } from 'lucide-react';
+import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff } from 'lucide-react';
 import { useAdminDashboardData } from '@/hooks/use-admin-dashboard-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,6 +11,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { AppUser } from '@/hooks/use-auth';
 import type { Restaurant } from '@/lib/types';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { useState } from 'react';
+import type { DateRange } from 'react-day-picker';
+import { cn } from '@/lib/utils';
 
 function StatCard({ title, value, icon, description, loading }: { title: string, value: string | number, icon: React.ReactNode, description: string, loading: boolean }) {
     return (
@@ -86,11 +92,20 @@ function UserTable({ users, loading }: { users: AppUser[], loading: boolean }) {
 }
 
 function RestaurantTable({ restaurants, loading }: { restaurants: Restaurant[], loading: boolean }) {
+     const getStatusVariant = (status: Restaurant['status']) => {
+        switch (status) {
+            case 'approved': return 'default';
+            case 'pending': return 'secondary';
+            case 'rejected': return 'destructive';
+            case 'disabled': return 'outline';
+            default: return 'secondary';
+        }
+    }
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Manage Restaurants</CardTitle>
-                <CardDescription>Approve or reject new restaurant registrations.</CardDescription>
+                <CardDescription>Approve, reject, or disable restaurants.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -108,13 +123,13 @@ function RestaurantTable({ restaurants, loading }: { restaurants: Restaurant[], 
                                 <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                                <TableCell className="text-right"><Skeleton className="h-8 w-32 ml-auto" /></TableCell>
+                                <TableCell className="text-right"><Skeleton className="h-8 w-40 ml-auto" /></TableCell>
                             </TableRow>
                         )) : restaurants.map(restaurant => (
                              <TableRow key={restaurant.id}>
                                 <TableCell className="font-medium">{restaurant.name}</TableCell>
                                 <TableCell>{restaurant.cuisine}</TableCell>
-                                <TableCell><Badge variant={restaurant.status === 'approved' ? 'default' : restaurant.status === 'pending' ? 'secondary' : 'destructive'} className="capitalize">{restaurant.status}</Badge></TableCell>
+                                <TableCell><Badge variant={getStatusVariant(restaurant.status)} className="capitalize">{restaurant.status}</Badge></TableCell>
                                 <TableCell className="text-right space-x-2">
                                     {restaurant.status === 'pending' && (
                                         <>
@@ -123,7 +138,10 @@ function RestaurantTable({ restaurants, loading }: { restaurants: Restaurant[], 
                                         </>
                                     )}
                                      {restaurant.status === 'approved' && (
-                                        <Button variant="destructive" size="sm"><XCircle className="mr-2 h-4 w-4" />Disable</Button>
+                                        <Button variant="destructive" size="sm"><PowerOff className="mr-2 h-4 w-4" />Disable</Button>
+                                    )}
+                                     {restaurant.status === 'disabled' && (
+                                        <Button variant="outline" size="sm"><Power className="mr-2 h-4 w-4" />Activate</Button>
                                     )}
                                 </TableCell>
                             </TableRow>
@@ -135,6 +153,72 @@ function RestaurantTable({ restaurants, loading }: { restaurants: Restaurant[], 
     );
 }
 
+function Reports() {
+    const [date, setDate] = useState<DateRange | undefined>();
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Reports</CardTitle>
+                <CardDescription>Generate and download reports for restaurants.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="grid gap-2">
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <Button
+                            id="date"
+                            variant={"outline"}
+                            className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !date && "text-muted-foreground"
+                            )}
+                        >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {date?.from ? (
+                            date.to ? (
+                                <>
+                                {format(date.from, "LLL dd, y")} -{" "}
+                                {format(date.to, "LLL dd, y")}
+                                </>
+                            ) : (
+                                format(date.from, "LLL dd, y")
+                            )
+                            ) : (
+                            <span>Pick a date range</span>
+                            )}
+                        </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                            initialFocus
+                            mode="range"
+                            defaultMonth={date?.from}
+                            selected={date}
+                            onSelect={setDate}
+                            numberOfMonths={2}
+                        />
+                        </PopoverContent>
+                    </Popover>
+                    <Button disabled={!date}>
+                        Generate Report
+                    </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" className="w-full" disabled>
+                        <FileDown className="mr-2 h-4 w-4" />
+                        Download PDF
+                    </Button>
+                     <Button variant="outline" className="w-full" disabled>
+                        <FileDown className="mr-2 h-4 w-4" />
+                        Download Excel
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
 
 export default function AdminDashboard() {
   const { data, loading } = useAdminDashboardData();
@@ -144,16 +228,21 @@ export default function AdminDashboard() {
       <Header />
       <main className="container py-8">
         <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 mb-12">
             <StatCard loading={loading} title="Total Revenue" value="$45,231" icon={<BarChart className="h-4 w-4 text-muted-foreground" />} description="+20.1% from last month" />
             <StatCard loading={loading} title="Total Customers" value={data.customerCount} icon={<Users className="h-4 w-4 text-muted-foreground" />} description="All-time customer count" />
             <StatCard loading={loading} title="Total Restaurants" value={data.restaurantCount} icon={<Utensils className="h-4 w-4 text-muted-foreground" />} description="All-time restaurant count" />
             <StatCard loading={loading} title="Pending Approvals" value={data.pendingApprovalCount} icon={<ShieldCheck className="h-4 w-4 text-muted-foreground" />} description="Restaurants needing review" />
         </div>
 
-        <div className="mt-12 grid gap-12 lg:grid-cols-2">
-            <RestaurantTable restaurants={data.restaurants} loading={loading} />
-            <UserTable users={data.users} loading={loading} />
+        <div className="grid gap-12 lg:grid-cols-3">
+             <div className="lg:col-span-2">
+                <RestaurantTable restaurants={data.restaurants} loading={loading} />
+             </div>
+             <div className="space-y-12">
+                <Reports />
+                <UserTable users={data.users} loading={loading} />
+             </div>
         </div>
       </main>
     </div>
