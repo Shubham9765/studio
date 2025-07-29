@@ -1,10 +1,11 @@
 
 import { db } from './firebase';
-import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
-import type { Restaurant } from '@/lib/types';
+import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import type { Restaurant, MenuItem } from '@/lib/types';
 import type { z } from 'zod';
 import type { RestaurantSchema } from '@/components/owner/restaurant-registration-form';
 import type { EditRestaurantSchema } from '@/components/owner/edit-restaurant-form';
+import type { MenuItemSchema } from '@/components/owner/menu-item-form';
 
 
 export interface OwnerDashboardData {
@@ -52,12 +53,10 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
     throw new Error('Owner ID is required to fetch dashboard data.');
   }
 
-  // 1. Find the restaurant for the current owner
   const q = query(collection(db, 'restaurants'), where('ownerId', '==', ownerId), limit(1));
   const restaurantSnapshot = await getDocs(q);
 
   if (restaurantSnapshot.empty) {
-    // This owner doesn't have a restaurant yet.
     return {
         restaurant: null,
         todaysOrders: 0,
@@ -69,13 +68,14 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
 
   const restaurantDoc = restaurantSnapshot.docs[0];
   const restaurant = { ...restaurantDoc.data(), id: restaurantDoc.id } as Restaurant;
+  
+  const menuItemsQuery = query(collection(db, 'restaurants', restaurant.id, 'menuItems'));
+  const menuItemsSnapshot = await getDocs(menuItemsQuery);
+  const menuItemsCount = menuItemsSnapshot.size;
 
-  // 2. Fetch related data (these are mock values for now)
-  // In a real application, you would have 'orders', 'menuItems', and 'reviews' collections
-  const todaysOrders = Math.floor(Math.random() * 20) + 5; // Mock: 5-24 orders
-  const pendingDeliveries = Math.floor(Math.random() * 5); // Mock: 0-4 pending
-  const menuItemsCount = Math.floor(Math.random() * 30) + 15; // Mock: 15-44 items
-  const reviewCount = Math.floor(Math.random() * 200) + 50; // Mock: 50-249 reviews
+  const todaysOrders = Math.floor(Math.random() * 20) + 5; 
+  const pendingDeliveries = Math.floor(Math.random() * 5);
+  const reviewCount = Math.floor(Math.random() * 200) + 50;
 
 
   return {
@@ -93,4 +93,47 @@ export async function updateRestaurant(restaurantId: string, data: z.infer<typeo
     }
     const restaurantRef = doc(db, 'restaurants', restaurantId);
     await updateDoc(restaurantRef, data);
+}
+
+// Menu Item Functions
+
+export async function getMenuItems(restaurantId: string): Promise<MenuItem[]> {
+    const menuItemsRef = collection(db, 'restaurants', restaurantId, 'menuItems');
+    const snapshot = await getDocs(menuItemsRef);
+    if (snapshot.empty) {
+        return [];
+    }
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as MenuItem));
+}
+
+export async function addMenuItem(restaurantId: string, data: z.infer<typeof MenuItemSchema>) {
+    const menuItemsRef = collection(db, 'restaurants', restaurantId, 'menuItems');
+    const docRef = await addDoc(menuItemsRef, {
+        ...data,
+        restaurantId,
+        createdAt: serverTimestamp(),
+    });
+    return docRef.id;
+}
+
+export async function updateMenuItem(restaurantId: string, itemId: string, data: z.infer<typeof MenuItemSchema>) {
+    const itemRef = doc(db, 'restaurants', restaurantId, 'menuItems', itemId);
+    await updateDoc(itemRef, data);
+}
+
+export async function deleteMenuItem(restaurantId: string, itemId: string) {
+    const itemRef = doc(db, 'restaurants', restaurantId, 'menuItems', itemId);
+    await deleteDoc(itemRef);
+}
+
+export async function getRestaurantByOwnerId(ownerId: string): Promise<Restaurant | null> {
+    const q = query(collection(db, 'restaurants'), where('ownerId', '==', ownerId), limit(1));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+        return null;
+    }
+
+    const restaurantDoc = snapshot.docs[0];
+    return { ...restaurantDoc.data(), id: restaurantDoc.id } as Restaurant;
 }

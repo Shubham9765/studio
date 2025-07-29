@@ -12,6 +12,7 @@ import { AlertTriangle } from 'lucide-react';
 import { RestaurantRegistrationForm } from './restaurant-registration-form';
 import { useState } from 'react';
 import { EditRestaurantForm } from './edit-restaurant-form';
+import Link from 'next/link';
 
 function StatCard({ title, value, description, icon, loading }: { title: string, value: string | number, description: string, icon: React.ReactNode, loading: boolean }) {
     return (
@@ -168,7 +169,7 @@ export default function OwnerDashboard() {
                     <CardDescription>Quick links to manage your restaurant's presence on Village Eats.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col sm:flex-row gap-4">
-                    <Button disabled><MenuSquare />Manage Menu</Button>
+                    <Button asChild><Link href="/owner/menu"><MenuSquare />Manage Menu</Link></Button>
                     <Button disabled><BookOpen />View Orders</Button>
                     <Button onClick={() => setIsEditFormOpen(true)}><Edit />Edit Restaurant Profile</Button>
                 </CardContent>
