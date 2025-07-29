@@ -43,11 +43,11 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
   const form = useForm<z.infer<typeof EditRestaurantSchema>>({
     resolver: zodResolver(EditRestaurantSchema),
     defaultValues: {
-      name: '',
-      cuisine: '',
-      deliveryTime: '',
-      deliveryCharge: 0,
-      isOpen: true,
+      name: restaurant?.name || '',
+      cuisine: restaurant?.cuisine || '',
+      deliveryTime: restaurant?.deliveryTime || '',
+      deliveryCharge: restaurant?.deliveryCharge || 0,
+      isOpen: restaurant?.isOpen || false,
     },
   });
 
