@@ -20,7 +20,6 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
     }
 
     if (hasHalfStar) {
-        // Not a perfect half-star, but a decent representation
         stars.push(<Star key="half" className="w-4 h-4 fill-amber-200 text-amber-400" />);
     }
 
@@ -39,7 +38,7 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
     )}>
       <div className="relative">
         <Image
-          src={restaurant.image}
+          src={restaurant.image || 'https://placehold.co/600x400.png'}
           alt={restaurant.name}
           width={600}
           height={400}

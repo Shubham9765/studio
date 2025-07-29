@@ -13,7 +13,7 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
@@ -27,6 +27,7 @@ export const EditRestaurantSchema = z.object({
   deliveryTime: z.string().min(1, { message: 'Please provide an estimated delivery time (e.g., 30-45 min).' }),
   deliveryCharge: z.coerce.number().min(0, { message: 'Delivery charge must be a positive number.' }),
   isOpen: z.boolean(),
+  image: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
 });
 
 interface EditRestaurantFormProps {
@@ -48,6 +49,7 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
       deliveryTime: restaurant?.deliveryTime || '',
       deliveryCharge: restaurant?.deliveryCharge || 0,
       isOpen: restaurant?.isOpen || false,
+      image: restaurant?.image || '',
     },
   });
 
@@ -59,6 +61,7 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
         deliveryTime: restaurant.deliveryTime,
         deliveryCharge: restaurant.deliveryCharge,
         isOpen: restaurant.isOpen,
+        image: restaurant.image,
       });
     }
   }, [restaurant, isOpen, form]);
@@ -103,6 +106,22 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
                   <FormControl>
                     <Input placeholder="e.g., The Spicy Spoon" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="image"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Image URL</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://example.com/your-restaurant.jpg" {...field} />
+                  </FormControl>
+                   <FormDescription>
+                    The main image for your restaurant shown to customers.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
