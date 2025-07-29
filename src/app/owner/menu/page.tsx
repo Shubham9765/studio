@@ -10,11 +10,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { MenuItemForm } from '@/components/owner/menu-item-form';
-import { deleteMenuItem, getMenuItems, getRestaurantByOwnerId } from '@/services/ownerService';
+import { deleteMenuItem, getMenuItems, getRestaurantByOwnerId, updateMenuItemAvailability } from '@/services/ownerService';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertTriangle, PlusCircle, Trash, Edit, Utensils, ImageIcon } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
 
 export default function ManageMenuPage() {
     const { user, loading: authLoading } = useAuth();
@@ -86,6 +90,34 @@ export default function ManageMenuPage() {
             toast({ variant: 'destructive', title: 'Error deleting item', description: e.message });
         }
     }
+
+    const handleAvailabilityToggle = async (item: MenuItem, isAvailable: boolean) => {
+        if (!restaurant) return;
+        
+        // Optimistically update UI
+        setMenuItems(currentItems => 
+            currentItems.map(menuItem => 
+                menuItem.id === item.id ? { ...menuItem, isAvailable } : menuItem
+            )
+        );
+
+        try {
+            await updateMenuItemAvailability(restaurant.id, item.id, isAvailable);
+            toast({
+                title: `Item ${isAvailable ? 'Available' : 'Unavailable'}`,
+                description: `${item.name} is now ${isAvailable ? 'visible' : 'hidden'} to customers.`,
+            });
+        } catch (e: any) {
+             // Revert optimistic update on error
+             setMenuItems(currentItems => 
+                currentItems.map(menuItem => 
+                    menuItem.id === item.id ? { ...menuItem, isAvailable: !isAvailable } : menuItem
+                )
+            );
+            toast({ variant: 'destructive', title: 'Update Failed', description: e.message });
+        }
+    };
+
 
     if (authLoading || loading) {
         return (
@@ -162,28 +194,38 @@ export default function ManageMenuPage() {
                                     <TableRow>
                                         <TableHead className="w-20">Image</TableHead>
                                         <TableHead>Name</TableHead>
-                                        <TableHead>Category</TableHead>
                                         <TableHead>Price</TableHead>
-                                        <TableHead>Description</TableHead>
+                                        <TableHead>Availability</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {menuItems.map(item => (
-                                        <TableRow key={item.id}>
+                                        <TableRow key={item.id} className={cn(!item.isAvailable && "bg-muted/50 text-muted-foreground")}>
                                             <TableCell>
                                                 {item.imageUrl ? (
-                                                    <Image src={item.imageUrl} alt={item.name} width={48} height={48} className="rounded-md object-cover h-12 w-12" />
+                                                    <Image src={item.imageUrl} alt={item.name} width={48} height={48} className={cn("rounded-md object-cover h-12 w-12", !item.isAvailable && "grayscale")} />
                                                 ) : (
                                                     <div className="w-12 h-12 flex items-center justify-center bg-muted rounded-md">
                                                         <ImageIcon className="h-6 w-6 text-muted-foreground" />
                                                     </div>
                                                 )}
                                             </TableCell>
-                                            <TableCell className="font-medium">{item.name}</TableCell>
-                                            <TableCell>{item.category}</TableCell>
+                                            <TableCell>
+                                                <div className="font-medium">{item.name}</div>
+                                                <div className="text-xs">{item.category}</div>
+                                            </TableCell>
                                             <TableCell>${item.price.toFixed(2)}</TableCell>
-                                            <TableCell className="max-w-xs truncate">{item.description}</TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                     <Switch
+                                                        id={`availability-${item.id}`}
+                                                        checked={item.isAvailable}
+                                                        onCheckedChange={(checked) => handleAvailabilityToggle(item, checked)}
+                                                    />
+                                                    <Badge variant={item.isAvailable ? 'default' : 'outline'}>{item.isAvailable ? 'Available' : 'Unavailable'}</Badge>
+                                                </div>
+                                            </TableCell>
                                             <TableCell className="text-right">
                                                 <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
                                                     <Edit className="h-4 w-4" />

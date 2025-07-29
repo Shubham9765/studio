@@ -20,6 +20,7 @@ import { useState, useEffect } from 'react';
 import { Textarea } from '../ui/textarea';
 import type { MenuItem } from '@/lib/types';
 import { addMenuItem, updateMenuItem } from '@/services/ownerService';
+import { Switch } from '../ui/switch';
 
 export const MenuItemSchema = z.object({
   name: z.string().min(3, { message: 'Item name must be at least 3 characters.' }),
@@ -27,6 +28,7 @@ export const MenuItemSchema = z.object({
   price: z.coerce.number().min(0, { message: 'Price must be a positive number.' }),
   category: z.string().min(3, { message: 'Category must be at least 3 characters.' }),
   imageUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
+  isAvailable: z.boolean().default(true),
 });
 
 interface MenuItemFormProps {
@@ -50,6 +52,7 @@ export function MenuItemForm({ isOpen, onOpenChange, restaurantId, menuItem, onF
       price: 0,
       category: '',
       imageUrl: '',
+      isAvailable: true,
     },
   });
 
@@ -62,6 +65,7 @@ export function MenuItemForm({ isOpen, onOpenChange, restaurantId, menuItem, onF
                 price: menuItem.price,
                 category: menuItem.category,
                 imageUrl: menuItem.imageUrl || '',
+                isAvailable: menuItem.isAvailable,
             });
         } else {
             form.reset({
@@ -70,6 +74,7 @@ export function MenuItemForm({ isOpen, onOpenChange, restaurantId, menuItem, onF
                 price: 0,
                 category: '',
                 imageUrl: '',
+                isAvailable: true,
             });
         }
     }
@@ -175,6 +180,26 @@ export function MenuItemForm({ isOpen, onOpenChange, restaurantId, menuItem, onF
                     Optional: A link to an image of the menu item.
                   </FormDescription>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="isAvailable"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Available for Ordering</FormLabel>
+                     <p className="text-sm text-muted-foreground">
+                        Controls whether customers can order this item.
+                     </p>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
                 </FormItem>
               )}
             />

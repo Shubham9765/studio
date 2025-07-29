@@ -111,6 +111,7 @@ export async function addMenuItem(restaurantId: string, data: z.infer<typeof Men
     const docRef = await addDoc(menuItemsRef, {
         ...data,
         restaurantId,
+        isAvailable: data.isAvailable, // Ensure this is passed
         createdAt: serverTimestamp(),
     });
     return docRef.id;
@@ -125,6 +126,12 @@ export async function deleteMenuItem(restaurantId: string, itemId: string) {
     const itemRef = doc(db, 'restaurants', restaurantId, 'menuItems', itemId);
     await deleteDoc(itemRef);
 }
+
+export async function updateMenuItemAvailability(restaurantId: string, itemId: string, isAvailable: boolean) {
+    const itemRef = doc(db, 'restaurants', restaurantId, 'menuItems', itemId);
+    await updateDoc(itemRef, { isAvailable });
+}
+
 
 export async function getRestaurantByOwnerId(ownerId: string): Promise<Restaurant | null> {
     const q = query(collection(db, 'restaurants'), where('ownerId', '==', ownerId), limit(1));

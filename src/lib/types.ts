@@ -20,4 +20,5 @@ export interface MenuItem {
   price: number;
   category: string;
   imageUrl?: string;
+  isAvailable: boolean;
 }
