@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Header } from '@/components/header';
@@ -31,17 +32,29 @@ function LoadingSkeleton() {
 export function HomePage() {
   const { data: trendingRestaurants, loading: trendingLoading, error: trendingError } = useTrendingRestaurants();
   const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
+  const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
   const [allRestaurantsLoading, setAllRestaurantsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchRestaurants = async () => {
       setAllRestaurantsLoading(true);
       const restaurants = await getRestaurants();
       setAllRestaurants(restaurants);
+      setFilteredRestaurants(restaurants);
       setAllRestaurantsLoading(false);
     };
     fetchRestaurants();
   }, []);
+
+  useEffect(() => {
+    const lowercasedFilter = searchTerm.toLowerCase();
+    const filtered = allRestaurants.filter(restaurant =>
+      restaurant.name.toLowerCase().includes(lowercasedFilter) ||
+      restaurant.cuisine.toLowerCase().includes(lowercasedFilter)
+    );
+    setFilteredRestaurants(filtered);
+  }, [searchTerm, allRestaurants]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -56,10 +69,15 @@ export function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">
               <div className="relative flex-1">
-                <Input placeholder="I'm looking for..." className="h-12 text-lg pl-4 pr-12 rounded-full" />
+                <Input 
+                  placeholder="Search by restaurant or cuisine..." 
+                  className="h-12 text-lg pl-4 pr-12 rounded-full"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               </div>
-              <Button size="lg" className="h-12 text-lg rounded-full">
+              <Button size="lg" className="h-12 text-lg rounded-full" onClick={() => { /* Could trigger a full page search */ }}>
                 Find Food
               </Button>
             </div>
@@ -108,7 +126,7 @@ export function HomePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {allRestaurants.map(restaurant => (
+              {filteredRestaurants.map(restaurant => (
                 <RestaurantCard key={restaurant.id} restaurant={restaurant} />
               ))}
             </div>
@@ -118,3 +136,5 @@ export function HomePage() {
     </div>
   );
 }
+
+    

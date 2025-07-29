@@ -13,11 +13,12 @@ import { MenuItemForm } from '@/components/owner/menu-item-form';
 import { deleteMenuItem, getMenuItems, getRestaurantByOwnerId, updateMenuItemAvailability } from '@/services/ownerService';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertTriangle, PlusCircle, Trash, Edit, Utensils, ImageIcon } from 'lucide-react';
+import { AlertTriangle, PlusCircle, Trash, Edit, Utensils, ImageIcon, Search } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 
 
 export default function ManageMenuPage() {
@@ -30,11 +31,16 @@ export default function ManageMenuPage() {
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+    
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filteredMenuItems, setFilteredMenuItems] = useState<MenuItem[]>([]);
+
 
     const fetchMenuData = async (restaurantId: string) => {
         try {
             const items = await getMenuItems(restaurantId);
             setMenuItems(items);
+            setFilteredMenuItems(items);
         } catch (e: any) {
             setError('Failed to fetch menu items.');
             toast({ variant: 'destructive', title: 'Error', description: e.message });
@@ -64,6 +70,15 @@ export default function ManageMenuPage() {
             fetchRestaurant();
         }
     }, [user, authLoading, toast]);
+    
+    useEffect(() => {
+        const lowercasedFilter = searchTerm.toLowerCase();
+        const filtered = menuItems.filter(item =>
+            item.name.toLowerCase().includes(lowercasedFilter) ||
+            item.category.toLowerCase().includes(lowercasedFilter)
+        );
+        setFilteredMenuItems(filtered);
+    }, [searchTerm, menuItems]);
     
     const handleFormSubmit = () => {
         setIsFormOpen(false);
@@ -95,12 +110,11 @@ export default function ManageMenuPage() {
         if (!restaurant) return;
         
         // Optimistically update UI
-        setMenuItems(currentItems => 
-            currentItems.map(menuItem => 
-                menuItem.id === item.id ? { ...menuItem, isAvailable } : menuItem
-            )
+        const optimisticUpdate = (items: MenuItem[]) => items.map(menuItem => 
+            menuItem.id === item.id ? { ...menuItem, isAvailable } : menuItem
         );
-
+        setMenuItems(optimisticUpdate);
+        
         try {
             await updateMenuItemAvailability(restaurant.id, item.id, isAvailable);
             toast({
@@ -109,11 +123,10 @@ export default function ManageMenuPage() {
             });
         } catch (e: any) {
              // Revert optimistic update on error
-             setMenuItems(currentItems => 
-                currentItems.map(menuItem => 
-                    menuItem.id === item.id ? { ...menuItem, isAvailable: !isAvailable } : menuItem
-                )
+             const revertUpdate = (items: MenuItem[]) => items.map(menuItem => 
+                menuItem.id === item.id ? { ...menuItem, isAvailable: !isAvailable } : menuItem
             );
+            setMenuItems(revertUpdate);
             toast({ variant: 'destructive', title: 'Update Failed', description: e.message });
         }
     };
@@ -186,9 +199,18 @@ export default function ManageMenuPage() {
                         <CardHeader>
                             <CardTitle>{restaurant?.name} Menu</CardTitle>
                             <CardDescription>View, add, edit, or delete your menu items.</CardDescription>
+                             <div className="relative pt-4">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                <Input 
+                                    placeholder="Search menu items..." 
+                                    className="pl-10"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                             </div>
                         </CardHeader>
                         <CardContent>
-                            {menuItems.length > 0 ? (
+                            {filteredMenuItems.length > 0 ? (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -200,7 +222,7 @@ export default function ManageMenuPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {menuItems.map(item => (
+                                    {filteredMenuItems.map(item => (
                                         <TableRow key={item.id} className={cn(!item.isAvailable && "bg-muted/50 text-muted-foreground")}>
                                             <TableCell>
                                                 {item.imageUrl ? (
@@ -241,9 +263,11 @@ export default function ManageMenuPage() {
                             ) : (
                                 <div className="text-center py-12">
                                     <Utensils className="mx-auto h-12 w-12 text-muted-foreground" />
-                                    <h3 className="mt-4 text-lg font-medium">Your menu is empty</h3>
+                                    <h3 className="mt-4 text-lg font-medium">
+                                        {searchTerm ? 'No items match your search' : 'Your menu is empty'}
+                                    </h3>
                                     <p className="mt-1 text-sm text-muted-foreground">
-                                        Click "Add New Item" to start building your menu.
+                                         {searchTerm ? 'Try a different search term.' : 'Click "Add New Item" to start building your menu.'}
                                     </p>
                                 </div>
                             )}
@@ -261,3 +285,5 @@ export default function ManageMenuPage() {
         </>
     );
 }
+
+    
