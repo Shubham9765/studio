@@ -59,7 +59,7 @@ export default function CheckoutPage() {
                 customerPhone: customerPhone, // Use state value directly
             };
 
-            await createOrder(user.uid, user.username || 'N/A', restaurant as Restaurant, cart, finalTotal, orderDetails);
+            await createOrder(user.uid, user.displayName || 'N/A', restaurant as Restaurant, cart, finalTotal, orderDetails);
             setOrderPlaced(true);
             clearCart();
         } catch (error) {
