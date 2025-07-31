@@ -8,6 +8,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ShoppingCart, X, Plus, Minus } from 'lucide-react';
 import type { Restaurant } from '@/lib/types';
 import Image from 'next/image';
+import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 
 interface CartProps {
     restaurant: Restaurant;
@@ -15,20 +19,24 @@ interface CartProps {
 
 export function Cart({ restaurant }: CartProps) {
   const { cart, restaurant: cartRestaurant, addItem, removeItem, updateItemQuantity, clearCart } = useCart();
+  const { user } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-  const handleAddToCart = (item: any) => {
-    // If cart is empty OR item is from the same restaurant, add it
-    if (!cartRestaurant || cartRestaurant.id === restaurant.id) {
-        addItem({ ...item, quantity: 1 }, restaurant);
-    } else {
-        // If item is from a different restaurant, ask for confirmation to clear cart
-        if (confirm('You have items from another restaurant in your cart. Do you want to clear your current cart and add this item?')) {
-            clearCart();
-            addItem({ ...item, quantity: 1 }, restaurant);
-        }
+  const handleCheckout = () => {
+    if (!user) {
+        toast({
+            variant: 'destructive',
+            title: 'Not logged in',
+            description: 'Please log in to place an order.',
+        });
+        return;
     }
-  };
-  
+    setIsCheckingOut(true);
+    router.push('/checkout');
+  }
+
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const deliveryFee = restaurant.deliveryCharge || 0;
   const total = subtotal + deliveryFee;
@@ -114,8 +122,12 @@ export function Cart({ restaurant }: CartProps) {
       )}
 
       <div className="p-6 pt-0">
-         <Button className="w-full mt-4" disabled={cart.length === 0}>
-             Go to Checkout
+         <Button 
+            className="w-full mt-4" 
+            disabled={cart.length === 0 || isCheckingOut}
+            onClick={handleCheckout}
+        >
+             {isCheckingOut ? 'Proceeding...' : 'Go to Checkout'}
          </Button>
       </div>
     </div>

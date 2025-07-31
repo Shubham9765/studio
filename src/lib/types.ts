@@ -1,3 +1,5 @@
+import type { Timestamp } from 'firebase/firestore';
+
 export interface Restaurant {
   id: string;
   name: string;
@@ -30,7 +32,7 @@ export interface Order {
     items: (MenuItem & { quantity: number })[];
     total: number;
     status: 'pending' | 'accepted' | 'preparing' | 'out-for-delivery' | 'delivered' | 'cancelled';
-    createdAt: Date;
+    createdAt: Timestamp;
     deliveryBoy?: {
         id: string;
         name: string;

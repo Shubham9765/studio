@@ -1,7 +1,8 @@
 import { db } from './firebase';
-import { collection, getDocs, doc, setDoc, query, where, getDoc } from 'firebase/firestore';
-import type { Restaurant, MenuItem } from '@/lib/types';
+import { collection, getDocs, doc, setDoc, query, where, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import type { Restaurant, MenuItem, Order } from '@/lib/types';
 import { MOCK_RESTAURANTS } from '@/lib/seed';
+import type { CartItem } from '@/hooks/use-cart';
 
 export async function getRestaurants(): Promise<Restaurant[]> {
   const q = query(collection(db, 'restaurants'), where('status', '==', 'approved'));
@@ -50,4 +51,25 @@ export async function seedRestaurants() {
   });
   await Promise.all(promises);
   console.log('Seeded restaurants');
+}
+
+export async function createOrder(
+  customerId: string, 
+  restaurantId: string, 
+  items: CartItem[], 
+  total: number
+): Promise<string> {
+  const ordersCollection = collection(db, 'orders');
+
+  const newOrder: Omit<Order, 'id'> = {
+      customerId,
+      restaurantId,
+      items,
+      total,
+      status: 'pending',
+      createdAt: serverTimestamp() as any, // Let Firestore handle the timestamp
+  };
+
+  const docRef = await addDoc(ordersCollection, newOrder);
+  return docRef.id;
 }
