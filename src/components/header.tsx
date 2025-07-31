@@ -1,5 +1,5 @@
 
-import { UtensilsCrossed, Search, User, Shield, Crown } from 'lucide-react';
+import { UtensilsCrossed, Search, User, Shield, Crown, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/use-auth';
@@ -15,6 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 export function Header() {
   const { user, signOut } = useAuth();
@@ -44,10 +45,10 @@ export function Header() {
     <>
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <UtensilsCrossed className="h-7 w-7 text-primary" />
             <h1 className="text-2xl font-bold font-headline text-primary">Village Eats</h1>
-          </div>
+          </Link>
           <div className="hidden md:flex flex-1 max-w-sm items-center relative">
             <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
             <Input placeholder="Search restaurants..." className="pl-10 rounded-full" />
@@ -77,6 +78,14 @@ export function Header() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  {user.role === 'customer' && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/my-orders">
+                        <Package className="mr-2 h-4 w-4" />
+                        My Orders
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={signOut}>
                     Log out
                   </DropdownMenuItem>

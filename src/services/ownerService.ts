@@ -178,3 +178,9 @@ export async function updateOrderPaymentStatus(orderId: string, paymentStatus: '
     const orderRef = doc(db, 'orders', orderId);
     await updateDoc(orderRef, { paymentStatus });
 }
+
+
+export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
+    const orderRef = doc(db, 'orders', orderId);
+    await updateDoc(orderRef, { status });
+}

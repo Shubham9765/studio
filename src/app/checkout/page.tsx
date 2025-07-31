@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { createOrder } from '@/services/restaurantService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import type { Order } from '@/lib/types';
+import type { Order, Restaurant } from '@/lib/types';
 
 export default function CheckoutPage() {
     const { cart, restaurant, totalPrice, clearCart } = useCart();
@@ -55,7 +55,7 @@ export default function CheckoutPage() {
                 ...(paymentMethod === 'upi' && { paymentDetails: { transactionId } }),
             };
 
-            await createOrder(user.uid, user.username || 'N/A', restaurant.id!, cart, finalTotal, orderDetails);
+            await createOrder(user.uid, user.username || 'N/A', restaurant as Restaurant, cart, finalTotal, orderDetails);
             setOrderPlaced(true);
             clearCart();
         } catch (error) {
@@ -133,8 +133,9 @@ export default function CheckoutPage() {
                                 Thank you for your order. You can track its status in your order history.
                             </p>
                         </CardContent>
-                        <CardFooter>
-                            <Button className="w-full" onClick={() => router.push('/')}>Continue Shopping</Button>
+                        <CardFooter className="flex-col gap-2">
+                            <Button className="w-full" onClick={() => router.push('/my-orders')}>Track Order</Button>
+                            <Button className="w-full" variant="outline" onClick={() => router.push('/')}>Continue Shopping</Button>
                         </CardFooter>
                     </Card>
                 </main>

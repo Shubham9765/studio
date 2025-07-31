@@ -8,9 +8,8 @@ import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { getOrdersForRestaurant, getRestaurantByOwnerId, updateOrderPaymentStatus } from '@/services/ownerService';
+import { getOrdersForRestaurant, getRestaurantByOwnerId, updateOrderPaymentStatus, updateOrderStatus } from '@/services/ownerService';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertTriangle, BookOpen, Check, BadgeCent, CircleDollarSign } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +19,17 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion"
+} from "@/components/ui/accordion";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+
+const orderStatuses: Order['status'][] = ['pending', 'accepted', 'preparing', 'out-for-delivery', 'delivered', 'cancelled'];
 
 
 export default function ManageOrdersPage() {
@@ -76,6 +85,21 @@ export default function ManageOrdersPage() {
             }
         } catch(e: any) {
             toast({ variant: 'destructive', title: 'Error', description: e.message });
+        } finally {
+            setUpdatingOrderId(null);
+        }
+    }
+    
+    const handleStatusChange = async (orderId: string, status: Order['status']) => {
+        setUpdatingOrderId(orderId);
+        try {
+            await updateOrderStatus(orderId, status);
+            toast({ title: 'Order Status Updated', description: 'Customer will be notified.'});
+            if (restaurant) {
+                fetchOrdersData(restaurant.id);
+            }
+        } catch (e: any) {
+             toast({ variant: 'destructive', title: 'Error', description: e.message });
         } finally {
             setUpdatingOrderId(null);
         }
@@ -154,15 +178,15 @@ export default function ManageOrdersPage() {
                                                 <span className="text-sm text-muted-foreground">{order.customerName}</span>
                                             </div>
                                             <div className="text-sm">{format(order.createdAt.toDate(), 'PPpp')}</div>
-                                            <div><Badge variant={order.paymentStatus === 'completed' ? 'default' : 'secondary'}>{order.paymentStatus}</Badge></div>
+                                            <div><Badge variant={order.status === 'delivered' ? 'default' : 'secondary'} className="capitalize">{order.status.replace('-', ' ')}</Badge></div>
                                             <div className="font-bold text-lg">${order.total.toFixed(2)}</div>
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent>
                                         <div className="p-4 bg-muted/50 rounded-md">
-                                            <h4 className="font-semibold mb-2">Order Details</h4>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
+                                            <div className="grid md:grid-cols-3 gap-6">
+                                                <div className="md:col-span-1">
+                                                    <h4 className="font-semibold mb-2">Order Details</h4>
                                                     <p className="font-semibold">Items Ordered:</p>
                                                     <ul className="list-disc pl-5">
                                                         {order.items.map(item => (
@@ -170,27 +194,49 @@ export default function ManageOrdersPage() {
                                                         ))}
                                                     </ul>
                                                 </div>
-                                                <div>
-                                                    <p className="font-semibold">Payment Information:</p>
+                                                <div className="md:col-span-1">
+                                                     <h4 className="font-semibold mb-2">Payment Information</h4>
                                                     <div className="flex items-center gap-2 capitalize">
                                                         {order.paymentMethod === 'cash' ? <CircleDollarSign className="h-4 w-4"/> : <BadgeCent className="h-4 w-4"/>}
                                                         <span>{order.paymentMethod}</span>
+                                                        <Badge variant={order.paymentStatus === 'completed' ? 'default' : 'secondary'}>{order.paymentStatus}</Badge>
                                                     </div>
                                                     {order.paymentMethod === 'upi' && (
-                                                        <p className="text-sm">
+                                                        <>
+                                                        <p className="text-sm mt-1">
                                                             <span className="font-medium">Transaction ID:</span> {order.paymentDetails?.transactionId || 'N/A'}
                                                         </p>
+                                                        {order.paymentStatus === 'pending' && (
+                                                            <Button 
+                                                                size="sm" 
+                                                                className="mt-2"
+                                                                onClick={() => handleMarkAsPaid(order.id)}
+                                                                disabled={updatingOrderId === order.id}
+                                                            >
+                                                                {updatingOrderId === order.id ? 'Confirming...' : <><Check className="mr-2 h-4 w-4"/> Mark as Paid</>}
+                                                            </Button>
+                                                        )}
+                                                        </>
                                                     )}
-                                                     {order.paymentStatus === 'pending' && order.paymentMethod === 'upi' && (
-                                                        <Button 
-                                                            size="sm" 
-                                                            className="mt-2"
-                                                            onClick={() => handleMarkAsPaid(order.id)}
-                                                            disabled={updatingOrderId === order.id}
-                                                        >
-                                                            {updatingOrderId === order.id ? 'Confirming...' : <><Check className="mr-2 h-4 w-4"/> Mark as Paid</>}
-                                                        </Button>
-                                                    )}
+                                                </div>
+                                                 <div className="md:col-span-1">
+                                                     <h4 className="font-semibold mb-2">Update Status</h4>
+                                                      <Select
+                                                        value={order.status}
+                                                        onValueChange={(value) => handleStatusChange(order.id, value as Order['status'])}
+                                                        disabled={updatingOrderId === order.id}
+                                                      >
+                                                        <SelectTrigger>
+                                                          <SelectValue placeholder="Update order status" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                          {orderStatuses.map(status => (
+                                                            <SelectItem key={status} value={status} className="capitalize">
+                                                              {status.replace('-', ' ')}
+                                                            </SelectItem>
+                                                          ))}
+                                                        </SelectContent>
+                                                      </Select>
                                                 </div>
                                             </div>
                                         </div>

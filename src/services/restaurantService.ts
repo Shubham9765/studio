@@ -1,6 +1,6 @@
 
 import { db } from './firebase';
-import { collection, getDocs, doc, setDoc, query, where, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, query, where, getDoc, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import type { Restaurant, MenuItem, Order } from '@/lib/types';
 import { MOCK_RESTAURANTS } from '@/lib/seed';
 import type { CartItem } from '@/hooks/use-cart';
@@ -57,7 +57,7 @@ export async function seedRestaurants() {
 export async function createOrder(
   customerId: string,
   customerName: string,
-  restaurantId: string, 
+  restaurant: Restaurant, 
   items: CartItem[], 
   total: number,
   orderDetails: Partial<Order>
@@ -67,7 +67,8 @@ export async function createOrder(
   const newOrder: Omit<Order, 'id'> = {
       customerId,
       customerName,
-      restaurantId,
+      restaurantId: restaurant.id,
+      restaurantName: restaurant.name,
       items,
       total,
       status: 'pending',
@@ -79,4 +80,15 @@ export async function createOrder(
 
   const docRef = await addDoc(ordersCollection, newOrder);
   return docRef.id;
+}
+
+
+export async function getOrdersByCustomerId(customerId: string): Promise<Order[]> {
+    const ordersRef = collection(db, 'orders');
+    const q = query(ordersRef, where('customerId', '==', customerId), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        return [];
+    }
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
 }
