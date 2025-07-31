@@ -1,7 +1,8 @@
 
+
 import { db } from './firebase';
-import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
-import type { Restaurant, MenuItem } from '@/lib/types';
+import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, getDoc, orderBy } from 'firebase/firestore';
+import type { Restaurant, MenuItem, Order } from '@/lib/types';
 import type { z } from 'zod';
 import type { RestaurantSchema } from '@/components/owner/restaurant-registration-form';
 import type { EditRestaurantSchema } from '@/components/owner/edit-restaurant-form';
@@ -37,6 +38,10 @@ export async function createRestaurant(ownerId: string, data: z.infer<typeof Res
         dataAiHint: data.cuisine.toLowerCase().split(' ')[0] || 'food',
         deliveryCharge: 0,
         isOpen: true,
+        paymentMethods: {
+            cash: true,
+            upi: false,
+        }
     };
 
     const docRef = await addDoc(collection(db, "restaurants"), {
@@ -92,7 +97,20 @@ export async function updateRestaurant(restaurantId: string, data: z.infer<typeo
         throw new Error('A restaurant ID is required to update a restaurant.');
     }
     const restaurantRef = doc(db, 'restaurants', restaurantId);
-    await updateDoc(restaurantRef, data);
+    
+    const { paymentMethodOption, upiId, upiQrCodeUrl, ...restData } = data;
+
+    const paymentMethods = {
+        cash: paymentMethodOption === 'cash' || paymentMethodOption === 'both',
+        upi: paymentMethodOption === 'upi' || paymentMethodOption === 'both',
+        upiId: paymentMethodOption === 'upi' || paymentMethodOption === 'both' ? upiId : '',
+        upiQrCodeUrl: paymentMethodOption === 'upi' || paymentMethodOption === 'both' ? upiQrCodeUrl : '',
+    };
+
+    await updateDoc(restaurantRef, {
+        ...restData,
+        paymentMethods
+    });
 }
 
 // Menu Item Functions
@@ -143,4 +161,20 @@ export async function getRestaurantByOwnerId(ownerId: string): Promise<Restauran
 
     const restaurantDoc = snapshot.docs[0];
     return { ...restaurantDoc.data(), id: restaurantDoc.id } as Restaurant;
+}
+
+// Order Functions
+export async function getOrdersForRestaurant(restaurantId: string): Promise<Order[]> {
+    const ordersRef = collection(db, 'orders');
+    const q = query(ordersRef, where('restaurantId', '==', restaurantId), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        return [];
+    }
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+}
+
+export async function updateOrderPaymentStatus(orderId: string, paymentStatus: 'completed' | 'pending'): Promise<void> {
+    const orderRef = doc(db, 'orders', orderId);
+    await updateDoc(orderRef, { paymentStatus });
 }

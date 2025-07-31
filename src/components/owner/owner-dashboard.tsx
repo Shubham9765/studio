@@ -170,7 +170,7 @@ export default function OwnerDashboard() {
                 </CardHeader>
                 <CardContent className="flex flex-col sm:flex-row gap-4">
                     <Button asChild><Link href="/owner/menu"><MenuSquare />Manage Menu</Link></Button>
-                    <Button disabled><BookOpen />View Orders</Button>
+                    <Button asChild><Link href="/owner/orders"><BookOpen />View Orders</Link></Button>
                     <Button onClick={() => setIsEditFormOpen(true)}><Edit />Edit Restaurant Profile</Button>
                 </CardContent>
             </Card>

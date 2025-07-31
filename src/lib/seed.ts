@@ -1,3 +1,4 @@
+
 import type { Restaurant } from './types';
 
 // Let's assign a mock owner ID to some restaurants.
@@ -17,6 +18,12 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       status: 'approved',
       deliveryCharge: 2.50,
       isOpen: true,
+      paymentMethods: {
+        cash: true,
+        upi: true,
+        upiId: 'village.pizza@upi',
+        upiQrCodeUrl: 'https://placehold.co/200x200.png',
+      }
     },
     {
       id: '2',
@@ -29,6 +36,10 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       status: 'approved',
       deliveryCharge: 1.99,
       isOpen: true,
+       paymentMethods: {
+        cash: true,
+        upi: false,
+      }
     },
     {
       id: '3',
@@ -41,6 +52,12 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       status: 'approved',
       deliveryCharge: 0,
       isOpen: true,
+       paymentMethods: {
+        cash: true,
+        upi: true,
+        upiId: 'curry.leaf@upi',
+        upiQrCodeUrl: 'https://placehold.co/200x200.png',
+      }
     },
     {
       id: '4',
@@ -53,6 +70,10 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       status: 'approved',
       deliveryCharge: 3.00,
       isOpen: false,
+       paymentMethods: {
+        cash: true,
+        upi: false,
+      }
     },
     {
       id: '5',
@@ -65,6 +86,10 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       status: 'approved',
       deliveryCharge: 5.00,
       isOpen: true,
+       paymentMethods: {
+        cash: true,
+        upi: false,
+      }
     },
     {
       id: '6',
@@ -78,6 +103,10 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       status: 'approved',
       deliveryCharge: 0,
       isOpen: true,
+       paymentMethods: {
+        cash: true,
+        upi: false,
+      }
     },
     {
       id: '7',
@@ -90,6 +119,10 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       status: 'approved',
       deliveryCharge: 1.50,
       isOpen: true,
+       paymentMethods: {
+        cash: true,
+        upi: false,
+      }
     },
     {
       id: '8',
@@ -102,5 +135,9 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
       status: 'approved',
       deliveryCharge: 2.00,
       isOpen: true,
+       paymentMethods: {
+        cash: true,
+        upi: false,
+      }
     },
   ];

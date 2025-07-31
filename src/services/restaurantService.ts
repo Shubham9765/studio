@@ -1,3 +1,4 @@
+
 import { db } from './firebase';
 import { collection, getDocs, doc, setDoc, query, where, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import type { Restaurant, MenuItem, Order } from '@/lib/types';
@@ -54,20 +55,26 @@ export async function seedRestaurants() {
 }
 
 export async function createOrder(
-  customerId: string, 
+  customerId: string,
+  customerName: string,
   restaurantId: string, 
   items: CartItem[], 
-  total: number
+  total: number,
+  orderDetails: Partial<Order>
 ): Promise<string> {
   const ordersCollection = collection(db, 'orders');
 
   const newOrder: Omit<Order, 'id'> = {
       customerId,
+      customerName,
       restaurantId,
       items,
       total,
       status: 'pending',
       createdAt: serverTimestamp() as any, // Let Firestore handle the timestamp
+      paymentMethod: orderDetails.paymentMethod || 'cash',
+      paymentStatus: orderDetails.paymentStatus || 'pending',
+      paymentDetails: orderDetails.paymentDetails || {},
   };
 
   const docRef = await addDoc(ordersCollection, newOrder);

@@ -20,6 +20,7 @@ import { useState, useEffect } from 'react';
 import type { Restaurant } from '@/lib/types';
 import { Switch } from '../ui/switch';
 import { updateRestaurant } from '@/services/ownerService';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 export const EditRestaurantSchema = z.object({
   name: z.string().min(3, { message: 'Restaurant name must be at least 3 characters.' }),
@@ -28,6 +29,9 @@ export const EditRestaurantSchema = z.object({
   deliveryCharge: z.coerce.number().min(0, { message: 'Delivery charge must be a positive number.' }),
   isOpen: z.boolean(),
   image: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
+  paymentMethodOption: z.enum(['cash', 'upi', 'both']).default('cash'),
+  upiId: z.string().optional(),
+  upiQrCodeUrl: z.string().url({ message: "Please enter a valid URL for the QR code." }).optional().or(z.literal('')),
 });
 
 interface EditRestaurantFormProps {
@@ -41,6 +45,12 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const getPaymentMethodOption = (methods: Restaurant['paymentMethods']) => {
+    if (methods.cash && methods.upi) return 'both';
+    if (methods.upi) return 'upi';
+    return 'cash';
+  }
+
   const form = useForm<z.infer<typeof EditRestaurantSchema>>({
     resolver: zodResolver(EditRestaurantSchema),
     defaultValues: {
@@ -50,9 +60,14 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
       deliveryCharge: restaurant?.deliveryCharge || 0,
       isOpen: restaurant?.isOpen || false,
       image: restaurant?.image || '',
+      paymentMethodOption: getPaymentMethodOption(restaurant?.paymentMethods),
+      upiId: restaurant?.paymentMethods?.upiId || '',
+      upiQrCodeUrl: restaurant?.paymentMethods?.upiQrCodeUrl || '',
     },
   });
 
+  const paymentMethodOption = form.watch('paymentMethodOption');
+  
   useEffect(() => {
     if (restaurant && isOpen) {
       form.reset({
@@ -62,6 +77,9 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
         deliveryCharge: restaurant.deliveryCharge,
         isOpen: restaurant.isOpen,
         image: restaurant.image,
+        paymentMethodOption: getPaymentMethodOption(restaurant.paymentMethods),
+        upiId: restaurant.paymentMethods.upiId || '',
+        upiQrCodeUrl: restaurant.paymentMethods.upiQrCodeUrl || '',
       });
     }
   }, [restaurant, isOpen, form]);
@@ -165,6 +183,75 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
                 </FormItem>
               )}
             />
+             <FormField
+                control={form.control}
+                name="paymentMethodOption"
+                render={({ field }) => (
+                    <FormItem className="space-y-3">
+                    <FormLabel>Accepted Payment Methods</FormLabel>
+                    <FormControl>
+                        <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-1"
+                        >
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                            <RadioGroupItem value="cash" />
+                            </FormControl>
+                            <FormLabel className="font-normal">Cash Only</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                            <RadioGroupItem value="upi" />
+                            </FormControl>
+                            <FormLabel className="font-normal">UPI Only</FormLabel>
+                        </FormItem>
+                         <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                            <RadioGroupItem value="both" />
+                            </FormControl>
+                            <FormLabel className="font-normal">Both Cash & UPI</FormLabel>
+                        </FormItem>
+                        </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+             />
+
+            {(paymentMethodOption === 'upi' || paymentMethodOption === 'both') && (
+                <div className="space-y-4 rounded-md border p-4">
+                    <FormField
+                    control={form.control}
+                    name="upiId"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>UPI ID</FormLabel>
+                        <FormControl>
+                            <Input placeholder="your-upi-id@bank" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="upiQrCodeUrl"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>UPI QR Code Image URL</FormLabel>
+                        <FormControl>
+                            <Input placeholder="https://example.com/qr.png" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </div>
+            )}
+
+
             <FormField
               control={form.control}
               name="isOpen"

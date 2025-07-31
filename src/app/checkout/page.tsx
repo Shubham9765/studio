@@ -13,10 +13,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, CheckCircle, ShoppingCart } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ShoppingCart, Banknote, Landmark } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { createOrder } from '@/services/restaurantService';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import type { Order } from '@/lib/types';
 
 export default function CheckoutPage() {
     const { cart, restaurant, totalPrice, clearCart } = useCart();
@@ -26,6 +28,8 @@ export default function CheckoutPage() {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderPlaced, setOrderPlaced] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi'>('cash');
+    const [transactionId, setTransactionId] = useState('');
 
     const deliveryFee = restaurant?.deliveryCharge || 0;
     const finalTotal = totalPrice + deliveryFee;
@@ -34,9 +38,24 @@ export default function CheckoutPage() {
         e.preventDefault();
         if (!user || !restaurant) return;
 
+        if (paymentMethod === 'upi' && !transactionId) {
+            toast({
+                variant: 'destructive',
+                title: 'Transaction ID Required',
+                description: 'Please enter the UPI transaction ID to proceed.',
+            });
+            return;
+        }
+
         setIsSubmitting(true);
         try {
-            await createOrder(user.uid, restaurant.id!, cart, finalTotal);
+            const orderDetails: Partial<Order> = {
+                paymentMethod,
+                paymentStatus: paymentMethod === 'cash' ? 'pending' : 'pending',
+                ...(paymentMethod === 'upi' && { paymentDetails: { transactionId } }),
+            };
+
+            await createOrder(user.uid, user.username || 'N/A', restaurant.id!, cart, finalTotal, orderDetails);
             setOrderPlaced(true);
             clearCart();
         } catch (error) {
@@ -62,8 +81,6 @@ export default function CheckoutPage() {
     }
 
     if (!user) {
-        // This should ideally be handled by a route guard or redirect in a larger app
-        // For now, just show a message.
         router.push('/');
         return (
              <div className="min-h-screen bg-background">
@@ -125,7 +142,6 @@ export default function CheckoutPage() {
         );
     }
 
-
     return (
         <div className="min-h-screen bg-background">
             <Header />
@@ -150,17 +166,53 @@ export default function CheckoutPage() {
                                     </div>
                                      <div className="space-y-4">
                                         <Label>Payment Method</Label>
+                                         <RadioGroup value={paymentMethod} onValueChange={(val) => setPaymentMethod(val as 'cash' | 'upi')} className="grid grid-cols-2 gap-4">
+                                            {restaurant?.paymentMethods?.cash && (
+                                                <Label htmlFor="cash" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary">
+                                                    <RadioGroupItem value="cash" id="cash" className="sr-only" />
+                                                    <Banknote className="mb-3 h-6 w-6" />
+                                                    Cash on Delivery
+                                                </Label>
+                                            )}
+                                             {restaurant?.paymentMethods?.upi && (
+                                                <Label htmlFor="upi" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary">
+                                                    <RadioGroupItem value="upi" id="upi" className="sr-only" />
+                                                    <Landmark className="mb-3 h-6 w-6" />
+                                                    Pay with UPI
+                                                </Label>
+                                            )}
+                                        </RadioGroup>
+                                     </div>
+
+                                    {paymentMethod === 'upi' && restaurant?.paymentMethods.upi && (
                                         <Card className="bg-muted/50 p-4">
-                                            <div className="flex items-center gap-4">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
-                                                <div>
-                                                    <p className="font-semibold">Paying with Card</p>
-                                                    <p className="text-sm text-muted-foreground">Mastercard ending in 1234</p>
+                                            <CardTitle className="text-lg mb-2">UPI Payment</CardTitle>
+                                            <div className="flex flex-col sm:flex-row gap-4 items-center">
+                                                {restaurant.paymentMethods.upiQrCodeUrl && (
+                                                    <Image src={restaurant.paymentMethods.upiQrCodeUrl} alt="UPI QR Code" width={128} height={128} className="rounded-md" />
+                                                )}
+                                                <div className="flex-1 space-y-2">
+                                                     <p className="text-sm">Scan the QR code or use the UPI ID below.</p>
+                                                     <p className="font-semibold text-base">
+                                                        <span className="font-normal text-muted-foreground">UPI ID: </span> 
+                                                        {restaurant.paymentMethods.upiId}
+                                                    </p>
+                                                     <div className="space-y-2">
+                                                        <Label htmlFor="transactionId">Transaction ID</Label>
+                                                        <Input 
+                                                            id="transactionId" 
+                                                            placeholder="Enter UPI transaction ID" 
+                                                            value={transactionId}
+                                                            onChange={(e) => setTransactionId(e.target.value)}
+                                                            required
+                                                        />
+                                                     </div>
                                                 </div>
                                             </div>
-                                            <p className="text-xs text-center mt-4 text-muted-foreground">Payment section is for demonstration purposes.</p>
+                                             <p className="text-xs text-center mt-4 text-muted-foreground">After payment, enter the transaction ID and place your order. The restaurant will verify the payment.</p>
                                         </Card>
-                                     </div>
+                                    )}
+
                                 </CardContent>
                                 <CardFooter>
                                      <Button type="submit" className="w-full" disabled={isSubmitting}>
