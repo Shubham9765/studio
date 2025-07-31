@@ -9,7 +9,6 @@ import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, Star, Clock, Utensils } from 'lucide-react';
-import { notFound } from 'next/navigation';
 import { MenuItemCard } from '@/components/customer/menu-item-card';
 import { Cart } from '@/components/customer/cart';
 
@@ -38,7 +37,7 @@ export default function RestaurantPage({ params: { id } }: RestaurantPageParams)
         ]);
 
         if (!restaurantData) {
-          notFound();
+          setError('Restaurant not found.');
           return;
         }
 
