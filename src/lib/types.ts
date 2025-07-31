@@ -35,9 +35,9 @@ export interface MenuItem {
 export interface Order {
     id: string;
     customerId: string;
-    customerName: string; // Add customer name for easier display
+    customerName: string;
     restaurantId: string;
-    restaurantName: string; // Add restaurant name for easier display
+    restaurantName: string;
     items: (MenuItem & { quantity: number })[];
     total: number;
     status: 'pending' | 'accepted' | 'preparing' | 'out-for-delivery' | 'delivered' | 'cancelled';
@@ -47,6 +47,8 @@ export interface Order {
       transactionId?: string;
     };
     createdAt: Timestamp;
+    deliveryAddress: string;
+    customerPhone: string;
     deliveryBoy?: {
         id: string;
         name: string;

@@ -76,6 +76,8 @@ export async function createOrder(
       paymentMethod: orderDetails.paymentMethod || 'cash',
       paymentStatus: orderDetails.paymentStatus || 'pending',
       paymentDetails: orderDetails.paymentDetails || {},
+      deliveryAddress: orderDetails.deliveryAddress || 'N/A',
+      customerPhone: orderDetails.customerPhone || 'N/A',
   };
 
   const docRef = await addDoc(ordersCollection, newOrder);

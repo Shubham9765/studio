@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { getOrdersForRestaurant, getRestaurantByOwnerId, updateOrderPaymentStatus, updateOrderStatus } from '@/services/ownerService';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, BookOpen, Check, BadgeCent, CircleDollarSign, Printer } from 'lucide-react';
+import { AlertTriangle, BookOpen, Check, BadgeCent, CircleDollarSign, Printer, User, Phone, MapPin } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -213,39 +213,48 @@ export default function ManageOrdersPage() {
                                     <AccordionContent>
                                         <div className="p-4 bg-muted/50 rounded-md">
                                             <div className="grid md:grid-cols-3 gap-6">
-                                                <div className="md:col-span-1">
-                                                    <h4 className="font-semibold mb-2">Order Details</h4>
-                                                    <p className="font-semibold">Items Ordered:</p>
-                                                    <ul className="list-disc pl-5">
-                                                        {order.items.map(item => (
-                                                            <li key={item.id} className="text-sm">{item.name} x {item.quantity}</li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                                <div className="md:col-span-1">
-                                                     <h4 className="font-semibold mb-2">Payment Information</h4>
-                                                    <div className="flex items-center gap-2 capitalize">
-                                                        {order.paymentMethod === 'cash' ? <CircleDollarSign className="h-4 w-4"/> : <BadgeCent className="h-4 w-4"/>}
-                                                        <span>{order.paymentMethod}</span>
-                                                        <Badge variant={order.paymentStatus === 'completed' ? 'default' : 'secondary'}>{order.paymentStatus}</Badge>
-                                                    </div>
-                                                    {order.paymentMethod === 'upi' && (
-                                                        <>
-                                                        <p className="text-sm mt-1">
-                                                            <span className="font-medium">Transaction ID:</span> {order.paymentDetails?.transactionId || 'N/A'}
-                                                        </p>
-                                                        {order.paymentStatus === 'pending' && (
-                                                            <Button 
-                                                                size="sm" 
-                                                                className="mt-2"
-                                                                onClick={() => handleMarkAsPaid(order.id)}
-                                                                disabled={updatingOrderId === order.id}
-                                                            >
-                                                                {updatingOrderId === order.id ? 'Confirming...' : <><Check className="mr-2 h-4 w-4"/> Mark as Paid</>}
-                                                            </Button>
+                                                <div className="md:col-span-2 grid grid-cols-2 gap-6">
+                                                     <div>
+                                                        <h4 className="font-semibold mb-2">Customer Details</h4>
+                                                        <div className="space-y-1 text-sm">
+                                                            <p className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" /> {order.customerName}</p>
+                                                            <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {order.customerPhone}</p>
+                                                            <p className="flex items-start gap-2"><MapPin className="h-4 w-4 text-muted-foreground mt-1" /> {order.deliveryAddress}</p>
+                                                        </div>
+                                                     </div>
+                                                      <div>
+                                                        <h4 className="font-semibold mb-2">Order Summary</h4>
+                                                        <ul className="list-disc pl-5 text-sm">
+                                                            {order.items.map(item => (
+                                                                <li key={item.id}>{item.name} x {item.quantity}</li>
+                                                            ))}
+                                                        </ul>
+                                                     </div>
+                                                     <div>
+                                                        <h4 className="font-semibold mb-2">Payment Information</h4>
+                                                        <div className="flex items-center gap-2 capitalize">
+                                                            {order.paymentMethod === 'cash' ? <CircleDollarSign className="h-4 w-4"/> : <BadgeCent className="h-4 w-4"/>}
+                                                            <span>{order.paymentMethod}</span>
+                                                            <Badge variant={order.paymentStatus === 'completed' ? 'default' : 'secondary'}>{order.paymentStatus}</Badge>
+                                                        </div>
+                                                        {order.paymentMethod === 'upi' && (
+                                                            <>
+                                                            <p className="text-sm mt-1">
+                                                                <span className="font-medium">Transaction ID:</span> {order.paymentDetails?.transactionId || 'N/A'}
+                                                            </p>
+                                                            {order.paymentStatus === 'pending' && (
+                                                                <Button 
+                                                                    size="sm" 
+                                                                    className="mt-2"
+                                                                    onClick={() => handleMarkAsPaid(order.id)}
+                                                                    disabled={updatingOrderId === order.id}
+                                                                >
+                                                                    {updatingOrderId === order.id ? 'Confirming...' : <><Check className="mr-2 h-4 w-4"/> Mark as Paid</>}
+                                                                </Button>
+                                                            )}
+                                                            </>
                                                         )}
-                                                        </>
-                                                    )}
+                                                    </div>
                                                 </div>
                                                  <div className="md:col-span-1">
                                                      <h4 className="font-semibold mb-2">Update Status</h4>
@@ -270,7 +279,7 @@ export default function ManageOrdersPage() {
                                              <div className="border-t mt-6 pt-4">
                                                 <Button size="sm" onClick={() => handlePrintKOT(order)}>
                                                     <Printer className="mr-2 h-4 w-4" />
-                                                    Print KOT
+                                                    Print KOT & Delivery Slip
                                                 </Button>
                                             </div>
                                         </div>

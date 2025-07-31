@@ -30,6 +30,8 @@ export default function CheckoutPage() {
     const [orderPlaced, setOrderPlaced] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi'>('cash');
     const [transactionId, setTransactionId] = useState('');
+    const [deliveryAddress, setDeliveryAddress] = useState(user?.displayName || '');
+    const [customerPhone, setCustomerPhone] = useState(user?.phone || '');
 
     const deliveryFee = restaurant?.deliveryCharge || 0;
     const finalTotal = totalPrice + deliveryFee;
@@ -53,6 +55,8 @@ export default function CheckoutPage() {
                 paymentMethod,
                 paymentStatus: paymentMethod === 'cash' ? 'pending' : 'pending',
                 ...(paymentMethod === 'upi' && { paymentDetails: { transactionId } }),
+                deliveryAddress,
+                customerPhone,
             };
 
             await createOrder(user.uid, user.username || 'N/A', restaurant as Restaurant, cart, finalTotal, orderDetails);
@@ -159,11 +163,11 @@ export default function CheckoutPage() {
                                 <CardContent className="space-y-6">
                                     <div className="space-y-2">
                                         <Label htmlFor="address">Delivery Address</Label>
-                                        <Input id="address" placeholder="123 Main St, Anytown, USA" defaultValue={user.displayName || ''} required />
+                                        <Input id="address" placeholder="123 Main St, Anytown, USA" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} required />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="phone">Phone Number</Label>
-                                        <Input id="phone" placeholder="Your contact number" defaultValue={user.phone || ''} required />
+                                        <Input id="phone" placeholder="Your contact number" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} required />
                                     </div>
                                      <div className="space-y-4">
                                         <Label>Payment Method</Label>
