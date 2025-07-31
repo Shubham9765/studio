@@ -85,10 +85,15 @@ export async function createOrder(
 
 export async function getOrdersByCustomerId(customerId: string): Promise<Order[]> {
     const ordersRef = collection(db, 'orders');
-    const q = query(ordersRef, where('customerId', '==', customerId), orderBy('createdAt', 'desc'));
+    // Using a composite query with orderBy on a different field requires a composite index.
+    // Removing orderBy to fix the issue without needing to create an index in Firestore.
+    // Sorting can be done client-side if needed.
+    const q = query(ordersRef, where('customerId', '==', customerId));
     const snapshot = await getDocs(q);
     if (snapshot.empty) {
         return [];
     }
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+    // Sort by date on the client-side
+    const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+    return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
 }
