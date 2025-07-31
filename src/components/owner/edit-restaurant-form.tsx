@@ -45,7 +45,8 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const getPaymentMethodOption = (methods: Restaurant['paymentMethods']) => {
+  const getPaymentMethodOption = (methods?: Restaurant['paymentMethods']) => {
+    if (!methods) return 'cash'; // Guard clause for undefined methods
     if (methods.cash && methods.upi) return 'both';
     if (methods.upi) return 'upi';
     return 'cash';
@@ -78,8 +79,8 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
         isOpen: restaurant.isOpen,
         image: restaurant.image,
         paymentMethodOption: getPaymentMethodOption(restaurant.paymentMethods),
-        upiId: restaurant.paymentMethods.upiId || '',
-        upiQrCodeUrl: restaurant.paymentMethods.upiQrCodeUrl || '',
+        upiId: restaurant.paymentMethods?.upiId || '',
+        upiQrCodeUrl: restaurant.paymentMethods?.upiQrCodeUrl || '',
       });
     }
   }, [restaurant, isOpen, form]);
