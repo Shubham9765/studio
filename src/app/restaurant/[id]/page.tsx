@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import Image from 'next/image';
 import { getRestaurantById, getMenuItemsForRestaurant } from '@/services/restaurantService';
 import type { Restaurant, MenuItem } from '@/lib/types';
@@ -22,7 +22,8 @@ interface GroupedMenuItems {
   [category: string]: MenuItem[];
 }
 
-export default function RestaurantPage({ params: { id } }: RestaurantPageParams) {
+export default function RestaurantPage({ params }: RestaurantPageParams) {
+  const { id } = use(Promise.resolve(params));
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
