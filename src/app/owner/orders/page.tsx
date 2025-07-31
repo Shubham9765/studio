@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { getOrdersForRestaurant, getRestaurantByOwnerId, updateOrderPaymentStatus, updateOrderStatus } from '@/services/ownerService';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, BookOpen, Check, BadgeCent, CircleDollarSign, Printer, User, Phone, MapPin } from 'lucide-react';
+import { AlertTriangle, BookOpen, Check, BadgeCent, CircleDollarSign, Printer, User, Phone, MapPin, Package, ChefHat, Bike, PartyPopper } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -20,18 +20,62 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { KOT } from '@/components/owner/kot';
+import { cn } from '@/lib/utils';
 
 
 const orderStatuses: Order['status'][] = ['pending', 'accepted', 'preparing', 'out-for-delivery', 'delivered', 'cancelled'];
 
+const statusSteps: { status: Order['status'], icon: React.ElementType, label: string }[] = [
+    { status: 'accepted', icon: Package, label: 'Accept Order' },
+    { status: 'preparing', icon: ChefHat, label: 'Mark as Preparing' },
+    { status: 'out-for-delivery', icon: Bike, label: 'Mark as Out for Delivery' },
+    { status: 'delivered', icon: PartyPopper, label: 'Mark as Delivered' },
+];
+
+function OrderStatusUpdater({ order, onUpdate, isUpdating }: { order: Order, onUpdate: (status: Order['status']) => void, isUpdating: boolean }) {
+    const currentStepIndex = statusSteps.findIndex(step => step.status === order.status);
+
+    if (order.status === 'cancelled' || order.status === 'delivered') {
+        return <p className="font-semibold text-center py-2 px-4 rounded-md bg-muted text-muted-foreground capitalize">{order.status}</p>;
+    }
+    
+    if (order.status === 'pending') {
+        return (
+            <div className="flex gap-2">
+                 <Button onClick={() => onUpdate('accepted')} disabled={isUpdating} className="flex-1">
+                    {isUpdating ? 'Accepting...' : 'Accept Order'}
+                 </Button>
+                 <Button variant="destructive" onClick={() => onUpdate('cancelled')} disabled={isUpdating} className="flex-1">
+                    {isUpdating ? '...' : 'Cancel Order'}
+                 </Button>
+            </div>
+        )
+    }
+
+    const nextStep = statusSteps[currentStepIndex + 1];
+
+    return (
+        <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-4">
+                {statusSteps.map((step, index) => (
+                    <div key={step.status} className={cn("flex-1 text-center transition-all", index <= currentStepIndex ? "text-primary" : "text-muted-foreground opacity-50")}>
+                        <step.icon className="mx-auto h-6 w-6 mb-1"/>
+                        <p className="text-xs font-semibold">{step.label.split(' ').slice(2).join(' ')}</p>
+                    </div>
+                ))}
+            </div>
+             <div className="w-full bg-muted rounded-full h-2.5">
+                <div className="bg-primary h-2.5 rounded-full" style={{ width: `${((currentStepIndex + 1) / statusSteps.length) * 100}%` }}></div>
+            </div>
+            {nextStep && (
+                <Button onClick={() => onUpdate(nextStep.status)} disabled={isUpdating}>
+                    {isUpdating ? 'Updating...' : <><nextStep.icon className="mr-2 h-4 w-4" /> {nextStep.label}</>}
+                </Button>
+            )}
+        </div>
+    )
+}
 
 export default function ManageOrdersPage() {
     const { user, loading: authLoading } = useAuth();
@@ -44,18 +88,23 @@ export default function ManageOrdersPage() {
     const [orderToPrint, setOrderToPrint] = useState<Order | null>(null);
 
     useEffect(() => {
-        const handleAfterPrint = () => {
-            setOrderToPrint(null);
-        };
-        window.addEventListener('afterprint', handleAfterPrint);
-        return () => window.removeEventListener('afterprint', handleAfterPrint);
-    }, []);
+        if (orderToPrint) {
+            const handleAfterPrint = () => {
+                setOrderToPrint(null);
+                 // Re-add the class after printing is done
+                document.body.classList.remove('print:bg-white');
+            };
+
+            // Remove class before printing
+            document.body.classList.add('print:bg-white');
+            window.addEventListener('afterprint', handleAfterPrint, { once: true });
+            
+            window.print();
+        }
+    }, [orderToPrint]);
 
     const handlePrintKOT = (order: Order) => {
         setOrderToPrint(order);
-        setTimeout(() => {
-            window.print();
-        }, 100);
     };
 
     const fetchOrdersData = async (restaurantId: string) => {
@@ -191,29 +240,29 @@ export default function ManageOrdersPage() {
                 </div>
                 <Card>
                     <CardHeader>
-                        <CardTitle>Order History</CardTitle>
-                        <CardDescription>View all orders placed at {restaurant.name}.</CardDescription>
+                        <CardTitle>Incoming Orders</CardTitle>
+                        <CardDescription>View and manage all orders placed at {restaurant.name}.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {orders.length > 0 ? (
-                        <Accordion type="single" collapsible className="w-full">
+                        <Accordion type="single" collapsible className="w-full space-y-4">
                             {orders.map(order => (
-                                <AccordionItem value={order.id} key={order.id}>
-                                    <AccordionTrigger>
-                                        <div className="flex justify-between w-full pr-4 items-center">
+                                <AccordionItem value={order.id} key={order.id} className="border rounded-lg">
+                                    <AccordionTrigger className="p-4 hover:no-underline">
+                                        <div className="flex justify-between w-full items-center">
                                             <div className="flex flex-col text-left">
                                                 <span className="font-bold">Order #{order.id.substring(0,6)}...</span>
                                                 <span className="text-sm text-muted-foreground">{order.customerName}</span>
                                             </div>
-                                            <div className="text-sm">{format(order.createdAt.toDate(), 'PPpp')}</div>
+                                            <div className="hidden md:block text-sm text-muted-foreground">{format(order.createdAt.toDate(), 'PPpp')}</div>
                                             <div><Badge variant={order.status === 'delivered' ? 'default' : 'secondary'} className="capitalize">{order.status.replace('-', ' ')}</Badge></div>
                                             <div className="font-bold text-lg">${order.total.toFixed(2)}</div>
                                         </div>
                                     </AccordionTrigger>
-                                    <AccordionContent>
-                                        <div className="p-4 bg-muted/50 rounded-md">
+                                    <AccordionContent className="p-4 pt-0">
+                                        <div className="border-t pt-4">
                                             <div className="grid md:grid-cols-3 gap-6">
-                                                <div className="md:col-span-2 grid grid-cols-2 gap-6">
+                                                <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
                                                      <div>
                                                         <h4 className="font-semibold mb-2">Customer Details</h4>
                                                         <div className="space-y-1 text-sm">
@@ -229,9 +278,15 @@ export default function ManageOrdersPage() {
                                                                 <li key={item.id}>{item.name} x {item.quantity}</li>
                                                             ))}
                                                         </ul>
+                                                         <div className="mt-4">
+                                                            <Button size="sm" variant="outline" onClick={() => handlePrintKOT(order)}>
+                                                                <Printer className="mr-2 h-4 w-4" />
+                                                                Print KOT & Slip
+                                                            </Button>
+                                                        </div>
                                                      </div>
-                                                     <div>
-                                                        <h4 className="font-semibold mb-2">Payment Information</h4>
+                                                     <div className="col-span-full sm:col-span-1">
+                                                        <h4 className="font-semibold mb-2">Payment</h4>
                                                         <div className="flex items-center gap-2 capitalize">
                                                             {order.paymentMethod === 'cash' ? <CircleDollarSign className="h-4 w-4"/> : <BadgeCent className="h-4 w-4"/>}
                                                             <span>{order.paymentMethod}</span>
@@ -239,8 +294,8 @@ export default function ManageOrdersPage() {
                                                         </div>
                                                         {order.paymentMethod === 'upi' && (
                                                             <>
-                                                            <p className="text-sm mt-1">
-                                                                <span className="font-medium">Transaction ID:</span> {order.paymentDetails?.transactionId || 'N/A'}
+                                                            <p className="text-sm mt-1 text-muted-foreground break-all">
+                                                                <span className="font-medium text-foreground">Transaction ID:</span> {order.paymentDetails?.transactionId || 'N/A'}
                                                             </p>
                                                             {order.paymentStatus === 'pending' && (
                                                                 <Button 
@@ -256,31 +311,14 @@ export default function ManageOrdersPage() {
                                                         )}
                                                     </div>
                                                 </div>
-                                                 <div className="md:col-span-1">
-                                                     <h4 className="font-semibold mb-2">Update Status</h4>
-                                                      <Select
-                                                        value={order.status}
-                                                        onValueChange={(value) => handleStatusChange(order.id, value as Order['status'])}
-                                                        disabled={updatingOrderId === order.id}
-                                                      >
-                                                        <SelectTrigger>
-                                                          <SelectValue placeholder="Update order status" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                          {orderStatuses.map(status => (
-                                                            <SelectItem key={status} value={status} className="capitalize">
-                                                              {status.replace('-', ' ')}
-                                                            </SelectItem>
-                                                          ))}
-                                                        </SelectContent>
-                                                      </Select>
+                                                 <div className="md:col-span-1 flex flex-col justify-between">
+                                                     <h4 className="font-semibold mb-2">Order Status</h4>
+                                                      <OrderStatusUpdater 
+                                                        order={order} 
+                                                        onUpdate={(status) => handleStatusChange(order.id, status)}
+                                                        isUpdating={updatingOrderId === order.id}
+                                                      />
                                                 </div>
-                                            </div>
-                                             <div className="border-t mt-6 pt-4">
-                                                <Button size="sm" onClick={() => handlePrintKOT(order)}>
-                                                    <Printer className="mr-2 h-4 w-4" />
-                                                    Print KOT & Delivery Slip
-                                                </Button>
                                             </div>
                                         </div>
                                     </AccordionContent>

@@ -171,16 +171,16 @@ export default function CheckoutPage() {
                                     </div>
                                      <div className="space-y-4">
                                         <Label>Payment Method</Label>
-                                         <RadioGroup value={paymentMethod} onValueChange={(val) => setPaymentMethod(val as 'cash' | 'upi')} className="grid grid-cols-2 gap-4">
+                                         <RadioGroup value={paymentMethod} onValueChange={(val) => setPaymentMethod(val as 'cash' | 'upi')} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             {restaurant?.paymentMethods?.cash && (
-                                                <Label htmlFor="cash" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary">
+                                                <Label htmlFor="cash" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary cursor-pointer">
                                                     <RadioGroupItem value="cash" id="cash" className="sr-only" />
                                                     <Banknote className="mb-3 h-6 w-6" />
                                                     Cash on Delivery
                                                 </Label>
                                             )}
                                              {restaurant?.paymentMethods?.upi && (
-                                                <Label htmlFor="upi" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary">
+                                                <Label htmlFor="upi" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary cursor-pointer">
                                                     <RadioGroupItem value="upi" id="upi" className="sr-only" />
                                                     <Landmark className="mb-3 h-6 w-6" />
                                                     Pay with UPI
