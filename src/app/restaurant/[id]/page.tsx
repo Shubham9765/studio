@@ -22,8 +22,7 @@ interface GroupedMenuItems {
   [category: string]: MenuItem[];
 }
 
-export default function RestaurantPage({ params }: RestaurantPageParams) {
-  const { id } = params;
+export default function RestaurantPage({ params: { id } }: RestaurantPageParams) {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
