@@ -166,12 +166,14 @@ export async function getRestaurantByOwnerId(ownerId: string): Promise<Restauran
 // Order Functions
 export async function getOrdersForRestaurant(restaurantId: string): Promise<Order[]> {
     const ordersRef = collection(db, 'orders');
-    const q = query(ordersRef, where('restaurantId', '==', restaurantId), orderBy('createdAt', 'desc'));
+    const q = query(ordersRef, where('restaurantId', '==', restaurantId));
     const snapshot = await getDocs(q);
     if (snapshot.empty) {
         return [];
     }
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+    const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+    // Sort by date on the client-side
+    return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
 }
 
 export async function updateOrderPaymentStatus(orderId: string, paymentStatus: 'completed' | 'pending'): Promise<void> {

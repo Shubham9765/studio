@@ -60,6 +60,8 @@ export default function ManageOrdersPage() {
                     setRestaurant(rest);
                     if (rest) {
                         await fetchOrdersData(rest.id);
+                    } else {
+                         setError('No restaurant found for this owner.');
                     }
                 } catch (e: any) {
                     setError('Failed to fetch restaurant data.');
@@ -70,20 +72,25 @@ export default function ManageOrdersPage() {
             }
         };
 
-        if (!authLoading) {
+        if (!authLoading && user) {
             fetchRestaurantAndOrders();
+        } else if (!authLoading && !user) {
+            setLoading(false);
         }
     }, [user, authLoading, toast]);
     
     const handleMarkAsPaid = async (orderId: string) => {
         setUpdatingOrderId(orderId);
+        
+        const originalOrders = [...orders];
+        const optimisticUpdate = orders.map(o => o.id === orderId ? { ...o, paymentStatus: 'completed' as const } : o);
+        setOrders(optimisticUpdate);
+
         try {
             await updateOrderPaymentStatus(orderId, 'completed');
             toast({ title: 'Payment Confirmed', description: 'Order marked as paid.'});
-            if (restaurant) {
-                fetchOrdersData(restaurant.id);
-            }
         } catch(e: any) {
+            setOrders(originalOrders);
             toast({ variant: 'destructive', title: 'Error', description: e.message });
         } finally {
             setUpdatingOrderId(null);
@@ -92,13 +99,16 @@ export default function ManageOrdersPage() {
     
     const handleStatusChange = async (orderId: string, status: Order['status']) => {
         setUpdatingOrderId(orderId);
+
+        const originalOrders = [...orders];
+        const optimisticUpdate = orders.map(o => o.id === orderId ? { ...o, status } : o);
+        setOrders(optimisticUpdate);
+
         try {
             await updateOrderStatus(orderId, status);
             toast({ title: 'Order Status Updated', description: 'Customer will be notified.'});
-            if (restaurant) {
-                fetchOrdersData(restaurant.id);
-            }
         } catch (e: any) {
+             setOrders(originalOrders);
              toast({ variant: 'destructive', title: 'Error', description: e.message });
         } finally {
             setUpdatingOrderId(null);
