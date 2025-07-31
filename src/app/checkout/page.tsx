@@ -53,10 +53,10 @@ export default function CheckoutPage() {
         try {
             const orderDetails: Partial<Order> = {
                 paymentMethod,
-                paymentStatus: paymentMethod === 'cash' ? 'pending' : 'pending',
+                paymentStatus: 'pending',
                 ...(paymentMethod === 'upi' && { paymentDetails: { transactionId } }),
-                deliveryAddress,
-                customerPhone,
+                deliveryAddress: deliveryAddress, // Use state value directly
+                customerPhone: customerPhone, // Use state value directly
             };
 
             await createOrder(user.uid, user.username || 'N/A', restaurant as Restaurant, cart, finalTotal, orderDetails);
