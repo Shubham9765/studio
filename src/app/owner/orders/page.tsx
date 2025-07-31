@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { getOrdersForRestaurant, getRestaurantByOwnerId, updateOrderPaymentStatus, updateOrderStatus } from '@/services/ownerService';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, BookOpen, Check, BadgeCent, CircleDollarSign } from 'lucide-react';
+import { AlertTriangle, BookOpen, Check, BadgeCent, CircleDollarSign, Printer } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { KOT } from '@/components/owner/kot';
 
 
 const orderStatuses: Order['status'][] = ['pending', 'accepted', 'preparing', 'out-for-delivery', 'delivered', 'cancelled'];
@@ -40,6 +41,22 @@ export default function ManageOrdersPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+    const [orderToPrint, setOrderToPrint] = useState<Order | null>(null);
+
+    useEffect(() => {
+        const handleAfterPrint = () => {
+            setOrderToPrint(null);
+        };
+        window.addEventListener('afterprint', handleAfterPrint);
+        return () => window.removeEventListener('afterprint', handleAfterPrint);
+    }, []);
+
+    const handlePrintKOT = (order: Order) => {
+        setOrderToPrint(order);
+        setTimeout(() => {
+            window.print();
+        }, 100);
+    };
 
     const fetchOrdersData = async (restaurantId: string) => {
         try {
@@ -165,7 +182,8 @@ export default function ManageOrdersPage() {
 
 
     return (
-        <div className="min-h-screen bg-background">
+        <>
+        <div className="min-h-screen bg-background print:hidden">
             <Header />
             <main className="container py-8">
                 <div className="flex justify-between items-center mb-8">
@@ -249,6 +267,12 @@ export default function ManageOrdersPage() {
                                                       </Select>
                                                 </div>
                                             </div>
+                                             <div className="border-t mt-6 pt-4">
+                                                <Button size="sm" onClick={() => handlePrintKOT(order)}>
+                                                    <Printer className="mr-2 h-4 w-4" />
+                                                    Print KOT
+                                                </Button>
+                                            </div>
                                         </div>
                                     </AccordionContent>
                                 </AccordionItem>
@@ -267,5 +291,11 @@ export default function ManageOrdersPage() {
                 </Card>
             </main>
         </div>
+        {orderToPrint && restaurant && (
+            <div className="hidden print:block">
+                <KOT order={orderToPrint} restaurant={restaurant} />
+            </div>
+        )}
+        </>
     );
 }
