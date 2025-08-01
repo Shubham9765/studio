@@ -1,7 +1,7 @@
 
 import { db } from './firebase';
-import { collection, getDocs, query, where, collectionGroup, doc, updateDoc } from 'firebase/firestore';
-import type { Restaurant } from '@/lib/types';
+import { collection, getDocs, query, where, collectionGroup, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import type { Restaurant, Order } from '@/lib/types';
 import type { AppUser } from '@/hooks/use-auth';
 
 export interface AdminDashboardData {
@@ -44,3 +44,19 @@ export async function updateUserStatus(userId: string, status: AppUser['status']
   const userRef = doc(db, 'users', userId);
   await updateDoc(userRef, { status });
 }
+
+export async function getOrdersByDateRange(startDate: Date, endDate: Date): Promise<Order[]> {
+    const ordersRef = collection(db, 'orders');
+    const q = query(
+        ordersRef, 
+        where('createdAt', '>=', Timestamp.fromDate(startDate)),
+        where('createdAt', '<=', Timestamp.fromDate(endDate))
+    );
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        return [];
+    }
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+}
+
+    

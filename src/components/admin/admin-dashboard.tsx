@@ -3,7 +3,7 @@
 
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff } from 'lucide-react';
+import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff, FileText } from 'lucide-react';
 import { useAdminDashboardData } from '@/hooks/use-admin-dashboard-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,6 +19,9 @@ import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 import { updateUserStatus, updateRestaurantStatus } from '@/services/adminService';
 import { useToast } from '@/hooks/use-toast';
+import { runFlow } from '@genkit-ai/next/client';
+import { generateSalesReport, type GenerateSalesReportOutput } from '@/ai/flows/generate-sales-report';
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 
 function StatCard({ title, value, icon, description, loading }: { title: string, value: string | number, icon: React.ReactNode, description: string, loading: boolean }) {
@@ -211,67 +214,108 @@ function RestaurantTable({ restaurants, loading, onUpdate }: { restaurants: Rest
 
 function Reports() {
     const [date, setDate] = useState<DateRange | undefined>();
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [report, setReport] = useState<GenerateSalesReportOutput | null>(null);
+    const [isReportOpen, setIsReportOpen] = useState(false);
+    const { toast } = useToast();
 
+    const handleGenerateReport = async () => {
+        if (!date || !date.from) {
+            toast({
+                variant: 'destructive',
+                title: 'Date range required',
+                description: 'Please select a date range to generate a report.',
+            });
+            return;
+        }
+
+        setIsGenerating(true);
+        try {
+            const reportData = await runFlow(generateSalesReport, {
+                startDate: date.from.toISOString(),
+                endDate: date.to ? date.to.toISOString() : date.from.toISOString(),
+            });
+            setReport(reportData);
+            setIsReportOpen(true);
+        } catch (error: any) {
+             toast({
+                variant: 'destructive',
+                title: 'Report Generation Failed',
+                description: error.message || 'An unexpected error occurred.',
+            });
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+    
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Reports</CardTitle>
-                <CardDescription>Generate and download reports for restaurants.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="grid gap-2">
-                    <Popover>
-                        <PopoverTrigger asChild>
-                        <Button
-                            id="date"
-                            variant={"outline"}
-                            className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !date && "text-muted-foreground"
-                            )}
-                        >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {date?.from ? (
-                            date.to ? (
-                                <>
-                                {format(date.from, "LLL dd, y")} -{" "}
-                                {format(date.to, "LLL dd, y")}
-                                </>
-                            ) : (
-                                format(date.from, "LLL dd, y")
-                            )
-                            ) : (
-                            <span>Pick a date range</span>
-                            )}
+        <>
+            <Card>
+                <CardHeader>
+                    <CardTitle>AI Sales Report</CardTitle>
+                    <CardDescription>Generate an AI-powered sales summary.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid gap-2">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <Button
+                                id="date"
+                                variant={"outline"}
+                                className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !date && "text-muted-foreground"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {date?.from ? (
+                                date.to ? (
+                                    <>
+                                    {format(date.from, "LLL dd, y")} -{" "}
+                                    {format(date.to, "LLL dd, y")}
+                                    </>
+                                ) : (
+                                    format(date.from, "LLL dd, y")
+                                )
+                                ) : (
+                                <span>Pick a date range</span>
+                                )}
+                            </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={date?.from}
+                                selected={date}
+                                onSelect={setDate}
+                                numberOfMonths={2}
+                            />
+                            </PopoverContent>
+                        </Popover>
+                        <Button onClick={handleGenerateReport} disabled={!date || isGenerating}>
+                            {isGenerating ? 'Generating...' : <><FileText className="mr-2 h-4 w-4" /> Generate Report</>}
                         </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                            initialFocus
-                            mode="range"
-                            defaultMonth={date?.from}
-                            selected={date}
-                            onSelect={setDate}
-                            numberOfMonths={2}
-                        />
-                        </PopoverContent>
-                    </Popover>
-                    <Button disabled={!date}>
-                        Generate Report
-                    </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" className="w-full" disabled>
-                        <FileDown className="mr-2 h-4 w-4" />
-                        Download PDF
-                    </Button>
-                     <Button variant="outline" className="w-full" disabled>
-                        <FileDown className="mr-2 h-4 w-4" />
-                        Download Excel
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
+                    </div>
+                </CardContent>
+            </Card>
+             <AlertDialog open={isReportOpen} onOpenChange={setIsReportOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Sales Report</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            AI-generated summary for the selected period.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="max-h-80 overflow-y-auto pr-4 text-sm whitespace-pre-wrap">
+                        {report?.report}
+                    </div>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => setIsReportOpen(false)}>Close</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     )
 }
 
@@ -304,3 +348,5 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
+    
