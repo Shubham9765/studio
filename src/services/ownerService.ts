@@ -16,6 +16,25 @@ export interface OwnerDashboardData {
   reviewCount: number;
 }
 
+async function sendNotification(userId: string, title: string, body: string, url: string) {
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    const fcmToken = userDoc.data()?.fcmToken;
+
+    if (fcmToken) {
+        // This would typically be a call to a server-side function (e.g., Firebase Cloud Function)
+        // that sends the push notification. For this project, we will log it.
+        console.log(`Sending notification to ${userId} with token ${fcmToken}`);
+        console.log(`Title: ${title}, Body: ${body}, URL: ${url}`);
+        // Example server-side fetch:
+        // await fetch('https://your-cloud-function-url/sendNotification', {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/json' },
+        //     body: JSON.stringify({ token: fcmToken, title, body, url })
+        // });
+    }
+}
+
+
 export async function createRestaurant(ownerId: string, data: z.infer<typeof RestaurantSchema>) {
     if (!ownerId) {
         throw new Error('An owner ID is required to create a restaurant.');
@@ -182,6 +201,15 @@ export async function updateOrderPaymentStatus(orderId: string, paymentStatus: '
 export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
     const orderRef = doc(db, 'orders', orderId);
     await updateDoc(orderRef, { status });
+
+    // Send notification to customer
+    const orderSnap = await getDoc(orderRef);
+    const orderData = orderSnap.data() as Order;
+    if (orderData?.customerId) {
+        const title = `Order Status Updated`;
+        const body = `Your order from ${orderData.restaurantName} is now: ${status.replace('-', ' ')}`;
+        await sendNotification(orderData.customerId, title, body, '/my-orders');
+    }
 }
 
 // Delivery Boy Functions
@@ -224,6 +252,10 @@ export async function assignDeliveryBoy(orderId: string, deliveryBoy: {id: strin
         deliveryBoy,
         status: 'out-for-delivery'
     });
+
+    const title = 'New Delivery Assignment';
+    const body = `You have been assigned a new order to deliver. Order #${orderId.substring(0,6)}`;
+    await sendNotification(deliveryBoy.id, title, body, '/');
 }
 
 
@@ -243,5 +275,3 @@ export async function getOrdersForDeliveryBoy(deliveryBoyId: string): Promise<Or
         .filter(order => ['out-for-delivery', 'delivered'].includes(order.status))
         .sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
 }
-
-    

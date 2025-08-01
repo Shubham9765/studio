@@ -1,9 +1,10 @@
 
-import { UtensilsCrossed, Search, User, Shield, Crown, Package, UserCog, Bike } from 'lucide-react';
+import { UtensilsCrossed, Search, User, Shield, Crown, Package, UserCog, Bike, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/use-auth';
 import { AuthDialog } from '@/components/auth-dialog';
+import { useNotifications } from '@/hooks/use-notifications';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,9 +18,11 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 export function Header() {
   const { user, signOut } = useAuth();
+  const { permission, requestPermission } = useNotifications();
   const router = useRouter();
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,6 +78,16 @@ export function Header() {
           <div className="flex items-center gap-2">
             {user ? (
               <>
+                 {permission === 'default' && (
+                    <Button variant="outline" size="icon" onClick={requestPermission} className="hidden sm:inline-flex">
+                        <Bell className="h-4 w-4" />
+                    </Button>
+                )}
+                 {permission === 'denied' && (
+                    <Button variant="outline" size="icon" disabled title="Notifications blocked" className="hidden sm:inline-flex">
+                        <Bell className="h-4 w-4" />
+                    </Button>
+                 )}
                 {user.role === 'customer' && (
                   <Button asChild variant="outline" size="sm">
                     <Link href="/my-orders">
@@ -90,6 +103,7 @@ export function Header() {
                         <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
                         <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
                       </Avatar>
+                       {permission === 'granted' && <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-background" />}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -112,6 +126,14 @@ export function Header() {
                           <span>Profile</span>
                         </DropdownMenuItem>
                     )}
+                     <DropdownMenuItem onClick={requestPermission} disabled={permission !== 'default'}>
+                        <Bell className={cn("mr-2 h-4 w-4", permission === 'granted' && 'text-green-500', permission === 'denied' && 'text-destructive')}/>
+                        <span>
+                            {permission === 'granted' ? 'Notifications On' :
+                             permission === 'denied' ? 'Notifications Blocked' :
+                             'Enable Notifications'}
+                        </span>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={signOut}>
                       Log out

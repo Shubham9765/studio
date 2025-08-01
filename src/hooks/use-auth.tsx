@@ -31,6 +31,7 @@ export interface AppUser extends User {
   status?: 'active' | 'inactive';
   address?: string; // Kept for backwards compatibility if needed, but addresses array is primary
   addresses?: Address[];
+  fcmToken?: string;
 }
 
 interface AuthContextType {
@@ -63,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             status: userData?.status || 'active',
             address: userData?.address || '',
             addresses: userData?.addresses || [],
+            fcmToken: userData?.fcmToken,
           };
           return appUser;
         } else {

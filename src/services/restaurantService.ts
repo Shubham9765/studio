@@ -5,6 +5,18 @@ import type { Restaurant, MenuItem, Order } from '@/lib/types';
 import { MOCK_RESTAURANTS } from '@/lib/seed';
 import type { CartItem } from '@/hooks/use-cart';
 
+async function sendNotification(userId: string, title: string, body: string, url: string) {
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    const fcmToken = userDoc.data()?.fcmToken;
+
+    if (fcmToken) {
+        // This would typically be a call to a server-side function (e.g., Firebase Cloud Function)
+        // that sends the push notification. For this project, we will log it.
+        console.log(`Sending notification to ${userId} with token ${fcmToken}`);
+        console.log(`Title: ${title}, Body: ${body}, URL: ${url}`);
+    }
+}
+
 export async function getRestaurants(): Promise<Restaurant[]> {
   const q = query(collection(db, 'restaurants'), where('status', '==', 'approved'));
   const querySnapshot = await getDocs(q);
@@ -81,6 +93,14 @@ export async function createOrder(
   };
 
   const docRef = await addDoc(ordersCollection, newOrder);
+  
+  // Send notification to restaurant owner
+  if(restaurant.ownerId) {
+    const title = 'New Order Received!';
+    const body = `You have a new order from ${customerName} for a total of $${total.toFixed(2)}`;
+    await sendNotification(restaurant.ownerId, title, body, '/owner/orders');
+  }
+
   return docRef.id;
 }
 

@@ -3,11 +3,9 @@
 
 import { Header } from '@/components/header';
 import { RestaurantCard } from '@/components/restaurant-card';
-import { useTrendingRestaurants } from '@/hooks/use-trending-restaurants';
 import type { Restaurant } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, ChefHat, Search, Sparkles } from 'lucide-react';
+import { ChefHat, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getRestaurants } from '@/services/restaurantService';
 import { Button } from '@/components/ui/button';
@@ -16,15 +14,15 @@ import { useRouter } from 'next/navigation';
 
 function LoadingSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="flex flex-col space-y-3">
-          <Skeleton className="h-[220px] w-full rounded-xl" />
-          <div className="space-y-2 p-2">
-            <Skeleton className="h-6 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+      {Array.from({ length: 8 }).map((_, i) => (
+         <div key={i} className="flex flex-col space-y-3">
+            <Skeleton className="h-[220px] w-full rounded-xl" />
+            <div className="space-y-2 p-2">
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
           </div>
-        </div>
       ))}
     </div>
   );
@@ -32,17 +30,16 @@ function LoadingSkeleton() {
 
 export function HomePage() {
   const router = useRouter();
-  const { data: trendingRestaurants, loading: trendingLoading, error: trendingError } = useTrendingRestaurants();
   const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
-  const [allRestaurantsLoading, setAllRestaurantsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchRestaurants = async () => {
-      setAllRestaurantsLoading(true);
+      setLoading(true);
       const restaurants = await getRestaurants();
       setAllRestaurants(restaurants);
-      setAllRestaurantsLoading(false);
+      setLoading(false);
     };
     fetchRestaurants();
   }, []);
@@ -81,47 +78,13 @@ export function HomePage() {
             </form>
         </section>
 
-        <section className="mb-12">
-          <div className="flex items-center gap-3 mb-6">
-            <Sparkles className="h-8 w-8 text-accent" />
-            <h2 className="text-3xl font-bold font-headline">AI Recommended</h2>
-          </div>
-          {trendingLoading && <LoadingSkeleton />}
-          {trendingError && (
-             <Alert variant="destructive">
-               <AlertTriangle className="h-4 w-4" />
-               <AlertTitle>Error Fetching Recommendations</AlertTitle>
-               <AlertDescription>
-                 Could not load trending restaurants. Please try again later.
-               </AlertDescription>
-             </Alert>
-          )}
-          {trendingRestaurants && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {trendingRestaurants.map(restaurant => (
-                <RestaurantCard key={restaurant.id} restaurant={restaurant} />
-              ))}
-            </div>
-          )}
-        </section>
-
         <section>
           <div className="flex items-center gap-3 mb-6">
              <ChefHat className="h-8 w-8 text-primary" />
              <h2 className="text-3xl font-bold font-headline">All Restaurants</h2>
           </div>
-          {allRestaurantsLoading ? (
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {Array.from({ length: 8 }).map((_, i) => (
-                 <div key={i} className="flex flex-col space-y-3">
-                    <Skeleton className="h-[220px] w-full rounded-xl" />
-                    <div className="space-y-2 p-2">
-                      <Skeleton className="h-6 w-3/4" />
-                      <Skeleton className="h-4 w-1/2" />
-                    </div>
-                  </div>
-              ))}
-            </div>
+          {loading ? (
+            <LoadingSkeleton />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {allRestaurants.map(restaurant => (
