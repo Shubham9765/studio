@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
 
 
@@ -34,7 +34,7 @@ function RatingDialog({ order, onRatingSuccess }: { order: Order, onRatingSucces
     const handleSubmitRating = async () => {
         setIsSubmitting(true);
         try {
-            await rateRestaurant(order.restaurantId, rating);
+            await rateRestaurant(order.id, order.restaurantId, rating);
             toast({ title: 'Rating Submitted!', description: `You rated ${order.restaurantName} ${rating} stars.` });
             onRatingSuccess(order.id);
             setIsOpen(false);
@@ -50,7 +50,7 @@ function RatingDialog({ order, onRatingSuccess }: { order: Order, onRatingSucces
             <DialogTrigger asChild>
                 <Button size="sm" variant="outline" disabled={!!order.ratingGiven}>
                     <Star className="mr-2 h-4 w-4" />
-                    {order.ratingGiven ? `You rated ${order.ratingGiven}` : 'Rate Restaurant'}
+                    {order.ratingGiven ? `Rated` : 'Rate Restaurant'}
                 </Button>
             </DialogTrigger>
             <DialogContent>
@@ -60,7 +60,7 @@ function RatingDialog({ order, onRatingSuccess }: { order: Order, onRatingSucces
                 </DialogHeader>
                 <div className="py-8">
                     <div className="flex justify-center items-center gap-4 mb-4">
-                        <span className="text-4xl font-bold">{rating}</span>
+                        <span className="text-4xl font-bold">{rating.toFixed(1)}</span>
                         <Star className="h-8 w-8 text-amber-400 fill-amber-400" />
                     </div>
                     <Slider
@@ -72,9 +72,11 @@ function RatingDialog({ order, onRatingSuccess }: { order: Order, onRatingSucces
                         onValueChange={(value) => setRating(value[0])}
                     />
                 </div>
-                <Button onClick={handleSubmitRating} disabled={isSubmitting}>
-                    {isSubmitting ? 'Submitting...' : 'Submit Rating'}
-                </Button>
+                 <DialogFooter>
+                    <Button onClick={handleSubmitRating} disabled={isSubmitting}>
+                        {isSubmitting ? 'Submitting...' : 'Submit Rating'}
+                    </Button>
+                 </DialogFooter>
             </DialogContent>
         </Dialog>
     )
@@ -113,9 +115,8 @@ export default function OrderHistoryPage() {
     }, [user, authLoading, router]);
     
     const handleRatingSuccess = (orderId: string) => {
-        // Optimistically update the UI to show the rating has been given
         setOrders(prevOrders => prevOrders.map(o => 
-            o.id === orderId ? { ...o, ratingGiven: true } : o // We can just mark it as given
+            o.id === orderId ? { ...o, ratingGiven: true } : o
         ));
     }
 

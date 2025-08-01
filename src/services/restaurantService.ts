@@ -107,15 +107,11 @@ export async function createOrder(
 
 export async function getOrdersByCustomerId(customerId: string): Promise<Order[]> {
     const ordersRef = collection(db, 'orders');
-    // Using a composite query with orderBy on a different field requires a composite index.
-    // Removing orderBy to fix the issue without needing to create an index in Firestore.
-    // Sorting can be done client-side if needed.
     const q = query(ordersRef, where('customerId', '==', customerId));
     const snapshot = await getDocs(q);
     if (snapshot.empty) {
         return [];
     }
-    // Sort by date on the client-side
     const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
     return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
 }
@@ -182,7 +178,6 @@ export async function getTopRatedMenuItems(): Promise<MenuItem[]> {
 
     const allItems = snapshot.docs.map(doc => ({...doc.data(), id: doc.id} as MenuItem));
     
-    // Sort by rating client-side and take the top 10
     return allItems
         .filter(item => item.isAvailable)
         .sort((a, b) => (b.rating || 0) - (a.rating || 0))
@@ -190,14 +185,22 @@ export async function getTopRatedMenuItems(): Promise<MenuItem[]> {
 }
 
 
-export async function rateRestaurant(restaurantId: string, newRating: number): Promise<void> {
+export async function rateRestaurant(orderId: string, restaurantId: string, newRating: number): Promise<void> {
     const restaurantRef = doc(db, 'restaurants', restaurantId);
+    const orderRef = doc(db, 'orders', orderId);
 
     try {
         await runTransaction(db, async (transaction) => {
             const restaurantDoc = await transaction.get(restaurantRef);
             if (!restaurantDoc.exists()) {
                 throw "Restaurant not found!";
+            }
+             const orderDoc = await transaction.get(orderRef);
+            if (!orderDoc.exists()) {
+                throw "Order not found!";
+            }
+            if (orderDoc.data().ratingGiven) {
+                throw "This order has already been rated.";
             }
             
             const data = restaurantDoc.data();
@@ -211,6 +214,8 @@ export async function rateRestaurant(restaurantId: string, newRating: number): P
                 rating: updatedRating,
                 reviewCount: newReviewCount
             });
+
+            transaction.update(orderRef, { ratingGiven: true });
         });
     } catch (e) {
         console.error("Transaction failed: ", e);
