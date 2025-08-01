@@ -60,6 +60,12 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
+    if (!loading && !user) {
+        router.push('/');
+    }
+  }, [loading, user, router]);
+
+  useEffect(() => {
     if (user) {
       profileForm.reset({ displayName: user.displayName || '' });
     }
@@ -73,11 +79,6 @@ export default function ProfilePage() {
     }
   }, [editingAddress, addressForm]);
   
-  if (!loading && !user) {
-      router.push('/');
-      return null;
-  }
-
   const onProfileSubmit = async (data: ProfileFormValues) => {
     if (!user) return;
     setIsSubmitting(true);
@@ -138,6 +139,40 @@ export default function ProfilePage() {
       setIsAddressFormOpen(true);
   }
 
+  if (loading || !user) {
+    return (
+        <div className="min-h-screen bg-background">
+         <Header />
+            <main className="container py-8">
+                <Skeleton className="h-8 w-1/3 mb-8" />
+                <div className="grid gap-12 md:grid-cols-2">
+                   <Card>
+                        <CardHeader>
+                            <CardTitle><Skeleton className="h-6 w-1/2" /></CardTitle>
+                            <CardDescription><Skeleton className="h-4 w-3/4" /></CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                           <div className="space-y-4"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-24" /></div>
+                        </CardContent>
+                   </Card>
+                   <Card>
+                         <CardHeader>
+                            <CardTitle><Skeleton className="h-6 w-1/2" /></CardTitle>
+                            <CardDescription><Skeleton className="h-4 w-3/4" /></CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Skeleton className="h-20 w-full" />
+                        </CardContent>
+                         <CardFooter>
+                            <Skeleton className="h-10 w-36" />
+                         </CardFooter>
+                   </Card>
+                </div>
+            </main>
+        </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -150,30 +185,24 @@ export default function ProfilePage() {
                 <CardDescription>Manage your personal details.</CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ? (
-                    <div className="space-y-4"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-24" /></div>
-                ) : user ? (
-                    <Form {...profileForm}>
-                        <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-6">
-                             <FormField
-                                control={profileForm.control}
-                                name="displayName"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Display Name</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Your full name" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Name'}</Button>
-                        </form>
-                    </Form>
-                ) : (
-                    <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>Could not load user profile.</AlertDescription></Alert>
-                )}
+                <Form {...profileForm}>
+                    <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-6">
+                         <FormField
+                            control={profileForm.control}
+                            name="displayName"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Display Name</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Your full name" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Name'}</Button>
+                    </form>
+                </Form>
               </CardContent>
             </Card>
 
@@ -183,9 +212,7 @@ export default function ProfilePage() {
                     <CardDescription>Manage your saved addresses for faster checkout.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                     {loading ? (
-                        Array.from({length: 2}).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
-                     ) : user?.addresses && user.addresses.length > 0 ? (
+                     {user?.addresses && user.addresses.length > 0 ? (
                         user.addresses.map(addr => (
                             <div key={addr.id} className="flex items-start justify-between rounded-lg border p-4">
                                 <div className="flex items-start gap-4">
@@ -249,5 +276,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    
