@@ -23,7 +23,8 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
         upi: true,
         upiId: 'village.pizza@upi',
         upiQrCodeUrl: 'https://placehold.co/200x200.png',
-      }
+      },
+      reviewCount: 150,
     },
     {
       id: '2',
@@ -39,7 +40,8 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
        paymentMethods: {
         cash: true,
         upi: false,
-      }
+      },
+      reviewCount: 230,
     },
     {
       id: '3',
@@ -57,7 +59,8 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
         upi: true,
         upiId: 'curry.leaf@upi',
         upiQrCodeUrl: 'https://placehold.co/200x200.png',
-      }
+      },
+      reviewCount: 310,
     },
     {
       id: '4',
@@ -73,7 +76,8 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
        paymentMethods: {
         cash: true,
         upi: false,
-      }
+      },
+       reviewCount: 180,
     },
     {
       id: '5',
@@ -89,7 +93,8 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
        paymentMethods: {
         cash: true,
         upi: false,
-      }
+      },
+      reviewCount: 450,
     },
     {
       id: '6',
@@ -106,7 +111,8 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
        paymentMethods: {
         cash: true,
         upi: false,
-      }
+      },
+       reviewCount: 95,
     },
     {
       id: '7',
@@ -122,7 +128,8 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
        paymentMethods: {
         cash: true,
         upi: false,
-      }
+      },
+       reviewCount: 120,
     },
     {
       id: '8',
@@ -138,6 +145,7 @@ export const MOCK_RESTAURANTS: Restaurant[] = [
        paymentMethods: {
         cash: true,
         upi: false,
-      }
+      },
+       reviewCount: 160,
     },
   ];

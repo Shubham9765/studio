@@ -1,6 +1,6 @@
 
 import { db } from './firebase';
-import { collection, getDocs, doc, setDoc, query, where, getDoc, addDoc, serverTimestamp, orderBy, collectionGroup } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, query, where, getDoc, addDoc, serverTimestamp, orderBy, collectionGroup, writeBatch, runTransaction, updateDoc, limit } from 'firebase/firestore';
 import type { Restaurant, MenuItem, Order } from '@/lib/types';
 import { MOCK_RESTAURANTS } from '@/lib/seed';
 import type { CartItem } from '@/hooks/use-cart';
@@ -158,4 +158,45 @@ export async function searchRestaurantsAndMenuItems(searchTerm: string): Promise
     }
 
     return { restaurants: matchingRestaurants, menuItems: matchingMenuItems };
+}
+
+export async function getTopRatedMenuItems(): Promise<MenuItem[]> {
+    const menuItemsQuery = query(
+        collectionGroup(db, 'menuItems'),
+        orderBy('rating', 'desc'),
+        limit(10)
+    );
+    const snapshot = await getDocs(menuItemsQuery);
+    if (snapshot.empty) {
+        return [];
+    }
+    return snapshot.docs.map(doc => ({...doc.data(), id: doc.id} as MenuItem));
+}
+
+export async function rateRestaurant(restaurantId: string, newRating: number): Promise<void> {
+    const restaurantRef = doc(db, 'restaurants', restaurantId);
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const restaurantDoc = await transaction.get(restaurantRef);
+            if (!restaurantDoc.exists()) {
+                throw "Restaurant not found!";
+            }
+            
+            const data = restaurantDoc.data();
+            const currentRating = data.rating || 0;
+            const reviewCount = data.reviewCount || 0;
+
+            const newReviewCount = reviewCount + 1;
+            const updatedRating = ((currentRating * reviewCount) + newRating) / newReviewCount;
+
+            transaction.update(restaurantRef, {
+                rating: updatedRating,
+                reviewCount: newReviewCount
+            });
+        });
+    } catch (e) {
+        console.error("Transaction failed: ", e);
+        throw e;
+    }
 }

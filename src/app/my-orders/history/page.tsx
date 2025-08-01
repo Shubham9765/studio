@@ -4,11 +4,11 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import type { Order } from '@/lib/types';
-import { getOrdersByCustomerId } from '@/services/restaurantService';
+import { getOrdersByCustomerId, rateRestaurant } from '@/services/restaurantService';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, History, Copy, PartyPopper } from 'lucide-react';
+import { AlertTriangle, History, Copy, PartyPopper, Star } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Accordion,
@@ -21,6 +21,65 @@ import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Slider } from '@/components/ui/slider';
+
+
+function RatingDialog({ order, onRatingSuccess }: { order: Order, onRatingSuccess: (orderId: string) => void }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [rating, setRating] = useState(5);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { toast } = useToast();
+
+    const handleSubmitRating = async () => {
+        setIsSubmitting(true);
+        try {
+            await rateRestaurant(order.restaurantId, rating);
+            toast({ title: 'Rating Submitted!', description: `You rated ${order.restaurantName} ${rating} stars.` });
+            onRatingSuccess(order.id);
+            setIsOpen(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Rating failed', description: error.message });
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm" variant="outline" disabled={!!order.ratingGiven}>
+                    <Star className="mr-2 h-4 w-4" />
+                    {order.ratingGiven ? `You rated ${order.ratingGiven}` : 'Rate Restaurant'}
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Rate your experience at {order.restaurantName}</DialogTitle>
+                    <DialogDescription>Your feedback helps other customers.</DialogDescription>
+                </DialogHeader>
+                <div className="py-8">
+                    <div className="flex justify-center items-center gap-4 mb-4">
+                        <span className="text-4xl font-bold">{rating}</span>
+                        <Star className="h-8 w-8 text-amber-400 fill-amber-400" />
+                    </div>
+                    <Slider
+                        defaultValue={[5]}
+                        value={[rating]}
+                        max={5}
+                        min={1}
+                        step={0.5}
+                        onValueChange={(value) => setRating(value[0])}
+                    />
+                </div>
+                <Button onClick={handleSubmitRating} disabled={isSubmitting}>
+                    {isSubmitting ? 'Submitting...' : 'Submit Rating'}
+                </Button>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 
 export default function OrderHistoryPage() {
     const { user, loading: authLoading } = useAuth();
@@ -30,28 +89,35 @@ export default function OrderHistoryPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+     const fetchOrders = async () => {
+        if (!user) return;
+        try {
+            setLoading(true);
+            const userOrders = await getOrdersByCustomerId(user.uid);
+            const historicalOrders = userOrders.filter(o => ['delivered', 'cancelled'].includes(o.status));
+            setOrders(historicalOrders);
+        } catch (e: any) {
+            setError('Failed to fetch your order history.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (authLoading) return;
         if (!user) {
             router.push('/');
             return;
         }
-
-        const fetchOrders = async () => {
-            try {
-                setLoading(true);
-                const userOrders = await getOrdersByCustomerId(user.uid);
-                const historicalOrders = userOrders.filter(o => ['delivered', 'cancelled'].includes(o.status));
-                setOrders(historicalOrders);
-            } catch (e: any) {
-                setError('Failed to fetch your order history.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchOrders();
     }, [user, authLoading, router]);
+    
+    const handleRatingSuccess = (orderId: string) => {
+        // Optimistically update the UI to show the rating has been given
+        setOrders(prevOrders => prevOrders.map(o => 
+            o.id === orderId ? { ...o, ratingGiven: true } : o // We can just mark it as given
+        ));
+    }
 
     const handleCopyId = (id: string) => {
         navigator.clipboard.writeText(id);
@@ -120,11 +186,16 @@ export default function OrderHistoryPage() {
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="p-6 pt-0">
-                                         <div className="mt-6">
-                                             <div className="flex items-center gap-2 text-muted-foreground">
-                                                <PartyPopper className="h-5 w-5 text-green-500" />
+                                         <div className="mt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                                             <div className="flex items-center gap-2 text-muted-foreground mb-4 sm:mb-0">
+                                                {order.status === 'delivered' && <PartyPopper className="h-5 w-5 text-green-500" />}
                                                 <p>This order was completed on {format(order.createdAt.toDate(), 'PPP')}.</p>
                                              </div>
+                                             {order.status === 'delivered' && (
+                                                <RatingDialog order={order} onRatingSuccess={handleRatingSuccess} />
+                                             )}
+                                         </div>
+                                        <div className="mt-4">
                                             <h4 className="font-semibold mb-2 mt-4">Order Summary</h4>
                                              <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
                                                 {order.items.map(item => (

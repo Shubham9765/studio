@@ -27,6 +27,7 @@ export interface Restaurant {
     upiQrCodeUrl?: string;
   };
   deliveryBoys?: DeliveryBoy[];
+  reviewCount?: number;
 }
 
 export interface MenuItem {
@@ -38,6 +39,7 @@ export interface MenuItem {
   category: string;
   imageUrl?: string;
   isAvailable: boolean;
+  rating?: number;
 }
 
 export interface Order {
@@ -61,4 +63,5 @@ export interface Order {
         id: string;
         name: string;
     };
+    ratingGiven?: boolean;
 }
