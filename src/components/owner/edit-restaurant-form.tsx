@@ -21,6 +21,7 @@ import type { Restaurant } from '@/lib/types';
 import { Switch } from '../ui/switch';
 import { updateRestaurant } from '@/services/ownerService';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { ScrollArea } from '../ui/scroll-area';
 
 export const EditRestaurantSchema = z.object({
   name: z.string().min(3, { message: 'Restaurant name must be at least 3 characters.' }),
@@ -114,173 +115,175 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
             Update your restaurant's information. Click save when you're done.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Restaurant Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., The Spicy Spoon" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="image"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Image URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://example.com/your-restaurant.jpg" {...field} />
-                  </FormControl>
-                   <FormDescription>
-                    The main image for your restaurant shown to customers.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="cuisine"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cuisine Type</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Indian, Italian, Mexican" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="deliveryTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estimated Delivery Time</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., 30-45 minutes" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="deliveryCharge"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Delivery Charge ($)</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.01" placeholder="e.g., 2.50" {...field} />
-                  </FormControl>
-                   <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
+        <ScrollArea className="max-h-[70vh] pr-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
                 control={form.control}
-                name="paymentMethodOption"
+                name="name"
                 render={({ field }) => (
-                    <FormItem className="space-y-3">
-                    <FormLabel>Accepted Payment Methods</FormLabel>
+                  <FormItem>
+                    <FormLabel>Restaurant Name</FormLabel>
                     <FormControl>
-                        <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="flex flex-col space-y-1"
-                        >
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                            <RadioGroupItem value="cash" />
-                            </FormControl>
-                            <FormLabel className="font-normal">Cash Only</FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                            <RadioGroupItem value="upi" />
-                            </FormControl>
-                            <FormLabel className="font-normal">UPI Only</FormLabel>
-                        </FormItem>
-                         <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                            <RadioGroupItem value="both" />
-                            </FormControl>
-                            <FormLabel className="font-normal">Both Cash & UPI</FormLabel>
-                        </FormItem>
-                        </RadioGroup>
+                      <Input placeholder="e.g., The Spicy Spoon" {...field} />
                     </FormControl>
                     <FormMessage />
-                    </FormItem>
+                  </FormItem>
                 )}
-             />
+              />
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Image URL</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://example.com/your-restaurant.jpg" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      The main image for your restaurant shown to customers.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="cuisine"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cuisine Type</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Indian, Italian, Mexican" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="deliveryTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estimated Delivery Time</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., 30-45 minutes" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="deliveryCharge"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Delivery Charge ($)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" placeholder="e.g., 2.50" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                  control={form.control}
+                  name="paymentMethodOption"
+                  render={({ field }) => (
+                      <FormItem className="space-y-3">
+                      <FormLabel>Accepted Payment Methods</FormLabel>
+                      <FormControl>
+                          <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex flex-col space-y-1"
+                          >
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                              <RadioGroupItem value="cash" />
+                              </FormControl>
+                              <FormLabel className="font-normal">Cash Only</FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                              <RadioGroupItem value="upi" />
+                              </FormControl>
+                              <FormLabel className="font-normal">UPI Only</FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                              <RadioGroupItem value="both" />
+                              </FormControl>
+                              <FormLabel className="font-normal">Both Cash & UPI</FormLabel>
+                          </FormItem>
+                          </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                      </FormItem>
+                  )}
+              />
 
-            {(paymentMethodOption === 'upi' || paymentMethodOption === 'both') && (
-                <div className="space-y-4 rounded-md border p-4">
-                    <FormField
-                    control={form.control}
-                    name="upiId"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>UPI ID</FormLabel>
-                        <FormControl>
-                            <Input placeholder="your-upi-id@bank" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
-                    control={form.control}
-                    name="upiQrCodeUrl"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>UPI QR Code Image URL</FormLabel>
-                        <FormControl>
-                            <Input placeholder="https://example.com/qr.png" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                </div>
-            )}
-
-
-            <FormField
-              control={form.control}
-              name="isOpen"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Open for Orders</FormLabel>
-                     <p className="text-sm text-muted-foreground">
-                        Controls whether customers can place orders.
-                     </p>
+              {(paymentMethodOption === 'upi' || paymentMethodOption === 'both') && (
+                  <div className="space-y-4 rounded-md border p-4">
+                      <FormField
+                      control={form.control}
+                      name="upiId"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel>UPI ID</FormLabel>
+                          <FormControl>
+                              <Input placeholder="your-upi-id@bank" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
+                      <FormField
+                      control={form.control}
+                      name="upiQrCodeUrl"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel>UPI QR Code Image URL</FormLabel>
+                          <FormControl>
+                              <Input placeholder="https://example.com/qr.png" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
                   </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
               )}
-            />
-            <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
-                </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+
+
+              <FormField
+                control={form.control}
+                name="isOpen"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Open for Orders</FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                          Controls whether customers can place orders.
+                      </p>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+               <DialogFooter className="sticky bottom-0 bg-background py-4">
+                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Saving...' : 'Save Changes'}
+                  </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
