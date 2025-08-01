@@ -109,7 +109,7 @@ const generateSalesReportFlow = ai.defineFlow(
         topItems,
     });
 
-    return llmResponse.output()!;
+    return llmResponse.output!;
   }
 );
 
