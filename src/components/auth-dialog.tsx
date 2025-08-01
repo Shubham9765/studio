@@ -43,7 +43,7 @@ const signUpSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
   phone: z.string().min(10, { message: 'Please enter a valid phone number.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
-  role: z.enum(['customer', 'owner']),
+  role: z.enum(['customer', 'owner', 'delivery']),
 });
 
 const loginSchema = z.object({
@@ -100,6 +100,7 @@ export function AuthDialog(props: Props) {
         await setDoc(userRef, {
           uid: user.uid,
           username: values.username,
+          displayName: values.username,
           email: user.email,
           phone: values.phone,
           role: values.role,
@@ -289,7 +290,7 @@ export function AuthDialog(props: Props) {
                                     <RadioGroup
                                     onValueChange={field.onChange}
                                     defaultValue={field.value}
-                                    className="flex items-center space-x-4"
+                                    className="flex items-center space-x-1 sm:space-x-4"
                                     >
                                     <FormItem className="flex items-center space-x-2 space-y-0">
                                         <FormControl>
@@ -301,7 +302,13 @@ export function AuthDialog(props: Props) {
                                         <FormControl>
                                         <RadioGroupItem value="owner" />
                                         </FormControl>
-                                        <FormLabel className="font-normal">Restaurant Owner</FormLabel>
+                                        <FormLabel className="font-normal">Owner</FormLabel>
+                                    </FormItem>
+                                     <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="delivery" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">Delivery</FormLabel>
                                     </FormItem>
                                     </RadioGroup>
                                 </FormControl>

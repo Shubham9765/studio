@@ -1,8 +1,7 @@
 
-
 import { db } from './firebase';
-import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, getDoc, orderBy } from 'firebase/firestore';
-import type { Restaurant, MenuItem, Order } from '@/lib/types';
+import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, getDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import type { Restaurant, MenuItem, Order, DeliveryBoy } from '@/lib/types';
 import type { z } from 'zod';
 import type { RestaurantSchema } from '@/components/owner/restaurant-registration-form';
 import type { EditRestaurantSchema } from '@/components/owner/edit-restaurant-form';
@@ -22,7 +21,6 @@ export async function createRestaurant(ownerId: string, data: z.infer<typeof Res
         throw new Error('An owner ID is required to create a restaurant.');
     }
     
-    // Check if owner already has a restaurant
     const existingRestaurantQuery = query(collection(db, 'restaurants'), where('ownerId', '==', ownerId), limit(1));
     const existingRestaurantSnapshot = await getDocs(existingRestaurantQuery);
     if (!existingRestaurantSnapshot.empty) {
@@ -41,7 +39,8 @@ export async function createRestaurant(ownerId: string, data: z.infer<typeof Res
         paymentMethods: {
             cash: true,
             upi: false,
-        }
+        },
+        deliveryBoys: [],
     };
 
     const docRef = await addDoc(collection(db, "restaurants"), {
@@ -129,7 +128,7 @@ export async function addMenuItem(restaurantId: string, data: z.infer<typeof Men
     const docRef = await addDoc(menuItemsRef, {
         ...data,
         restaurantId,
-        isAvailable: data.isAvailable, // Ensure this is passed
+        isAvailable: data.isAvailable, 
         createdAt: serverTimestamp(),
     });
     return docRef.id;
@@ -172,7 +171,6 @@ export async function getOrdersForRestaurant(restaurantId: string): Promise<Orde
         return [];
     }
     const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
-    // Sort by date on the client-side
     return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
 }
 
@@ -181,8 +179,58 @@ export async function updateOrderPaymentStatus(orderId: string, paymentStatus: '
     await updateDoc(orderRef, { paymentStatus });
 }
 
-
 export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
     const orderRef = doc(db, 'orders', orderId);
     await updateDoc(orderRef, { status });
+}
+
+// Delivery Boy Functions
+export async function addDeliveryBoyToRestaurant(restaurantId: string, email: string): Promise<void> {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('email', '==', email), where('role', '==', 'delivery'), limit(1));
+    const userSnapshot = await getDocs(q);
+
+    if (userSnapshot.empty) {
+        throw new Error('No delivery person found with this email.');
+    }
+
+    const userDoc = userSnapshot.docs[0];
+    const userData = userDoc.data();
+    
+    const newDeliveryBoy: DeliveryBoy = {
+        id: userDoc.id,
+        name: userData.displayName || userData.username,
+        email: userData.email,
+        phone: userData.phone,
+    };
+
+    const restaurantRef = doc(db, 'restaurants', restaurantId);
+    await updateDoc(restaurantRef, {
+        deliveryBoys: arrayUnion(newDeliveryBoy)
+    });
+}
+
+export async function removeDeliveryBoyFromRestaurant(restaurantId: string, deliveryBoy: DeliveryBoy): Promise<void> {
+    const restaurantRef = doc(db, 'restaurants', restaurantId);
+    await updateDoc(restaurantRef, {
+        deliveryBoys: arrayRemove(deliveryBoy)
+    });
+}
+
+
+export async function assignDeliveryBoy(orderId: string, deliveryBoy: {id: string, name: string}): Promise<void> {
+    const orderRef = doc(db, 'orders', orderId);
+    await updateDoc(orderRef, { deliveryBoy });
+}
+
+
+export async function getOrdersForDeliveryBoy(deliveryBoyId: string): Promise<Order[]> {
+    const ordersRef = collection(db, 'orders');
+    const q = query(ordersRef, where('deliveryBoy.id', '==', deliveryBoyId));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        return [];
+    }
+    const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+    return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
 }

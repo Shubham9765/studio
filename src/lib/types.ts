@@ -1,6 +1,13 @@
 
 import type { Timestamp } from 'firebase/firestore';
 
+export interface DeliveryBoy {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+}
+
 export interface Restaurant {
   id: string;
   name: string;
@@ -19,6 +26,7 @@ export interface Restaurant {
     upiId?: string;
     upiQrCodeUrl?: string;
   };
+  deliveryBoys?: DeliveryBoy[];
 }
 
 export interface MenuItem {

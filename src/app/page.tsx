@@ -1,9 +1,11 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
 import { HomePage } from '@/components/home-page';
 import AdminDashboard from '@/components/admin/admin-dashboard';
 import OwnerDashboard from '@/components/owner/owner-dashboard';
+import DeliveryDashboard from '@/components/delivery/delivery-dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
@@ -31,6 +33,10 @@ export default function Home() {
 
   if (user?.role === 'owner') {
     return <OwnerDashboard />;
+  }
+  
+  if (user?.role === 'delivery') {
+    return <DeliveryDashboard />;
   }
 
   return <HomePage />;

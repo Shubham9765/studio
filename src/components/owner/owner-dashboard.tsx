@@ -3,7 +3,7 @@
 
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Utensils, Truck, Star, ClipboardList, Edit, MenuSquare, BookOpen, ShieldAlert, BadgeCheck, Clock, ShieldX } from 'lucide-react';
+import { Utensils, Truck, Star, ClipboardList, Edit, MenuSquare, BookOpen, ShieldAlert, BadgeCheck, Clock, ShieldX, Bike } from 'lucide-react';
 import { useOwnerDashboardData } from '@/hooks/use-owner-dashboard-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -171,6 +171,7 @@ export default function OwnerDashboard() {
                 <CardContent className="flex flex-col sm:flex-row gap-4">
                     <Button asChild><Link href="/owner/menu"><MenuSquare />Manage Menu</Link></Button>
                     <Button asChild><Link href="/owner/orders"><BookOpen />View Orders</Link></Button>
+                    <Button asChild><Link href="/owner/delivery"><Bike />Manage Delivery</Link></Button>
                     <Button onClick={() => setIsEditFormOpen(true)}><Edit />Edit Restaurant Profile</Button>
                 </CardContent>
             </Card>

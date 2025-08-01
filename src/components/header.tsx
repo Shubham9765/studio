@@ -1,5 +1,5 @@
 
-import { UtensilsCrossed, Search, User, Shield, Crown, Package, UserCog } from 'lucide-react';
+import { UtensilsCrossed, Search, User, Shield, Crown, Package, UserCog, Bike } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/use-auth';
@@ -38,6 +38,8 @@ export function Header() {
         return <Crown className="w-4 h-4 text-accent" />;
       case 'owner':
         return <Shield className="w-4 h-4 text-primary" />;
+      case 'delivery':
+        return <Bike className="w-4 h-4 text-green-500" />;
       default:
         return <User className="w-4 h-4 text-muted-foreground" />;
     }
@@ -89,10 +91,12 @@ export function Header() {
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => router.push('/profile')}>
-                      <UserCog className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </DropdownMenuItem>
+                    {user.role !== 'delivery' && (
+                        <DropdownMenuItem onClick={() => router.push('/profile')}>
+                          <UserCog className="mr-2 h-4 w-4" />
+                          <span>Profile</span>
+                        </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={signOut}>
                       Log out

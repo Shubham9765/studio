@@ -25,7 +25,7 @@ export interface Address {
 }
 
 export interface AppUser extends User {
-  role?: 'customer' | 'owner' | 'admin';
+  role?: 'customer' | 'owner' | 'admin' | 'delivery';
   username?: string;
   phone?: string;
   status?: 'active' | 'inactive';
@@ -118,5 +118,3 @@ export function useAuth() {
   }
   return context;
 }
-
-    
