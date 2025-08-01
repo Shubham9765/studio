@@ -9,12 +9,13 @@ import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Bike, Check, PackageCheck, User, Phone, MapPin } from 'lucide-react';
+import { AlertTriangle, Bike, Check, PackageCheck, User, Phone, MapPin, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
+import Link from 'next/link';
 
 export default function DeliveryDashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -28,8 +29,9 @@ export default function DeliveryDashboard() {
     if (user?.uid) {
       setLoading(true);
       try {
-        const assignedOrders = await getOrdersForDeliveryBoy(user.uid);
-        setOrders(assignedOrders);
+        const allOrders = await getOrdersForDeliveryBoy(user.uid);
+        const activeOrders = allOrders.filter(o => o.status === 'out-for-delivery');
+        setOrders(activeOrders);
       } catch (e: any) {
         setError('Failed to fetch assigned orders.');
       } finally {
@@ -91,7 +93,15 @@ export default function DeliveryDashboard() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container py-8">
-        <h1 className="text-3xl font-bold mb-8">My Deliveries</h1>
+        <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold">My Active Deliveries</h1>
+            <Button asChild variant="outline">
+                <Link href="/delivery/history">
+                    <History className="mr-2 h-4 w-4" />
+                    View History
+                </Link>
+            </Button>
+        </div>
         {orders.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {orders.map(order => (
@@ -99,7 +109,7 @@ export default function DeliveryDashboard() {
                 <CardHeader>
                   <CardTitle className="flex justify-between items-center">
                     <span>Order #{order.id.substring(0, 6)}...</span>
-                    <Badge variant={order.status === 'out-for-delivery' ? 'default' : 'secondary'} className="capitalize">{order.status.replace('-', ' ')}</Badge>
+                    <Badge variant="default" className="capitalize">{order.status.replace('-', ' ')}</Badge>
                   </CardTitle>
                   <CardDescription>
                     From: {order.restaurantName}<br/>
@@ -134,12 +144,6 @@ export default function DeliveryDashboard() {
                         >
                             {updatingOrderId === order.id ? 'Updating...' : <><Check className="mr-2 h-4 w-4"/> Mark as Delivered</>}
                         </Button>
-                    )}
-                    {order.status === 'delivered' && (
-                         <div className="flex items-center justify-center gap-2 text-green-600 font-semibold p-2 bg-green-100 rounded-md">
-                            <PackageCheck className="h-5 w-5"/>
-                            <span>Delivery Completed</span>
-                         </div>
                     )}
                 </div>
               </Card>
