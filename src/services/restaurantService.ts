@@ -1,6 +1,6 @@
 
 import { db } from './firebase';
-import { collection, getDocs, doc, setDoc, query, where, getDoc, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, query, where, getDoc, addDoc, serverTimestamp, orderBy, collectionGroup } from 'firebase/firestore';
 import type { Restaurant, MenuItem, Order } from '@/lib/types';
 import { MOCK_RESTAURANTS } from '@/lib/seed';
 import type { CartItem } from '@/hooks/use-cart';
@@ -98,4 +98,44 @@ export async function getOrdersByCustomerId(customerId: string): Promise<Order[]
     // Sort by date on the client-side
     const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
     return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+}
+
+export async function searchRestaurantsAndMenuItems(searchTerm: string): Promise<{ restaurants: Restaurant[], menuItems: MenuItem[] }> {
+    const lowercasedTerm = searchTerm.toLowerCase();
+
+    // Search for restaurants
+    const allRestaurants = await getRestaurants();
+    const matchingRestaurants = allRestaurants.filter(r => 
+        r.name.toLowerCase().includes(lowercasedTerm) ||
+        r.cuisine.toLowerCase().includes(lowercasedTerm)
+    );
+    
+    // Search for menu items
+    const menuItemsQuery = query(collectionGroup(db, 'menuItems'));
+    const menuItemsSnapshot = await getDocs(menuItemsQuery);
+    const allMenuItems = menuItemsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as MenuItem));
+
+    const matchingMenuItems = allMenuItems.filter(item =>
+        item.name.toLowerCase().includes(lowercasedTerm) ||
+        item.description.toLowerCase().includes(lowercasedTerm) ||
+        item.category.toLowerCase().includes(lowercasedTerm)
+    );
+
+    // To avoid duplication, if a menu item's restaurant is already in the matching list, don't add it again.
+    const restaurantIdsFromMenuItems = new Set(matchingMenuItems.map(item => item.restaurantId));
+    const existingRestaurantIds = new Set(matchingRestaurants.map(r => r.id));
+
+    const additionalRestaurantIds: string[] = [];
+    restaurantIdsFromMenuItems.forEach(id => {
+        if (!existingRestaurantIds.has(id)) {
+            additionalRestaurantIds.push(id);
+        }
+    });
+
+    if (additionalRestaurantIds.length > 0) {
+        const additionalRestaurants = allRestaurants.filter(r => additionalRestaurantIds.includes(r.id));
+        matchingRestaurants.push(...additionalRestaurants);
+    }
+
+    return { restaurants: matchingRestaurants, menuItems: matchingMenuItems };
 }

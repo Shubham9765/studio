@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { getRestaurants } from '@/services/restaurantService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useRouter } from 'next/navigation';
 
 function LoadingSkeleton() {
   return (
@@ -30,6 +31,7 @@ function LoadingSkeleton() {
 }
 
 export function HomePage() {
+  const router = useRouter();
   const { data: trendingRestaurants, loading: trendingLoading, error: trendingError } = useTrendingRestaurants();
   const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
   const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
@@ -47,7 +49,16 @@ export function HomePage() {
     fetchRestaurants();
   }, []);
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+    }
+  };
+
   useEffect(() => {
+    // This effect now only filters the "All Restaurants" section on the homepage
+    // The main search action is handled by handleSearch
     const lowercasedFilter = searchTerm.toLowerCase();
     const filtered = allRestaurants.filter(restaurant =>
       restaurant.name.toLowerCase().includes(lowercasedFilter) ||
@@ -55,6 +66,7 @@ export function HomePage() {
     );
     setFilteredRestaurants(filtered);
   }, [searchTerm, allRestaurants]);
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -67,20 +79,20 @@ export function HomePage() {
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
               Get your favorite meals delivered fast, right to your door.
             </p>
-            <div className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">
+            <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">
               <div className="relative flex-1">
                 <Input 
-                  placeholder="Search by restaurant or cuisine..." 
+                  placeholder="Search by restaurant or dish..." 
                   className="h-12 text-lg pl-4 pr-12 rounded-full"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               </div>
-              <Button size="lg" className="h-12 text-lg rounded-full" onClick={() => { /* Could trigger a full page search */ }}>
+              <Button type="submit" size="lg" className="h-12 text-lg rounded-full">
                 Find Food
               </Button>
-            </div>
+            </form>
         </section>
 
         <section className="mb-12">
@@ -136,5 +148,3 @@ export function HomePage() {
     </div>
   );
 }
-
-    
