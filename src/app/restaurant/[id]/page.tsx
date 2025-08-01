@@ -15,16 +15,13 @@ import { Input } from '@/components/ui/input';
 import { usePathname } from 'next/navigation';
 
 
-interface RestaurantPageParams {
-  params: { id: string };
-}
-
 interface GroupedMenuItems {
   [category: string]: MenuItem[];
 }
 
-export default function RestaurantPage({ params }: RestaurantPageParams) {
-  const { id } = params;
+export default function RestaurantPage() {
+  const pathname = usePathname();
+  const id = pathname.split('/').pop() || '';
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
