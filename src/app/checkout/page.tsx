@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useCart } from '@/hooks/use-cart';
@@ -30,8 +30,15 @@ export default function CheckoutPage() {
     const [orderPlaced, setOrderPlaced] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi'>('cash');
     const [transactionId, setTransactionId] = useState('');
-    const [deliveryAddress, setDeliveryAddress] = useState(user?.displayName || '');
-    const [customerPhone, setCustomerPhone] = useState(user?.phone || '');
+    const [deliveryAddress, setDeliveryAddress] = useState('');
+    const [customerPhone, setCustomerPhone] = useState('');
+
+    useEffect(() => {
+        if (user) {
+            setDeliveryAddress(user.address || '');
+            setCustomerPhone(user.phone || '');
+        }
+    }, [user]);
 
     const deliveryFee = restaurant?.deliveryCharge || 0;
     const finalTotal = totalPrice + deliveryFee;

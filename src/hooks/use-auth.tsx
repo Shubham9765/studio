@@ -11,6 +11,7 @@ import {
   useEffect,
   useState,
   ReactNode,
+  useCallback,
 } from 'react';
 import { auth, db } from '@/services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -20,12 +21,14 @@ export interface AppUser extends User {
   username?: string;
   phone?: string;
   status?: 'active' | 'inactive';
+  address?: string;
 }
 
 interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
   signOut: () => void;
+  refreshAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,37 +36,49 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const userRef = doc(db, 'users', user.uid);
+  
+  const fetchUserData = useCallback(async (firebaseUser: User | null): Promise<AppUser | null> => {
+      if (firebaseUser) {
+        const userRef = doc(db, 'users', firebaseUser.uid);
         const docSnap = await getDoc(userRef);
         if (docSnap.exists()) {
           const userData = docSnap.data();
           const appUser: AppUser = {
-            ...user,
-            uid: user.uid,
+            ...firebaseUser,
+            uid: firebaseUser.uid,
             role: userData?.role,
             username: userData?.username,
-            displayName: userData?.username || user.displayName, // Fallback to username
+            displayName: userData?.username || firebaseUser.displayName,
             phone: userData?.phone,
             status: userData?.status || 'active',
+            address: userData?.address || '',
           };
-          setUser(appUser);
+          return appUser;
         } else {
-          // This case might happen if user document creation fails on signup.
-          // Or for existing users before roles were introduced.
-          setUser(user);
+          return firebaseUser;
         }
-      } else {
-        setUser(null);
       }
+      return null;
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setLoading(true);
+      const appUser = await fetchUserData(user);
+      setUser(appUser);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [fetchUserData]);
+  
+  const refreshAuth = useCallback(async () => {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+        const appUser = await fetchUserData(currentUser);
+        setUser(appUser);
+    }
+  }, [fetchUserData]);
 
   const signOut = async () => {
     await firebaseSignOut(auth);
@@ -71,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signOut, refreshAuth }}>
       {children}
     </AuthContext.Provider>
   );

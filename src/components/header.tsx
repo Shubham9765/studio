@@ -1,5 +1,5 @@
 
-import { UtensilsCrossed, Search, User, Shield, Crown, Package } from 'lucide-react';
+import { UtensilsCrossed, Search, User, Shield, Crown, Package, UserCog } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/use-auth';
@@ -16,9 +16,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export function Header() {
   const { user, signOut } = useAuth();
+  const router = useRouter();
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
 
   const getInitials = (name?: string | null) => {
@@ -86,6 +88,11 @@ export function Header() {
                         {user.role && <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'} className="capitalize w-fit">{user.role}</Badge>}
                       </div>
                     </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push('/profile')}>
+                      <UserCog className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={signOut}>
                       Log out
