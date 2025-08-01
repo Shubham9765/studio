@@ -8,9 +8,10 @@ import type { Restaurant, MenuItem } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Star, Clock, Utensils } from 'lucide-react';
+import { AlertTriangle, Star, Clock, Utensils, Search } from 'lucide-react';
 import { MenuItemCard } from '@/components/customer/menu-item-card';
 import { Cart } from '@/components/customer/cart';
+import { Input } from '@/components/ui/input';
 
 
 interface RestaurantPageParams {
@@ -27,6 +28,7 @@ export default function RestaurantPage({ params }: RestaurantPageParams) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,7 +60,12 @@ export default function RestaurantPage({ params }: RestaurantPageParams) {
     fetchData();
   }, [id]);
 
-  const groupedMenuItems = menuItems.reduce((acc, item) => {
+  const filteredMenuItems = menuItems.filter(item => 
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const groupedMenuItems = filteredMenuItems.reduce((acc, item) => {
     const { category } = item;
     if (!acc[category]) {
       acc[category] = [];
@@ -143,6 +150,16 @@ export default function RestaurantPage({ params }: RestaurantPageParams) {
         <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-8">
           {/* Menu Section */}
           <div className="md:col-span-2 lg:col-span-3">
+             <div className="mb-8 relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input 
+                    placeholder="Search menu..." 
+                    className="pl-12 text-base h-12 rounded-full"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+
             {Object.keys(groupedMenuItems).length > 0 ? (
                 Object.entries(groupedMenuItems).map(([category, items]) => (
                     <section key={category} className="mb-12">
@@ -157,8 +174,12 @@ export default function RestaurantPage({ params }: RestaurantPageParams) {
             ) : (
                 <div className="text-center py-16">
                     <Utensils className="mx-auto h-16 w-16 text-muted-foreground" />
-                    <h3 className="mt-4 text-xl font-medium">No Menu Items Found</h3>
-                    <p className="mt-1 text-muted-foreground">This restaurant has not added any menu items yet.</p>
+                    <h3 className="mt-4 text-xl font-medium">
+                        {searchTerm ? 'No items match your search' : 'No Menu Items Found'}
+                    </h3>
+                    <p className="mt-1 text-muted-foreground">
+                        {searchTerm ? 'Try a different search term.' : 'This restaurant has not added any menu items yet.'}
+                    </p>
                 </div>
             )}
           </div>
