@@ -3,12 +3,12 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import type { Order, Restaurant } from '@/lib/types';
+import type { Order, Restaurant, DeliveryBoy } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { getOrdersForRestaurant, getRestaurantByOwnerId, updateOrderPaymentStatus, updateOrderStatus } from '@/services/ownerService';
+import { assignDeliveryBoy, getOrdersForRestaurant, getRestaurantByOwnerId, updateOrderPaymentStatus, updateOrderStatus } from '@/services/ownerService';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, BookOpen, Check, BadgeCent, CircleDollarSign, Printer, User, Phone, MapPin, Package, ChefHat, Bike, PartyPopper } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -22,15 +22,14 @@ import {
 } from "@/components/ui/accordion";
 import { KOT } from '@/components/owner/kot';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-
-const orderStatuses: Order['status'][] = ['pending', 'accepted', 'preparing', 'out-for-delivery', 'delivered', 'cancelled'];
 
 const statusSteps: { status: Order['status'], icon: React.ElementType, label: string }[] = [
     { status: 'accepted', icon: Package, label: 'Accept Order' },
     { status: 'preparing', icon: ChefHat, label: 'Mark as Preparing' },
-    { status: 'out-for-delivery', icon: Bike, label: 'Mark as Out for Delivery' },
-    { status: 'delivered', icon: PartyPopper, label: 'Mark as Delivered' },
+    { status: 'out-for-delivery', icon: Bike, label: 'Out for Delivery' },
+    { status: 'delivered', icon: PartyPopper, label: 'Delivered' },
 ];
 
 function OrderStatusUpdater({ order, onUpdate, isUpdating }: { order: Order, onUpdate: (status: Order['status']) => void, isUpdating: boolean }) {
@@ -54,6 +53,8 @@ function OrderStatusUpdater({ order, onUpdate, isUpdating }: { order: Order, onU
     }
 
     const nextStep = statusSteps[currentStepIndex + 1];
+    
+    const hideNextStepButton = nextStep?.status === 'out-for-delivery' || !nextStep;
 
     return (
         <div className="flex flex-col gap-2">
@@ -66,13 +67,48 @@ function OrderStatusUpdater({ order, onUpdate, isUpdating }: { order: Order, onU
                 ))}
             </div>
              <div className="w-full bg-muted rounded-full h-2.5">
-                <div className="bg-primary h-2.5 rounded-full" style={{ width: `${((currentStepIndex + 1) / statusSteps.length) * 100}%` }}></div>
+                <div className="bg-primary h-2.5 rounded-full" style={{ width: `${((currentStepIndex + 1) / (statusSteps.length)) * 100}%` }}></div>
             </div>
-            {nextStep && (
+            {nextStep && !hideNextStepButton && (
                 <Button onClick={() => onUpdate(nextStep.status)} disabled={isUpdating}>
                     {isUpdating ? 'Updating...' : <><nextStep.icon className="mr-2 h-4 w-4" /> {nextStep.label}</>}
                 </Button>
             )}
+             {order.status === 'delivered' && (
+                <p className="font-semibold text-center py-2 px-4 rounded-md bg-green-100 text-green-700 capitalize">{order.status}</p>
+            )}
+        </div>
+    )
+}
+
+
+function DeliveryAssigner({ order, deliveryBoys, onAssign, isAssigning }: { order: Order, deliveryBoys: DeliveryBoy[], onAssign: (deliveryBoyId: string) => void, isAssigning: boolean }) {
+    if (order.deliveryBoy) {
+        return (
+            <div className="flex items-center gap-2 p-2 rounded-md bg-muted">
+                <Bike className="h-5 w-5 text-muted-foreground" />
+                <div className="text-sm">
+                    <p className="font-semibold">{order.deliveryBoy.name}</p>
+                    <p className="text-muted-foreground">Assigned for delivery</p>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-2">
+            <h4 className="font-semibold">Assign Delivery</h4>
+            <Select onValueChange={onAssign} disabled={isAssigning}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Select a delivery person" />
+                </SelectTrigger>
+                <SelectContent>
+                    {deliveryBoys.map(boy => (
+                        <SelectItem key={boy.id} value={boy.id}>{boy.name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            {isAssigning && <p className="text-sm text-muted-foreground">Assigning...</p>}
         </div>
     )
 }
@@ -87,15 +123,41 @@ export default function ManageOrdersPage() {
     const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
     const [orderToPrint, setOrderToPrint] = useState<Order | null>(null);
 
+    const fetchOrdersData = async (restaurantId: string) => {
+        try {
+            const items = await getOrdersForRestaurant(restaurantId);
+            setOrders(items);
+        } catch (e: any) {
+            setError('Failed to fetch orders.');
+            toast({ variant: 'destructive', title: 'Error', description: e.message });
+        }
+    };
+    
+    const fetchRestaurantData = async (ownerId: string) => {
+         try {
+            setLoading(true);
+            const rest = await getRestaurantByOwnerId(user.uid);
+            setRestaurant(rest);
+            if (rest) {
+                await fetchOrdersData(rest.id);
+            } else {
+                    setError('No restaurant found for this owner.');
+            }
+        } catch (e: any) {
+            setError('Failed to fetch restaurant data.');
+            toast({ variant: 'destructive', title: 'Error', description: e.message });
+        } finally {
+            setLoading(false);
+        }
+    }
+
     useEffect(() => {
         if (orderToPrint) {
             const handleAfterPrint = () => {
                 setOrderToPrint(null);
-                 // Re-add the class after printing is done
                 document.body.classList.remove('print:bg-white');
             };
 
-            // Remove class before printing
             document.body.classList.add('print:bg-white');
             window.addEventListener('afterprint', handleAfterPrint, { once: true });
             
@@ -107,39 +169,10 @@ export default function ManageOrdersPage() {
         setOrderToPrint(order);
     };
 
-    const fetchOrdersData = async (restaurantId: string) => {
-        try {
-            const items = await getOrdersForRestaurant(restaurantId);
-            setOrders(items);
-        } catch (e: any) {
-            setError('Failed to fetch orders.');
-            toast({ variant: 'destructive', title: 'Error', description: e.message });
-        }
-    };
 
     useEffect(() => {
-        const fetchRestaurantAndOrders = async () => {
-            if (user?.uid) {
-                try {
-                    setLoading(true);
-                    const rest = await getRestaurantByOwnerId(user.uid);
-                    setRestaurant(rest);
-                    if (rest) {
-                        await fetchOrdersData(rest.id);
-                    } else {
-                         setError('No restaurant found for this owner.');
-                    }
-                } catch (e: any) {
-                    setError('Failed to fetch restaurant data.');
-                    toast({ variant: 'destructive', title: 'Error', description: e.message });
-                } finally {
-                    setLoading(false);
-                }
-            }
-        };
-
         if (!authLoading && user) {
-            fetchRestaurantAndOrders();
+            fetchRestaurantData(user.uid);
         } else if (!authLoading && !user) {
             setLoading(false);
         }
@@ -147,16 +180,11 @@ export default function ManageOrdersPage() {
     
     const handleMarkAsPaid = async (orderId: string) => {
         setUpdatingOrderId(orderId);
-        
-        const originalOrders = [...orders];
-        const optimisticUpdate = orders.map(o => o.id === orderId ? { ...o, paymentStatus: 'completed' as const } : o);
-        setOrders(optimisticUpdate);
-
         try {
             await updateOrderPaymentStatus(orderId, 'completed');
             toast({ title: 'Payment Confirmed', description: 'Order marked as paid.'});
+            if (restaurant) await fetchOrdersData(restaurant.id);
         } catch(e: any) {
-            setOrders(originalOrders);
             toast({ variant: 'destructive', title: 'Error', description: e.message });
         } finally {
             setUpdatingOrderId(null);
@@ -165,17 +193,34 @@ export default function ManageOrdersPage() {
     
     const handleStatusChange = async (orderId: string, status: Order['status']) => {
         setUpdatingOrderId(orderId);
-
-        const originalOrders = [...orders];
-        const optimisticUpdate = orders.map(o => o.id === orderId ? { ...o, status } : o);
-        setOrders(optimisticUpdate);
-
         try {
             await updateOrderStatus(orderId, status);
             toast({ title: 'Order Status Updated', description: 'Customer will be notified.'});
+            if (restaurant) await fetchOrdersData(restaurant.id);
         } catch (e: any) {
-             setOrders(originalOrders);
              toast({ variant: 'destructive', title: 'Error', description: e.message });
+        } finally {
+            setUpdatingOrderId(null);
+        }
+    }
+
+    const handleAssignDelivery = async (orderId: string, deliveryBoyId: string) => {
+        if (!restaurant?.deliveryBoys) return;
+
+        setUpdatingOrderId(orderId);
+        const deliveryBoy = restaurant.deliveryBoys.find(db => db.id === deliveryBoyId);
+        if (!deliveryBoy) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Selected delivery person not found.' });
+            setUpdatingOrderId(null);
+            return;
+        }
+
+        try {
+            await assignDeliveryBoy(orderId, { id: deliveryBoy.id, name: deliveryBoy.name });
+            toast({ title: 'Delivery Assigned', description: `Order assigned to ${deliveryBoy.name} and is now out for delivery.` });
+            if (restaurant) await fetchOrdersData(restaurant.id);
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: 'Error', description: e.message });
         } finally {
             setUpdatingOrderId(null);
         }
@@ -310,6 +355,25 @@ export default function ManageOrdersPage() {
                                                             </>
                                                         )}
                                                     </div>
+                                                     <div className="col-span-full sm:col-span-1">
+                                                        {(restaurant.deliveryBoys?.length || 0) > 0 && ['accepted', 'preparing'].includes(order.status) && (
+                                                          <DeliveryAssigner 
+                                                            order={order}
+                                                            deliveryBoys={restaurant.deliveryBoys || []}
+                                                            onAssign={(deliveryBoyId) => handleAssignDelivery(order.id, deliveryBoyId)}
+                                                            isAssigning={updatingOrderId === order.id}
+                                                          />
+                                                        )}
+                                                         {order.deliveryBoy && (
+                                                             <div className="flex items-center gap-2 p-2 rounded-md bg-muted">
+                                                                <Bike className="h-5 w-5 text-muted-foreground" />
+                                                                <div className="text-sm">
+                                                                    <p className="font-semibold">{order.deliveryBoy.name}</p>
+                                                                    <p className="text-muted-foreground">Assigned for delivery</p>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                  <div className="md:col-span-1 flex flex-col justify-between">
                                                      <h4 className="font-semibold mb-2">Order Status</h4>
@@ -346,3 +410,5 @@ export default function ManageOrdersPage() {
         </>
     );
 }
+
+    

@@ -231,13 +231,17 @@ export async function getOrdersForDeliveryBoy(deliveryBoyId: string): Promise<Or
     const ordersRef = collection(db, 'orders');
     const q = query(
         ordersRef, 
-        where('deliveryBoy.id', '==', deliveryBoyId),
-        where('status', 'in', ['out-for-delivery', 'delivered'])
+        where('deliveryBoy.id', '==', deliveryBoyId)
     );
     const snapshot = await getDocs(q);
     if (snapshot.empty) {
         return [];
     }
     const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
-    return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+     // Filter locally for relevant statuses and sort
+    return orders
+        .filter(order => ['out-for-delivery', 'delivered'].includes(order.status))
+        .sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
 }
+
+    
