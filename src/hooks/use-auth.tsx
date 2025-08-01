@@ -15,6 +15,7 @@ import {
 } from 'react';
 import { auth, db } from '@/services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 
 export interface Address {
     id: string;
@@ -44,6 +45,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
   
   const fetchUserData = useCallback(async (firebaseUser: User | null): Promise<AppUser | null> => {
       if (firebaseUser) {
@@ -99,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await firebaseSignOut(auth);
     setUser(null);
+    router.push('/');
   };
 
   return (
