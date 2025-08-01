@@ -161,17 +161,21 @@ export async function searchRestaurantsAndMenuItems(searchTerm: string): Promise
 }
 
 export async function getTopRatedMenuItems(): Promise<MenuItem[]> {
-    const menuItemsQuery = query(
-        collectionGroup(db, 'menuItems'),
-        orderBy('rating', 'desc'),
-        limit(10)
-    );
+    const menuItemsQuery = query(collectionGroup(db, 'menuItems'));
     const snapshot = await getDocs(menuItemsQuery);
+    
     if (snapshot.empty) {
         return [];
     }
-    return snapshot.docs.map(doc => ({...doc.data(), id: doc.id} as MenuItem));
+
+    const allItems = snapshot.docs.map(doc => ({...doc.data(), id: doc.id} as MenuItem));
+    
+    // Sort by rating client-side and take the top 10
+    return allItems
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        .slice(0, 10);
 }
+
 
 export async function rateRestaurant(restaurantId: string, newRating: number): Promise<void> {
     const restaurantRef = doc(db, 'restaurants', restaurantId);
