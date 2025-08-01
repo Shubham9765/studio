@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -30,8 +31,8 @@ const orderStatuses: Order['status'][] = ['pending', 'accepted', 'preparing', 'o
 const statusSteps: { status: Order['status'], icon: React.ElementType, label: string }[] = [
     { status: 'accepted', icon: Package, label: 'Accept Order' },
     { status: 'preparing', icon: ChefHat, label: 'Mark as Preparing' },
-    { status: 'out-for-delivery', icon: Bike, label: 'Mark as Out for Delivery' },
-    { status: 'delivered', icon: PartyPopper, label: 'Mark as Delivered' },
+    { status: 'out-for-delivery', icon: Bike, label: 'Out for Delivery' },
+    { status: 'delivered', icon: PartyPopper, label: 'Delivered' },
 ];
 
 function OrderStatusUpdater({ order, onUpdate, isUpdating }: { order: Order, onUpdate: (status: Order['status']) => void, isUpdating: boolean }) {
@@ -55,9 +56,9 @@ function OrderStatusUpdater({ order, onUpdate, isUpdating }: { order: Order, onU
     }
 
     const nextStep = statusSteps[currentStepIndex + 1];
-
-    // Don't show the "Mark as out for delivery button" if delivery staff can be assigned
-    const hideNextStepButton = nextStep?.status === 'out-for-delivery';
+    
+    // Hide the button for 'out-for-delivery' as assignment handles it.
+    const hideNextStepButton = nextStep?.status === 'out-for-delivery' || nextStep?.status === 'delivered';
 
 
     return (
@@ -71,7 +72,7 @@ function OrderStatusUpdater({ order, onUpdate, isUpdating }: { order: Order, onU
                 ))}
             </div>
              <div className="w-full bg-muted rounded-full h-2.5">
-                <div className="bg-primary h-2.5 rounded-full" style={{ width: `${((currentStepIndex + 1) / statusSteps.length) * 100}%` }}></div>
+                <div className="bg-primary h-2.5 rounded-full" style={{ width: `${((currentStepIndex + 1) / (statusSteps.length -1)) * 100}%` }}></div>
             </div>
             {nextStep && !hideNextStepButton && (
                 <Button onClick={() => onUpdate(nextStep.status)} disabled={isUpdating}>
@@ -220,7 +221,10 @@ export default function ManageOrdersPage() {
 
         setUpdatingOrderId(orderId);
         const deliveryBoy = restaurant.deliveryBoys.find(db => db.id === deliveryBoyId);
-        if (!deliveryBoy) return;
+        if (!deliveryBoy) {
+            setUpdatingOrderId(null);
+            return;
+        }
         
         const originalOrders = [...orders];
         const optimisticUpdate = orders.map(o => 
