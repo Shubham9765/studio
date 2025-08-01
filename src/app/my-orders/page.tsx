@@ -196,11 +196,10 @@ export default function MyOrdersPage() {
                         <PackageSearch className="mx-auto h-16 w-16 text-muted-foreground" />
                         <h3 className="mt-4 text-2xl font-bold">No active orders</h3>
                         <p className="mt-2 text-muted-foreground">You haven't placed any orders that are currently in progress. Let's find something delicious!</p>
-                        <Button className="mt-6" onClick={() => router.push('/')}>Start Shopping</Button>
+                        <Button className="mt-6" onClick={() => router.push('/')}>Goto Order Food</Button>
                     </Card>
                 )}
             </main>
         </div>
     );
 }
-

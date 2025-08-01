@@ -145,7 +145,7 @@ export default function OrderHistoryPage() {
                         <History className="mx-auto h-16 w-16 text-muted-foreground" />
                         <h3 className="mt-4 text-2xl font-bold">No past orders</h3>
                         <p className="mt-2 text-muted-foreground">Your completed and cancelled orders will appear here.</p>
-                        <Button className="mt-6" onClick={() => router.push('/')}>Start Shopping</Button>
+                        <Button className="mt-6" onClick={() => router.push('/')}>Goto Order Food</Button>
                     </Card>
                 )}
             </main>

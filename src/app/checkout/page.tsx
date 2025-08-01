@@ -142,7 +142,7 @@ export default function CheckoutPage() {
                             <p className="text-muted-foreground mt-2">Looks like you haven't added anything to your cart yet.</p>
                         </CardContent>
                         <CardFooter>
-                            <Button className="w-full" onClick={() => router.push('/')}>Start Shopping</Button>
+                            <Button className="w-full" onClick={() => router.push('/')}>Goto Order Food</Button>
                         </CardFooter>
                     </Card>
                 </main>
