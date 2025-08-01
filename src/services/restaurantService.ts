@@ -126,14 +126,14 @@ export async function searchRestaurantsAndMenuItems(searchTerm: string): Promise
     }
     const lowercasedTerm = searchTerm.toLowerCase();
 
-    // Fetch all approved restaurants and all available menu items in parallel
-    const [allRestaurants, allMenuItems] = await Promise.all([
-        getRestaurants(),
-        getDocs(query(collectionGroup(db, 'menuItems'), where('isAvailable', '==', true))).then(snapshot => 
-            snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as MenuItem))
-        )
-    ]);
+    // Fetch all approved restaurants
+    const allRestaurants = await getRestaurants();
 
+    // Fetch menu items for each restaurant
+    const menuItemsPromises = allRestaurants.map(r => getMenuItemsForRestaurant(r.id));
+    const allMenuItemsArrays = await Promise.all(menuItemsPromises);
+    const allMenuItems = allMenuItemsArrays.flat();
+    
     // Filter restaurants based on search term
     const matchingRestaurants = allRestaurants.filter(r => 
         r.name.toLowerCase().includes(lowercasedTerm) ||
@@ -142,9 +142,11 @@ export async function searchRestaurantsAndMenuItems(searchTerm: string): Promise
 
     // Filter menu items based on search term
     const matchingMenuItems = allMenuItems.filter(item =>
-        item.name.toLowerCase().includes(lowercasedTerm) ||
-        item.description.toLowerCase().includes(lowercasedTerm) ||
-        item.category.toLowerCase().includes(lowercasedTerm)
+        item.isAvailable && (
+            item.name.toLowerCase().includes(lowercasedTerm) ||
+            item.description.toLowerCase().includes(lowercasedTerm) ||
+            item.category.toLowerCase().includes(lowercasedTerm)
+        )
     );
 
     // Get IDs of restaurants that have matching menu items
@@ -161,7 +163,7 @@ export async function searchRestaurantsAndMenuItems(searchTerm: string): Promise
         }
     });
     
-    // Add the missing restaurants
+    // Add the missing restaurants from the full list
     if (additionalRestaurantIds.length > 0) {
         const additionalRestaurants = allRestaurants.filter(r => additionalRestaurantIds.includes(r.id));
         matchingRestaurants.push(...additionalRestaurants);
@@ -182,6 +184,7 @@ export async function getTopRatedMenuItems(): Promise<MenuItem[]> {
     
     // Sort by rating client-side and take the top 10
     return allItems
+        .filter(item => item.isAvailable)
         .sort((a, b) => (b.rating || 0) - (a.rating || 0))
         .slice(0, 10);
 }
