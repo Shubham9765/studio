@@ -149,7 +149,7 @@ export default function ProfilePage() {
                    <Card>
                         <CardHeader>
                             <CardTitle><Skeleton className="h-6 w-1/2" /></CardTitle>
-                            <CardDescription><Skeleton className="h-4 w-3/4" /></CardDescription>
+                            <div className="text-sm text-muted-foreground"><Skeleton className="h-4 w-3/4" /></div>
                         </CardHeader>
                         <CardContent>
                            <div className="space-y-4"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-24" /></div>
@@ -158,7 +158,7 @@ export default function ProfilePage() {
                    <Card>
                          <CardHeader>
                             <CardTitle><Skeleton className="h-6 w-1/2" /></CardTitle>
-                            <CardDescription><Skeleton className="h-4 w-3/4" /></CardDescription>
+                            <div className="text-sm text-muted-foreground"><Skeleton className="h-4 w-3/4" /></div>
                         </CardHeader>
                         <CardContent>
                             <Skeleton className="h-20 w-full" />
