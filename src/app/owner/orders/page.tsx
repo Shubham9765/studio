@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { assignDeliveryBoy, getOrdersForRestaurant, getRestaurantByOwnerId, updateOrderPaymentStatus, updateOrderStatus } from '@/services/ownerService';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, BookOpen, Check, BadgeCent, CircleDollarSign, Printer, User, Phone, MapPin, Package, ChefHat, Bike, PartyPopper } from 'lucide-react';
+import { AlertTriangle, BookOpen, Check, BadgeCent, CircleDollarSign, Printer, User, Phone, MapPin, Package, ChefHat, Bike, PartyPopper, History } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -23,6 +23,7 @@ import {
 import { KOT } from '@/components/owner/kot';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import Link from 'next/link';
 
 
 const statusSteps: { status: Order['status'], icon: React.ElementType, label: string }[] = [
@@ -273,6 +274,8 @@ export default function ManageOrdersPage() {
             </div>
         )
     }
+    
+    const activeOrders = orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
 
 
     return (
@@ -281,17 +284,23 @@ export default function ManageOrdersPage() {
             <Header />
             <main className="container py-8">
                 <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold">Restaurant Orders</h1>
+                    <h1 className="text-3xl font-bold">Active Orders</h1>
+                    <Button asChild variant="outline">
+                        <Link href="/owner/orders/history">
+                            <History className="mr-2 h-4 w-4" />
+                            View Order History
+                        </Link>
+                    </Button>
                 </div>
                 <Card>
                     <CardHeader>
-                        <CardTitle>Incoming Orders</CardTitle>
-                        <CardDescription>View and manage all orders placed at {restaurant.name}.</CardDescription>
+                        <CardTitle>Incoming & In-Progress Orders</CardTitle>
+                        <CardDescription>View and manage all active orders placed at {restaurant.name}.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {orders.length > 0 ? (
+                        {activeOrders.length > 0 ? (
                         <Accordion type="single" collapsible className="w-full space-y-4">
-                            {orders.map(order => (
+                            {activeOrders.map(order => (
                                 <AccordionItem value={order.id} key={order.id} className="border rounded-lg">
                                     <AccordionTrigger className="p-4 hover:no-underline">
                                         <div className="flex justify-between w-full items-center">
@@ -300,7 +309,7 @@ export default function ManageOrdersPage() {
                                                 <span className="text-sm text-muted-foreground">{order.customerName}</span>
                                             </div>
                                             <div className="hidden md:block text-sm text-muted-foreground">{format(order.createdAt.toDate(), 'PPpp')}</div>
-                                            <div><Badge variant={order.status === 'delivered' ? 'default' : 'secondary'} className="capitalize">{order.status.replace('-', ' ')}</Badge></div>
+                                            <div><Badge variant={order.status === 'out-for-delivery' ? 'default' : 'secondary'} className="capitalize">{order.status.replace('-', ' ')}</Badge></div>
                                             <div className="font-bold text-lg">${order.total.toFixed(2)}</div>
                                         </div>
                                     </AccordionTrigger>
@@ -392,9 +401,9 @@ export default function ManageOrdersPage() {
                         ) : (
                             <div className="text-center py-12">
                                 <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
-                                <h3 className="mt-4 text-lg font-medium">No Orders Yet</h3>
+                                <h3 className="mt-4 text-lg font-medium">No Active Orders</h3>
                                 <p className="mt-1 text-sm text-muted-foreground">
-                                    When customers place orders, they will appear here.
+                                    When customers place new orders, they will appear here.
                                 </p>
                             </div>
                         )}
@@ -410,5 +419,3 @@ export default function ManageOrdersPage() {
         </>
     );
 }
-
-    
