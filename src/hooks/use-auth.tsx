@@ -16,12 +16,20 @@ import {
 import { auth, db } from '@/services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
+export interface Address {
+    id: string;
+    name: string;
+    address: string;
+    phone: string;
+}
+
 export interface AppUser extends User {
   role?: 'customer' | 'owner' | 'admin';
   username?: string;
   phone?: string;
   status?: 'active' | 'inactive';
-  address?: string;
+  address?: string; // Kept for backwards compatibility if needed, but addresses array is primary
+  addresses?: Address[];
 }
 
 interface AuthContextType {
@@ -48,14 +56,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             uid: firebaseUser.uid,
             role: userData?.role,
             username: userData?.username,
-            displayName: userData?.username || firebaseUser.displayName,
+            displayName: userData?.displayName || userData?.username || firebaseUser.displayName,
             phone: userData?.phone,
             status: userData?.status || 'active',
             address: userData?.address || '',
+            addresses: userData?.addresses || [],
           };
           return appUser;
         } else {
-          return firebaseUser;
+          // Default user object if no firestore doc exists yet
+          return {
+             ...firebaseUser,
+             displayName: firebaseUser.displayName,
+             addresses: [],
+          };
         }
       }
       return null;
@@ -75,8 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshAuth = useCallback(async () => {
     const currentUser = auth.currentUser;
     if (currentUser) {
+        setLoading(true);
         const appUser = await fetchUserData(currentUser);
         setUser(appUser);
+        setLoading(false);
     }
   }, [fetchUserData]);
 
@@ -99,3 +115,5 @@ export function useAuth() {
   }
   return context;
 }
+
+    

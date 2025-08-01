@@ -13,12 +13,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, CheckCircle, ShoppingCart, Banknote, Landmark } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ShoppingCart, Banknote, Landmark, Home, Building, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { createOrder } from '@/services/restaurantService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { Order, Restaurant } from '@/lib/types';
+import type { Address } from '@/hooks/use-auth';
 
 export default function CheckoutPage() {
     const { cart, restaurant, totalPrice, clearCart } = useCart();
@@ -30,15 +31,25 @@ export default function CheckoutPage() {
     const [orderPlaced, setOrderPlaced] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi'>('cash');
     const [transactionId, setTransactionId] = useState('');
+    
+    const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>(undefined);
     const [deliveryAddress, setDeliveryAddress] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
 
     useEffect(() => {
-        if (user) {
-            setDeliveryAddress(user.address || '');
-            setCustomerPhone(user.phone || '');
+        if (user?.addresses && user.addresses.length > 0) {
+            const defaultAddress = user.addresses[0];
+            setSelectedAddressId(defaultAddress.id);
+            setDeliveryAddress(defaultAddress.address);
+            setCustomerPhone(defaultAddress.phone);
         }
     }, [user]);
+    
+    const handleAddressSelection = (address: Address) => {
+        setSelectedAddressId(address.id);
+        setDeliveryAddress(address.address);
+        setCustomerPhone(address.phone);
+    }
 
     const deliveryFee = restaurant?.deliveryCharge || 0;
     const finalTotal = totalPrice + deliveryFee;
@@ -46,6 +57,15 @@ export default function CheckoutPage() {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!user || !restaurant) return;
+        
+        if (!deliveryAddress || !customerPhone) {
+            toast({
+                variant: 'destructive',
+                title: 'Address Required',
+                description: 'Please select or add a delivery address to continue.',
+            });
+            return;
+        }
 
         if (paymentMethod === 'upi' && !transactionId) {
             toast({
@@ -62,8 +82,8 @@ export default function CheckoutPage() {
                 paymentMethod,
                 paymentStatus: 'pending',
                 ...(paymentMethod === 'upi' && { paymentDetails: { transactionId } }),
-                deliveryAddress: deliveryAddress, // Use state value directly
-                customerPhone: customerPhone, // Use state value directly
+                deliveryAddress: deliveryAddress,
+                customerPhone: customerPhone,
             };
 
             await createOrder(user.uid, user.displayName || 'N/A', restaurant as Restaurant, cart, finalTotal, orderDetails);
@@ -168,14 +188,47 @@ export default function CheckoutPage() {
                                     <CardDescription>Confirm your details and place the order.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="address">Delivery Address</Label>
-                                        <Input id="address" placeholder="123 Main St, Anytown, USA" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} required />
+                                     <div className="space-y-4">
+                                        <Label>Select Delivery Address</Label>
+                                        {(user.addresses?.length || 0) > 0 ? (
+                                            <RadioGroup 
+                                                value={selectedAddressId} 
+                                                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                                            >
+                                                {user.addresses?.map(addr => (
+                                                    <Label 
+                                                        key={addr.id}
+                                                        htmlFor={addr.id} 
+                                                        className="flex items-start rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary cursor-pointer"
+                                                        onClick={() => handleAddressSelection(addr)}
+                                                    >
+                                                        <RadioGroupItem value={addr.id} id={addr.id} className="mr-4 mt-1" />
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center gap-2 font-bold">
+                                                                {addr.name.toLowerCase() === 'home' ? <Home className="h-4 w-4" /> : <Building className="h-4 w-4" />}
+                                                                {addr.name}
+                                                            </div>
+                                                            <p className="text-sm text-muted-foreground">{addr.address}</p>
+                                                            <p className="text-sm text-muted-foreground">{addr.phone}</p>
+                                                        </div>
+                                                    </Label>
+                                                ))}
+                                            </RadioGroup>
+                                        ) : (
+                                            <Alert>
+                                                <AlertTriangle className="h-4 w-4" />
+                                                <AlertTitle>No Addresses Found</AlertTitle>
+                                                <AlertDescription>
+                                                    You haven't saved any delivery addresses yet. Please add one in your profile.
+                                                </AlertDescription>
+                                            </Alert>
+                                        )}
+                                        <Button type="button" variant="outline" size="sm" onClick={() => router.push('/profile')}>
+                                            <PlusCircle className="mr-2 h-4 w-4" />
+                                            Manage Addresses
+                                        </Button>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="phone">Phone Number</Label>
-                                        <Input id="phone" placeholder="Your contact number" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} required />
-                                    </div>
+                                    <Separator />
                                      <div className="space-y-4">
                                         <Label>Payment Method</Label>
                                          <RadioGroup value={paymentMethod} onValueChange={(val) => setPaymentMethod(val as 'cash' | 'upi')} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -277,3 +330,5 @@ export default function CheckoutPage() {
         </div>
     );
 }
+
+    

@@ -1,10 +1,12 @@
 
 import { db } from './firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import type { Address } from '@/hooks/use-auth';
 
 interface UserProfileData {
-    displayName: string;
-    address: string;
+    displayName?: string;
+    address?: string; // Can be removed if fully migrated
+    addresses?: Address[];
 }
 
 export async function updateUserProfile(userId: string, data: UserProfileData): Promise<void> {
@@ -13,9 +15,24 @@ export async function updateUserProfile(userId: string, data: UserProfileData): 
   }
 
   const userRef = doc(db, 'users', userId);
-  await updateDoc(userRef, {
-      username: data.displayName, // Keep `username` in sync with `displayName`
-      displayName: data.displayName,
-      address: data.address,
-  });
+  
+  const updateData: { [key: string]: any } = {};
+
+  if (data.displayName) {
+      updateData.username = data.displayName; // Keep `username` in sync
+      updateData.displayName = data.displayName;
+  }
+  
+  if (data.addresses) {
+      updateData.addresses = data.addresses;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+      // Nothing to update
+      return;
+  }
+
+  await updateDoc(userRef, updateData);
 }
+
+    
