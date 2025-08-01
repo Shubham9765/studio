@@ -220,13 +220,20 @@ export async function removeDeliveryBoyFromRestaurant(restaurantId: string, deli
 
 export async function assignDeliveryBoy(orderId: string, deliveryBoy: {id: string, name: string}): Promise<void> {
     const orderRef = doc(db, 'orders', orderId);
-    await updateDoc(orderRef, { deliveryBoy });
+    await updateDoc(orderRef, { 
+        deliveryBoy,
+        status: 'out-for-delivery'
+    });
 }
 
 
 export async function getOrdersForDeliveryBoy(deliveryBoyId: string): Promise<Order[]> {
     const ordersRef = collection(db, 'orders');
-    const q = query(ordersRef, where('deliveryBoy.id', '==', deliveryBoyId));
+    const q = query(
+        ordersRef, 
+        where('deliveryBoy.id', '==', deliveryBoyId),
+        where('status', 'in', ['out-for-delivery', 'delivered'])
+    );
     const snapshot = await getDocs(q);
     if (snapshot.empty) {
         return [];

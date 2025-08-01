@@ -56,6 +56,10 @@ function OrderStatusUpdater({ order, onUpdate, isUpdating }: { order: Order, onU
 
     const nextStep = statusSteps[currentStepIndex + 1];
 
+    // Don't show the "Mark as out for delivery button" if delivery staff can be assigned
+    const hideNextStepButton = nextStep?.status === 'out-for-delivery';
+
+
     return (
         <div className="flex flex-col gap-2">
             <div className="flex items-center gap-4">
@@ -69,7 +73,7 @@ function OrderStatusUpdater({ order, onUpdate, isUpdating }: { order: Order, onU
              <div className="w-full bg-muted rounded-full h-2.5">
                 <div className="bg-primary h-2.5 rounded-full" style={{ width: `${((currentStepIndex + 1) / statusSteps.length) * 100}%` }}></div>
             </div>
-            {nextStep && (
+            {nextStep && !hideNextStepButton && (
                 <Button onClick={() => onUpdate(nextStep.status)} disabled={isUpdating}>
                     {isUpdating ? 'Updating...' : <><nextStep.icon className="mr-2 h-4 w-4" /> {nextStep.label}</>}
                 </Button>
@@ -219,12 +223,14 @@ export default function ManageOrdersPage() {
         if (!deliveryBoy) return;
         
         const originalOrders = [...orders];
-        const optimisticUpdate = orders.map(o => o.id === orderId ? { ...o, deliveryBoy: { id: deliveryBoy.id, name: deliveryBoy.name } } : o);
+        const optimisticUpdate = orders.map(o => 
+            o.id === orderId ? { ...o, deliveryBoy: { id: deliveryBoy.id, name: deliveryBoy.name }, status: 'out-for-delivery' as const } : o
+        );
         setOrders(optimisticUpdate);
 
         try {
-            await assignDeliveryBoy(orderId, deliveryBoy);
-            toast({ title: 'Delivery Assigned', description: `Order assigned to ${deliveryBoy.name}.` });
+            await assignDeliveryBoy(orderId, { id: deliveryBoy.id, name: deliveryBoy.name });
+            toast({ title: 'Delivery Assigned', description: `Order assigned to ${deliveryBoy.name} and is now out for delivery.` });
         } catch (e: any) {
             setOrders(originalOrders);
             toast({ variant: 'destructive', title: 'Error', description: e.message });
