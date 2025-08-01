@@ -18,7 +18,7 @@ interface CartProps {
 }
 
 export function Cart({ restaurant }: CartProps) {
-  const { cart, restaurant: cartRestaurant, addItem, removeItem, updateItemQuantity, clearCart } = useCart();
+  const { cart, restaurant: cartRestaurant, removeItem, updateItemQuantity } = useCart();
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();

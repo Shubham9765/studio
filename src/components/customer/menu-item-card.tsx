@@ -2,12 +2,13 @@
 'use client';
 
 import Image from 'next/image';
-import type { MenuItem } from '@/lib/types';
+import type { MenuItem, Restaurant } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, ShoppingCart } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 import { useToast } from '@/hooks/use-toast';
+import { getRestaurantById } from '@/services/restaurantService';
 
 interface MenuItemCardProps {
     item: MenuItem;
@@ -18,11 +19,20 @@ export function MenuItemCard({ item, restaurantId }: MenuItemCardProps) {
     const { addItem, restaurant: cartRestaurant, clearCart } = useCart();
     const { toast } = useToast();
 
-    const handleAddToCart = () => {
+    const handleAddToCart = async () => {
         if (!item.isAvailable) return;
 
-        const handleAddItem = () => {
-            addItem({ ...item, quantity: 1 }, { id: restaurantId });
+        const handleAddItem = async () => {
+            const fullRestaurant = await getRestaurantById(restaurantId);
+            if (!fullRestaurant) {
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "Could not find restaurant information.",
+                });
+                return;
+            }
+            addItem({ ...item, quantity: 1 }, fullRestaurant);
             toast({
                 title: "Added to cart",
                 description: `${item.name} has been added to your order.`,
@@ -32,10 +42,10 @@ export function MenuItemCard({ item, restaurantId }: MenuItemCardProps) {
         if (cartRestaurant && cartRestaurant.id !== restaurantId) {
              if (confirm('Your cart contains items from another restaurant. Would you like to clear it and add this item instead?')) {
                 clearCart();
-                handleAddItem();
+                await handleAddItem();
             }
         } else {
-            handleAddItem();
+            await handleAddItem();
         }
     }
 
