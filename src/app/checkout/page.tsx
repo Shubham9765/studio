@@ -37,6 +37,12 @@ export default function CheckoutPage() {
     const [customerPhone, setCustomerPhone] = useState('');
 
     useEffect(() => {
+        if (!authLoading && !user) {
+            router.push('/');
+        }
+    }, [authLoading, user, router]);
+
+    useEffect(() => {
         if (user?.addresses && user.addresses.length > 0) {
             const defaultAddress = user.addresses[0];
             setSelectedAddressId(defaultAddress.id);
@@ -112,16 +118,11 @@ export default function CheckoutPage() {
     }
 
     if (!user) {
-        router.push('/');
         return (
              <div className="min-h-screen bg-background">
                 <Header />
                 <main className="container py-8 flex items-center justify-center">
-                    <Alert variant="destructive" className="w-1/2">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle>Access Denied</AlertTitle>
-                        <AlertDescription>You must be logged in to access the checkout page.</AlertDescription>
-                    </Alert>
+                     <p>Redirecting to login...</p>
                 </main>
             </div>
         )
