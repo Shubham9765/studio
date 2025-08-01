@@ -22,6 +22,14 @@ export function Header() {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+    }
+  };
 
   const getInitials = (name?: string | null) => {
     if (!name) return '';
@@ -54,8 +62,15 @@ export function Header() {
             <h1 className="text-2xl font-bold font-headline text-primary">Village Eats</h1>
           </Link>
           <div className="hidden md:flex flex-1 max-w-sm items-center relative">
-            <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
-            <Input placeholder="Search restaurants..." className="pl-10 rounded-full" />
+            <form onSubmit={handleSearch} className="w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input 
+                placeholder="Search restaurants or dishes..." 
+                className="pl-10 rounded-full w-full" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </form>
           </div>
           <div className="flex items-center gap-2">
             {user ? (
@@ -110,7 +125,7 @@ export function Header() {
                 <Button size="sm" onClick={() => setAuthDialogOpen(true)}>Sign Up</Button>
               </>
             )}
-             <Button variant="ghost" size="icon" className="md:hidden">
+             <Button variant="ghost" size="icon" className="md:hidden" onClick={() => router.push('/search')}>
               <Search className="h-5 w-5" />
             </Button>
           </div>

@@ -34,7 +34,6 @@ export function HomePage() {
   const router = useRouter();
   const { data: trendingRestaurants, loading: trendingLoading, error: trendingError } = useTrendingRestaurants();
   const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
-  const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
   const [allRestaurantsLoading, setAllRestaurantsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -43,7 +42,6 @@ export function HomePage() {
       setAllRestaurantsLoading(true);
       const restaurants = await getRestaurants();
       setAllRestaurants(restaurants);
-      setFilteredRestaurants(restaurants);
       setAllRestaurantsLoading(false);
     };
     fetchRestaurants();
@@ -55,18 +53,6 @@ export function HomePage() {
       router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
     }
   };
-
-  useEffect(() => {
-    // This effect now only filters the "All Restaurants" section on the homepage
-    // The main search action is handled by handleSearch
-    const lowercasedFilter = searchTerm.toLowerCase();
-    const filtered = allRestaurants.filter(restaurant =>
-      restaurant.name.toLowerCase().includes(lowercasedFilter) ||
-      restaurant.cuisine.toLowerCase().includes(lowercasedFilter)
-    );
-    setFilteredRestaurants(filtered);
-  }, [searchTerm, allRestaurants]);
-
 
   return (
     <div className="min-h-screen bg-background">
@@ -138,7 +124,7 @@ export function HomePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {filteredRestaurants.map(restaurant => (
+              {allRestaurants.map(restaurant => (
                 <RestaurantCard key={restaurant.id} restaurant={restaurant} />
               ))}
             </div>
