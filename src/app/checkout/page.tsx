@@ -80,7 +80,7 @@ export default function CheckoutPage() {
         try {
             const orderDetails: Partial<Order> = {
                 paymentMethod,
-                paymentStatus: 'pending',
+                paymentStatus: paymentMethod === 'upi' ? 'pending' : 'pending',
                 ...(paymentMethod === 'upi' && { paymentDetails: { transactionId } }),
                 deliveryAddress: deliveryAddress,
                 customerPhone: customerPhone,
@@ -330,5 +330,3 @@ export default function CheckoutPage() {
         </div>
     );
 }
-
-    
