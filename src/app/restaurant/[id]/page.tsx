@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { getRestaurantById, getMenuItemsForRestaurant } from '@/services/restaurantService';
 import type { Restaurant, MenuItem } from '@/lib/types';
@@ -12,6 +12,7 @@ import { AlertTriangle, Star, Clock, Utensils, Search } from 'lucide-react';
 import { MenuItemCard } from '@/components/customer/menu-item-card';
 import { Cart } from '@/components/customer/cart';
 import { Input } from '@/components/ui/input';
+import { usePathname } from 'next/navigation';
 
 
 interface RestaurantPageParams {
@@ -23,7 +24,7 @@ interface GroupedMenuItems {
 }
 
 export default function RestaurantPage({ params }: RestaurantPageParams) {
-  const { id } = use(params);
+  const { id } = params;
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +58,9 @@ export default function RestaurantPage({ params }: RestaurantPageParams) {
       }
     };
 
-    fetchData();
+    if (id) {
+        fetchData();
+    }
   }, [id]);
 
   const filteredMenuItems = menuItems.filter(item => 
@@ -153,7 +156,7 @@ export default function RestaurantPage({ params }: RestaurantPageParams) {
              <div className="mb-8 relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input 
-                    placeholder="Search menu..." 
+                    placeholder="Search this menu..." 
                     className="pl-12 text-base h-12 rounded-full"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}

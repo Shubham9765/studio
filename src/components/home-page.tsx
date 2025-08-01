@@ -35,13 +35,18 @@ export function HomePage() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const [restaurants, menuItems] = await Promise.all([
-        getRestaurants(),
-        getTopRatedMenuItems()
-      ]);
-      setAllRestaurants(restaurants);
-      setTopMenuItems(menuItems);
-      setLoading(false);
+      try {
+        const [restaurants, menuItems] = await Promise.all([
+          getRestaurants(),
+          getTopRatedMenuItems()
+        ]);
+        setAllRestaurants(restaurants);
+        setTopMenuItems(menuItems);
+      } catch (error) {
+        console.error("Failed to fetch homepage data:", error);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchData();
   }, []);

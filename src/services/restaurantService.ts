@@ -46,8 +46,8 @@ export async function getRestaurantById(id: string): Promise<Restaurant | null> 
 }
 
 export async function getMenuItemsForRestaurant(restaurantId: string): Promise<MenuItem[]> {
-    const menuItemsRef = collection(db, 'restaurants', restaurantId, 'menuItems');
-    const snapshot = await getDocs(menuItemsRef);
+    const q = query(collection(db, 'restaurants', restaurantId, 'menuItems'), where('isAvailable', '==', true));
+    const snapshot = await getDocs(q);
     if (snapshot.empty) {
         return [];
     }
@@ -121,37 +121,47 @@ export async function getOrdersByCustomerId(customerId: string): Promise<Order[]
 }
 
 export async function searchRestaurantsAndMenuItems(searchTerm: string): Promise<{ restaurants: Restaurant[], menuItems: MenuItem[] }> {
+    if (!searchTerm) {
+        return { restaurants: [], menuItems: [] };
+    }
     const lowercasedTerm = searchTerm.toLowerCase();
 
-    // Search for restaurants
-    const allRestaurants = await getRestaurants();
+    // Fetch all approved restaurants and all available menu items in parallel
+    const [allRestaurants, allMenuItems] = await Promise.all([
+        getRestaurants(),
+        getDocs(query(collectionGroup(db, 'menuItems'), where('isAvailable', '==', true))).then(snapshot => 
+            snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as MenuItem))
+        )
+    ]);
+
+    // Filter restaurants based on search term
     const matchingRestaurants = allRestaurants.filter(r => 
         r.name.toLowerCase().includes(lowercasedTerm) ||
         r.cuisine.toLowerCase().includes(lowercasedTerm)
     );
-    
-    // Search for menu items
-    const menuItemsQuery = query(collectionGroup(db, 'menuItems'));
-    const menuItemsSnapshot = await getDocs(menuItemsQuery);
-    const allMenuItems = menuItemsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as MenuItem));
 
+    // Filter menu items based on search term
     const matchingMenuItems = allMenuItems.filter(item =>
         item.name.toLowerCase().includes(lowercasedTerm) ||
         item.description.toLowerCase().includes(lowercasedTerm) ||
         item.category.toLowerCase().includes(lowercasedTerm)
     );
 
-    // To avoid duplication, if a menu item's restaurant is already in the matching list, don't add it again.
+    // Get IDs of restaurants that have matching menu items
     const restaurantIdsFromMenuItems = new Set(matchingMenuItems.map(item => item.restaurantId));
+    
+    // Get IDs of restaurants that are already in the matching list
     const existingRestaurantIds = new Set(matchingRestaurants.map(r => r.id));
 
+    // Find which restaurants need to be added to the list
     const additionalRestaurantIds: string[] = [];
     restaurantIdsFromMenuItems.forEach(id => {
         if (!existingRestaurantIds.has(id)) {
             additionalRestaurantIds.push(id);
         }
     });
-
+    
+    // Add the missing restaurants
     if (additionalRestaurantIds.length > 0) {
         const additionalRestaurants = allRestaurants.filter(r => additionalRestaurantIds.includes(r.id));
         matchingRestaurants.push(...additionalRestaurants);
