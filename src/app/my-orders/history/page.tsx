@@ -8,7 +8,7 @@ import { getOrdersByCustomerId } from '@/services/restaurantService';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, PackageSearch, Package, ChefHat, Bike, PartyPopper, Copy, History } from 'lucide-react';
+import { AlertTriangle, History, Copy, PartyPopper } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Accordion,
@@ -18,56 +18,11 @@ import {
 } from "@/components/ui/accordion";
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { Progress } from '@/components/ui/progress';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
-const statusSteps = [
-    { status: 'pending', icon: Package, label: 'Order Placed' },
-    { status: 'accepted', icon: ChefHat, label: 'Preparing' },
-    { status: 'out-for-delivery', icon: Bike, label: 'Out for Delivery' },
-    { status: 'delivered', icon: PartyPopper, label: 'Delivered' },
-];
-
-function OrderStatusTracker({ status }: { status: Order['status'] }) {
-    const currentStepIndex = statusSteps.findIndex(step => step.status === status);
-    const progressPercentage = currentStepIndex >= 0 ? ((currentStepIndex + 1) / statusSteps.length) * 100 : 0;
-    
-    if (status === 'cancelled') {
-        return (
-            <div className="text-center p-4 rounded-md bg-destructive/10 text-destructive">
-                <p className="font-bold">Order Cancelled</p>
-            </div>
-        )
-    }
-
-    return (
-        <div className="w-full my-4">
-             <Progress value={progressPercentage} className="h-2 mb-4" />
-             <div className="flex justify-between">
-                {statusSteps.map((step, index) => (
-                    <div key={step.status} className="flex flex-col items-center w-1/4">
-                        <div className={cn(
-                            "w-12 h-12 rounded-full flex items-center justify-center transition-colors",
-                            index <= currentStepIndex ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                        )}>
-                            <step.icon className="h-6 w-6" />
-                        </div>
-                        <p className={cn(
-                            "text-xs mt-2 text-center",
-                            index <= currentStepIndex ? 'font-semibold text-primary' : 'text-muted-foreground'
-                        )}>{step.label}</p>
-                    </div>
-                ))}
-            </div>
-        </div>
-    )
-}
-
-export default function MyOrdersPage() {
+export default function OrderHistoryPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
@@ -86,9 +41,10 @@ export default function MyOrdersPage() {
             try {
                 setLoading(true);
                 const userOrders = await getOrdersByCustomerId(user.uid);
-                setOrders(userOrders);
+                const historicalOrders = userOrders.filter(o => ['delivered', 'cancelled'].includes(o.status));
+                setOrders(historicalOrders);
             } catch (e: any) {
-                setError('Failed to fetch your orders.');
+                setError('Failed to fetch your order history.');
             } finally {
                 setLoading(false);
             }
@@ -137,46 +93,39 @@ export default function MyOrdersPage() {
         )
     }
 
-    const activeOrders = orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
-
     return (
         <div className="min-h-screen bg-background">
             <Header />
             <main className="container py-8">
-                <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold">My Active Orders</h1>
-                    <Button asChild variant="outline">
-                        <Link href="/my-orders/history">
-                            <History className="mr-2 h-4 w-4" />
-                            View Order History
-                        </Link>
-                    </Button>
-                </div>
-                {activeOrders.length > 0 ? (
+                <h1 className="text-3xl font-bold mb-8">Order History</h1>
+                {orders.length > 0 ? (
                     <Accordion type="single" collapsible className="w-full space-y-4">
-                        {activeOrders.map(order => (
+                        {orders.map(order => (
                              <Card key={order.id}>
                                 <AccordionItem value={order.id} className="border-b-0">
                                     <AccordionTrigger className="p-6">
                                         <div className="flex justify-between w-full items-center">
                                             <div className="flex flex-col text-left">
-                                                <div className="flex items-center gap-2">
+                                                 <div className="flex items-center gap-2">
                                                     <span className="font-bold">Order #{order.id.substring(0, 6)}...</span>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); handleCopyId(order.id); }}>
+                                                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); handleCopyId(order.id); }}>
                                                         <Copy className="h-3 w-3"/>
                                                     </Button>
                                                 </div>
                                                 <span className="text-sm text-muted-foreground">{order.restaurantName || 'Restaurant'}</span>
                                             </div>
                                             <div className="hidden sm:block text-sm">{format(order.createdAt.toDate(), 'PP')}</div>
-                                            <div><Badge variant={order.status === 'out-for-delivery' ? 'default' : 'secondary'} className="capitalize">{order.status.replace('-', ' ')}</Badge></div>
+                                            <div><Badge variant={order.status === 'delivered' ? 'default' : 'destructive'} className="capitalize">{order.status.replace('-', ' ')}</Badge></div>
                                             <div className="font-bold text-lg">${order.total.toFixed(2)}</div>
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="p-6 pt-0">
-                                        <OrderStatusTracker status={order.status} />
-                                        <div className="mt-6">
-                                            <h4 className="font-semibold mb-2">Order Summary</h4>
+                                         <div className="mt-6">
+                                             <div className="flex items-center gap-2 text-muted-foreground">
+                                                <PartyPopper className="h-5 w-5 text-green-500" />
+                                                <p>This order was completed on {format(order.createdAt.toDate(), 'PPP')}.</p>
+                                             </div>
+                                            <h4 className="font-semibold mb-2 mt-4">Order Summary</h4>
                                              <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
                                                 {order.items.map(item => (
                                                     <li key={item.id} className="flex justify-between">
@@ -193,9 +142,9 @@ export default function MyOrdersPage() {
                     </Accordion>
                 ) : (
                     <Card className="flex flex-col items-center justify-center py-20 text-center">
-                        <PackageSearch className="mx-auto h-16 w-16 text-muted-foreground" />
-                        <h3 className="mt-4 text-2xl font-bold">No active orders</h3>
-                        <p className="mt-2 text-muted-foreground">You haven't placed any orders that are currently in progress. Let's find something delicious!</p>
+                        <History className="mx-auto h-16 w-16 text-muted-foreground" />
+                        <h3 className="mt-4 text-2xl font-bold">No past orders</h3>
+                        <p className="mt-2 text-muted-foreground">Your completed and cancelled orders will appear here.</p>
                         <Button className="mt-6" onClick={() => router.push('/')}>Start Shopping</Button>
                     </Card>
                 )}
@@ -203,4 +152,3 @@ export default function MyOrdersPage() {
         </div>
     );
 }
-
