@@ -1,19 +1,20 @@
 
+'use server';
+
 import { db } from './firebase';
-import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, getDoc, arrayUnion, arrayRemove, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, getDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import type { Restaurant, MenuItem, Order, DeliveryBoy } from '@/lib/types';
 import type { z } from 'zod';
 import type { RestaurantSchema } from '@/components/owner/restaurant-registration-form';
 import type { EditRestaurantSchema } from '@/components/owner/edit-restaurant-form';
 import type { MenuItemSchema } from '@/components/owner/menu-item-form';
-import { runFlow } from '@genkit-ai/next/client';
 import { sendFcmNotification } from '@/ai/flows/send-fcm-notification';
 
 
 async function sendNotification(userId: string, title: string, body: string, url: string) {
     // This is a fire-and-forget operation. We don't want to block the UI
     // or show an error to the user if the notification fails to send.
-    runFlow(sendFcmNotification, { userId, title, body, url })
+    sendFcmNotification({ userId, title, body, url })
       .catch(error => {
         console.error("Failed to send notification:", error);
       });
@@ -45,6 +46,7 @@ export async function createRestaurant(ownerId: string, data: z.infer<typeof Res
             upi: false,
         },
         deliveryBoys: [],
+        reviewCount: 0,
     };
 
     const docRef = await addDoc(collection(db, "restaurants"), {
@@ -185,19 +187,6 @@ export async function getOrdersForRestaurant(restaurantId: string): Promise<Orde
     }
     const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
     return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
-}
-
-export function listenToOrdersForRestaurant(restaurantId: string, callback: (orders: Order[]) => void): () => void {
-    const ordersRef = collection(db, 'orders');
-    const q = query(ordersRef, where('restaurantId', '==', restaurantId));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-        const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
-        const sortedOrders = orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
-        callback(sortedOrders);
-    });
-
-    return unsubscribe;
 }
 
 export async function updateOrderPaymentStatus(orderId: string, paymentStatus: 'completed' | 'pending'): Promise<void> {

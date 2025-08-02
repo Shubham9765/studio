@@ -8,7 +8,8 @@ import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { assignDeliveryBoy, getRestaurantByOwnerId, updateOrderPaymentStatus, updateOrderStatus, listenToOrdersForRestaurant } from '@/services/ownerService';
+import { assignDeliveryBoy, getRestaurantByOwnerId, updateOrderPaymentStatus, updateOrderStatus } from '@/services/ownerService';
+import { listenToOrdersForRestaurant } from '@/services/ownerClientService';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, BookOpen, Check, BadgeCent, CircleDollarSign, Printer, User, Phone, MapPin, Package, ChefHat, Bike, PartyPopper, History } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -419,5 +420,3 @@ export default function ManageOrdersPage() {
         </>
     );
 }
-
-    

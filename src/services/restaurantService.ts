@@ -1,4 +1,6 @@
 
+'use server';
+
 import { db } from './firebase';
 import { collection, getDocs, doc, setDoc, query, where, getDoc, addDoc, serverTimestamp, orderBy, collectionGroup, writeBatch, runTransaction, updateDoc, limit } from 'firebase/firestore';
 import type { Restaurant, MenuItem, Order } from '@/lib/types';
@@ -6,15 +8,6 @@ import { MOCK_RESTAURANTS } from '@/lib/seed';
 import type { CartItem } from '@/hooks/use-cart';
 import { sendFcmNotification } from '@/ai/flows/send-fcm-notification';
 
-
-async function sendNotification(userId: string, title: string, body: string, url: string) {
-    // This is a fire-and-forget operation. We don't want to block the UI
-    // or show an error to the user if the notification fails to send.
-    sendFcmNotification({ userId, title, body, url })
-      .catch(error => {
-        console.error("Failed to send notification:", error);
-      });
-}
 
 export async function getRestaurants(): Promise<Restaurant[]> {
   const q = query(collection(db, 'restaurants'), where('status', '==', 'approved'));
@@ -97,7 +90,10 @@ export async function createOrder(
   if(restaurant.ownerId) {
     const title = 'New Order Received!';
     const body = `You have a new order from ${customerName} for a total of $${total.toFixed(2)}`;
-    await sendNotification(restaurant.ownerId, title, body, '/owner/orders');
+    
+    // Fire-and-forget notification
+    sendFcmNotification({ userId: restaurant.ownerId, title, body, url: '/owner/orders' })
+      .catch(error => console.error("Failed to send new order notification:", error));
   }
 
   return docRef.id;
