@@ -4,17 +4,16 @@ import { collection, getDocs, doc, setDoc, query, where, getDoc, addDoc, serverT
 import type { Restaurant, MenuItem, Order } from '@/lib/types';
 import { MOCK_RESTAURANTS } from '@/lib/seed';
 import type { CartItem } from '@/hooks/use-cart';
+import { sendFcmNotification } from '@/ai/flows/send-fcm-notification';
+
 
 async function sendNotification(userId: string, title: string, body: string, url: string) {
-    const userDoc = await getDoc(doc(db, 'users', userId));
-    const fcmToken = userDoc.data()?.fcmToken;
-
-    if (fcmToken) {
-        // This would typically be a call to a server-side function (e.g., Firebase Cloud Function)
-        // that sends the push notification. For this project, we will log it.
-        console.log(`Sending notification to ${userId} with token ${fcmToken}`);
-        console.log(`Title: ${title}, Body: ${body}, URL: ${url}`);
-    }
+    // This is a fire-and-forget operation. We don't want to block the UI
+    // or show an error to the user if the notification fails to send.
+    sendFcmNotification({ userId, title, body, url })
+      .catch(error => {
+        console.error("Failed to send notification:", error);
+      });
 }
 
 export async function getRestaurants(): Promise<Restaurant[]> {
