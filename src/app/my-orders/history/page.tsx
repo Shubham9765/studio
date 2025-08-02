@@ -170,23 +170,23 @@ export default function OrderHistoryPage() {
                         {orders.map(order => (
                              <Card key={order.id}>
                                 <AccordionItem value={order.id} className="border-b-0">
-                                    <AccordionTrigger className="p-6">
-                                        <div className="flex justify-between w-full items-center">
-                                            <div className="flex flex-col text-left">
-                                                 <div className="flex items-center gap-2">
+                                    <div className="flex items-center p-6">
+                                        <AccordionTrigger className="flex-grow">
+                                            <div className="flex justify-between w-full items-center">
+                                                <div className="flex flex-col text-left">
                                                     <span className="font-bold">Order #{order.id.substring(0, 6)}...</span>
-                                                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); handleCopyId(order.id); }}>
-                                                        <Copy className="h-3 w-3"/>
-                                                    </Button>
+                                                    <span className="text-sm text-muted-foreground">{order.restaurantName || 'Restaurant'}</span>
                                                 </div>
-                                                <span className="text-sm text-muted-foreground">{order.restaurantName || 'Restaurant'}</span>
+                                                <div className="hidden sm:block text-sm">{format(order.createdAt.toDate(), 'PP')}</div>
+                                                <div><Badge variant={order.status === 'delivered' ? 'default' : 'destructive'} className="capitalize">{order.status.replace('-', ' ')}</Badge></div>
+                                                <div className="font-bold text-lg">${order.total.toFixed(2)}</div>
                                             </div>
-                                            <div className="hidden sm:block text-sm">{format(order.createdAt.toDate(), 'PP')}</div>
-                                            <div><Badge variant={order.status === 'delivered' ? 'default' : 'destructive'} className="capitalize">{order.status.replace('-', ' ')}</Badge></div>
-                                            <div className="font-bold text-lg">${order.total.toFixed(2)}</div>
-                                        </div>
-                                    </AccordionTrigger>
-                                    <AccordionContent className="p-6 pt-0">
+                                        </AccordionTrigger>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 ml-2 flex-shrink-0" onClick={(e) => { e.stopPropagation(); handleCopyId(order.id); }}>
+                                            <Copy className="h-4 w-4"/>
+                                        </Button>
+                                    </div>
+                                    <AccordionContent className="px-6 pb-6">
                                          <div className="mt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
                                              <div className="flex items-center gap-2 text-muted-foreground mb-4 sm:mb-0">
                                                 {order.status === 'delivered' && <PartyPopper className="h-5 w-5 text-green-500" />}
