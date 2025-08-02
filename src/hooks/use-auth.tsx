@@ -81,7 +81,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setLoading(true);
       const appUser = await fetchUserData(user);
       setUser(appUser);
       setLoading(false);
@@ -92,12 +91,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   const refreshAuth = useCallback(async () => {
     const currentUser = auth.currentUser;
-    if (currentUser) {
-        setLoading(true);
-        const appUser = await fetchUserData(currentUser);
-        setUser(appUser);
-        setLoading(false);
-    }
+    // No need to setLoading(true) here, as it can cause flashes of the loading screen on re-renders.
+    const appUser = await fetchUserData(currentUser);
+    setUser(appUser);
   }, [fetchUserData]);
 
   const signOut = async () => {
