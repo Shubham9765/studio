@@ -8,7 +8,7 @@ import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { assignDeliveryBoy, getOrdersForRestaurant, getRestaurantByOwnerId, updateOrderPaymentStatus, updateOrderStatus } from '@/services/ownerService';
+import { assignDeliveryBoy, getRestaurantByOwnerId, updateOrderPaymentStatus, updateOrderStatus, listenToOrdersForRestaurant } from '@/services/ownerService';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, BookOpen, Check, BadgeCent, CircleDollarSign, Printer, User, Phone, MapPin, Package, ChefHat, Bike, PartyPopper, History } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -124,34 +124,45 @@ export default function ManageOrdersPage() {
     const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
     const [orderToPrint, setOrderToPrint] = useState<Order | null>(null);
 
-    const fetchOrdersData = async (restaurantId: string) => {
-        try {
-            const items = await getOrdersForRestaurant(restaurantId);
-            setOrders(items);
-        } catch (e: any) {
-            setError('Failed to fetch orders.');
-            toast({ variant: 'destructive', title: 'Error', description: e.message });
-        }
-    };
-    
-    const fetchRestaurantData = async (ownerId: string) => {
-         try {
-            setLoading(true);
-            const rest = await getRestaurantByOwnerId(user.uid);
-            setRestaurant(rest);
-            if (rest) {
-                await fetchOrdersData(rest.id);
-            } else {
-                    setError('No restaurant found for this owner.');
+    useEffect(() => {
+        const fetchRestaurantAndListenForOrders = async () => {
+            if (user?.uid) {
+                setLoading(true);
+                try {
+                    const rest = await getRestaurantByOwnerId(user.uid);
+                    setRestaurant(rest);
+                    if (rest) {
+                        const unsubscribe = listenToOrdersForRestaurant(rest.id, (newOrders) => {
+                            setOrders(newOrders);
+                            setLoading(false);
+                        });
+                        return () => unsubscribe(); // Return unsubscribe function for cleanup
+                    } else {
+                        setError('No restaurant found for this owner.');
+                        setLoading(false);
+                    }
+                } catch (e: any) {
+                    setError('Failed to fetch restaurant data.');
+                    toast({ variant: 'destructive', title: 'Error', description: e.message });
+                    setLoading(false);
+                }
+            } else if (!authLoading) {
+                 setLoading(false);
             }
-        } catch (e: any) {
-            setError('Failed to fetch restaurant data.');
-            toast({ variant: 'destructive', title: 'Error', description: e.message });
-        } finally {
-            setLoading(false);
-        }
-    }
+        };
 
+        const unsubscribePromise = fetchRestaurantAndListenForOrders();
+
+        // Cleanup function for when the component unmounts
+        return () => {
+            unsubscribePromise.then(unsubscribe => {
+                if (unsubscribe) {
+                    unsubscribe();
+                }
+            });
+        };
+    }, [user, authLoading, toast]);
+    
     useEffect(() => {
         if (orderToPrint) {
             const handleAfterPrint = () => {
@@ -171,20 +182,11 @@ export default function ManageOrdersPage() {
     };
 
 
-    useEffect(() => {
-        if (!authLoading && user) {
-            fetchRestaurantData(user.uid);
-        } else if (!authLoading && !user) {
-            setLoading(false);
-        }
-    }, [user, authLoading, toast]);
-    
     const handleMarkAsPaid = async (orderId: string) => {
         setUpdatingOrderId(orderId);
         try {
             await updateOrderPaymentStatus(orderId, 'completed');
             toast({ title: 'Payment Confirmed', description: 'Order marked as paid.'});
-            if (restaurant) await fetchOrdersData(restaurant.id);
         } catch(e: any) {
             toast({ variant: 'destructive', title: 'Error', description: e.message });
         } finally {
@@ -197,7 +199,6 @@ export default function ManageOrdersPage() {
         try {
             await updateOrderStatus(orderId, status);
             toast({ title: 'Order Status Updated', description: 'Customer will be notified.'});
-            if (restaurant) await fetchOrdersData(restaurant.id);
         } catch (e: any) {
              toast({ variant: 'destructive', title: 'Error', description: e.message });
         } finally {
@@ -219,7 +220,6 @@ export default function ManageOrdersPage() {
         try {
             await assignDeliveryBoy(orderId, { id: deliveryBoy.id, name: deliveryBoy.name });
             toast({ title: 'Delivery Assigned', description: `Order assigned to ${deliveryBoy.name} and is now out for delivery.` });
-            if (restaurant) await fetchOrdersData(restaurant.id);
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: e.message });
         } finally {
