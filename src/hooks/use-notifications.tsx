@@ -48,6 +48,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         if (typeof window === 'undefined' || !user || permission !== 'granted') return;
         
         try {
+            // Add a small delay to allow Firebase to initialize fully
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
             const messaging = getMessaging(app);
             const currentToken = await getToken(messaging, { vapidKey: VAPID_KEY });
             
