@@ -17,6 +17,7 @@ import { useCart } from '@/hooks/use-cart';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 
 interface GroupedMenuItems {
@@ -24,7 +25,7 @@ interface GroupedMenuItems {
 }
 
 function FloatingCartBar() {
-    const { cart, cartCount, totalPrice, restaurant } = useCart();
+    const { cartCount, totalPrice, restaurant } = useCart();
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 
     if (cartCount === 0) return null;
