@@ -98,7 +98,7 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
 
   const todaysOrders = Math.floor(Math.random() * 20) + 5; 
   const pendingDeliveries = Math.floor(Math.random() * 5);
-  const reviewCount = Math.floor(Math.random() * 200) + 50;
+  const reviewCount = restaurant.reviewCount || 0;
 
 
   return {
@@ -266,9 +266,19 @@ export async function assignDeliveryBoy(orderId: string, deliveryBoy: {id: strin
         status: 'out-for-delivery'
     });
 
+    // Send notification to customer about delivery status
+    const orderSnap = await getDoc(orderRef);
+    const orderData = orderSnap.data() as Order;
+    if (orderData?.customerId) {
+        const title = 'Order Out for Delivery!';
+        const body = `Your order from ${orderData.restaurantName} is on its way.`;
+        await sendNotification(orderData.customerId, title, body, '/my-orders');
+    }
+
+    // Send notification to delivery boy
     const title = 'New Delivery Assignment';
     const body = `You have been assigned a new order to deliver. Order #${orderId.substring(0,6)}`;
-    await sendNotification(deliveryBoy.id, title, body, '/');
+    await sendNotification(deliveryBoy.id, title, body, '/delivery');
 }
 
 
@@ -283,8 +293,6 @@ export async function getOrdersForDeliveryBoy(deliveryBoyId: string): Promise<Or
         return [];
     }
     const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
-     // Filter locally for relevant statuses and sort
-    return orders
-        .filter(order => ['out-for-delivery', 'delivered'].includes(order.status))
-        .sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+    
+    return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
 }

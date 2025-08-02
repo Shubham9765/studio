@@ -160,7 +160,7 @@ export default function OwnerDashboard() {
           <StatCard loading={loading} title="Today's Orders" value={data.todaysOrders} description="+5 since yesterday" icon={<ClipboardList className="h-4 w-4 text-muted-foreground" />} />
           <StatCard loading={loading} title="Pending Deliveries" value={data.pendingDeliveries} description="To be picked up" icon={<Truck className="h-4 w-4 text-muted-foreground" />} />
           <StatCard loading={loading} title="Menu Items" value={data.menuItemsCount} description="Total items listed" icon={<Utensils className="h-4 w-4 text-muted-foreground" />} />
-          <StatCard loading={loading} title="Average Rating" value={data.restaurant.rating} description={`Based on ${data.reviewCount} reviews`} icon={<Star className="h-4 w-4 text-muted-foreground" />} />
+          <StatCard loading={loading} title="Average Rating" value={data.restaurant.rating.toFixed(1)} description={`Based on ${data.reviewCount} reviews`} icon={<Star className="h-4 w-4 text-muted-foreground" />} />
         </div>
          <div className="mt-12">
             <Card>
@@ -179,15 +179,17 @@ export default function OwnerDashboard() {
         </div>
       </main>
     </div>
-    <EditRestaurantForm
-        isOpen={isEditFormOpen}
-        onOpenChange={setIsEditFormOpen}
-        restaurant={data.restaurant}
-        onRestaurantUpdated={() => {
-            setIsEditFormOpen(false);
-            refreshData();
-        }}
-    />
+    {data.restaurant && (
+        <EditRestaurantForm
+            isOpen={isEditFormOpen}
+            onOpenChange={setIsEditFormOpen}
+            restaurant={data.restaurant}
+            onRestaurantUpdated={() => {
+                setIsEditFormOpen(false);
+                refreshData();
+            }}
+        />
+    )}
     </>
   );
 }
