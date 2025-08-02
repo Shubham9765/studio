@@ -1,10 +1,7 @@
 
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import { useAuth } from './use-auth';
-import { app, db } from '@/services/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
 interface NotificationContextType {
     permission: NotificationPermission | null;
@@ -13,10 +10,7 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-const VAPID_KEY = 'BCRPec9LBTgPSoCdKMkEybDUggXVqFVAkXu2RvtfPTDJJzeljomV3-T3QwxrxfTBdmtszoF6m8ew45gTy1G9N6Y';
-
 export function NotificationProvider({ children }: { children: ReactNode }) {
-    const { user } = useAuth();
     const [permission, setPermission] = useState<NotificationPermission | null>(null);
 
     useEffect(() => {

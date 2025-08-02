@@ -105,7 +105,6 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
     const orderRef = doc(db, 'orders', orderId);
     await updateDoc(orderRef, { status });
 
-    // Optional: Send notification
     try {
         const orderSnap = await getDoc(orderRef);
         if (orderSnap.exists()) {
@@ -159,7 +158,6 @@ export async function assignDeliveryBoy(orderId: string, deliveryBoy: {id: strin
         status: 'out-for-delivery'
     });
     
-     // Optional: Send notification
     try {
         const orderSnap = await getDoc(orderRef);
         if (orderSnap.exists()) {

@@ -36,7 +36,6 @@ export async function createOrder(
 
   const docRef = await addDoc(ordersCollection, newOrder);
   
-  // Optional: Send notification to restaurant owner
   if(restaurant.ownerId) {
     const title = 'New Order Received!';
     const body = `You have a new order from ${customerName} for a total of $${total.toFixed(2)}`;
