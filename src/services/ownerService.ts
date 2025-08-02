@@ -10,17 +10,6 @@ import type { EditRestaurantSchema } from '@/components/owner/edit-restaurant-fo
 import type { MenuItemSchema } from '@/components/owner/menu-item-form';
 
 
-async function sendNotification(userId: string, title: string, body: string, url: string) {
-    const { sendFcmNotification } = await import('@/ai/flows/send-fcm-notification');
-    // This is a fire-and-forget operation. We don't want to block the UI
-    // or show an error to the user if the notification fails to send.
-    sendFcmNotification({ userId, title, body, url })
-      .catch(error => {
-        console.error("Failed to send notification:", error);
-      });
-}
-
-
 export async function createRestaurant(ownerId: string, data: z.infer<typeof RestaurantSchema>) {
     if (!ownerId) {
         throw new Error('An owner ID is required to create a restaurant.');
@@ -116,13 +105,16 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
     const orderRef = doc(db, 'orders', orderId);
     await updateDoc(orderRef, { status });
 
-    // Send notification to customer
-    const orderSnap = await getDoc(orderRef);
-    const orderData = orderSnap.data() as Order;
-    if (orderData?.customerId) {
-        const title = `Order Status Updated`;
-        const body = `Your order from ${orderData.restaurantName} is now: ${status.replace('-', ' ')}`;
-        await sendNotification(orderData.customerId, title, body, '/my-orders');
+    // Optional: Send notification
+    try {
+        const orderSnap = await getDoc(orderRef);
+        if (orderSnap.exists()) {
+            const orderData = orderSnap.data() as Order;
+            const message = `Your order #${orderId.substring(0, 6)} is now ${status.replace('-', ' ')}.`;
+            console.log(`(Notification Stub) To: ${orderData.customerId}, Message: ${message}`);
+        }
+    } catch (error) {
+        console.error("Failed to send status update notification:", error);
     }
 }
 
@@ -166,18 +158,16 @@ export async function assignDeliveryBoy(orderId: string, deliveryBoy: {id: strin
         deliveryBoy,
         status: 'out-for-delivery'
     });
-
-    // Send notification to customer about delivery status
-    const orderSnap = await getDoc(orderRef);
-    const orderData = orderSnap.data() as Order;
-    if (orderData?.customerId) {
-        const title = 'Order Out for Delivery!';
-        const body = `Your order from ${orderData.restaurantName} is on its way.`;
-        await sendNotification(orderData.customerId, title, body, '/my-orders');
+    
+     // Optional: Send notification
+    try {
+        const orderSnap = await getDoc(orderRef);
+        if (orderSnap.exists()) {
+            const orderData = orderSnap.data() as Order;
+            const message = `Your order #${orderId.substring(0, 6)} is out for delivery with ${deliveryBoy.name}!`;
+            console.log(`(Notification Stub) To: ${orderData.customerId}, Message: ${message}`);
+        }
+    } catch (error) {
+        console.error("Failed to send delivery notification:", error);
     }
-
-    // Send notification to delivery boy
-    const title = 'New Delivery Assignment';
-    const body = `You have been assigned a new order to deliver. Order #${orderId.substring(0,6)}`;
-    await sendNotification(deliveryBoy.id, title, body, '/delivery');
 }

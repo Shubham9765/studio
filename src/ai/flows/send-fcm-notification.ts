@@ -1,76 +1,85 @@
-
 'use server';
 
-/**
- * @fileOverview A server-side flow to send FCM notifications.
- *
- * - sendFcmNotification - A function that sends a push notification to a user.
- * - SendFcmNotificationInput - The input type for the sendFcmNotification function.
- */
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
-import { getDoc, doc } from 'firebase/firestore';
-import { getMessaging } from 'firebase-admin/messaging';
-import { app } from '@/services/firebaseAdmin';
-import { db } from '@/services/firebase';
+import { db } from './firebase';
+import { collection, doc, addDoc, serverTimestamp, runTransaction, updateDoc, getDoc } from 'firebase/firestore';
+import type { Order } from '@/lib/types';
+import type { CartItem } from '@/hooks/use-cart';
+import type { Restaurant } from '@/lib/types';
 
-const SendFcmNotificationInputSchema = z.object({
-    userId: z.string().describe('The ID of the user to send the notification to.'),
-    title: z.string().describe('The title of the notification.'),
-    body: z.string().describe('The body content of the notification.'),
-    url: z.string().describe('The URL to open when the notification is clicked.'),
-});
-export type SendFcmNotificationInput = z.infer<typeof SendFcmNotificationInputSchema>;
 
-export async function sendFcmNotification(input: SendFcmNotificationInput): Promise<void> {
-    return sendFcmNotificationFlow(input);
+export async function createOrder(
+  customerId: string,
+  customerName: string,
+  restaurant: Restaurant, 
+  items: CartItem[], 
+  total: number,
+  orderDetails: Partial<Order>
+): Promise<string> {
+  const ordersCollection = collection(db, 'orders');
+
+  const newOrder: Omit<Order, 'id'> = {
+      customerId,
+      customerName,
+      restaurantId: restaurant.id,
+      restaurantName: restaurant.name,
+      items,
+      total,
+      status: 'pending',
+      createdAt: serverTimestamp() as any, // Let Firestore handle the timestamp
+      paymentMethod: orderDetails.paymentMethod || 'cash',
+      paymentStatus: orderDetails.paymentStatus || 'pending',
+      paymentDetails: orderDetails.paymentDetails || {},
+      deliveryAddress: orderDetails.deliveryAddress || 'N/A',
+      customerPhone: orderDetails.customerPhone || 'N/A',
+  };
+
+  const docRef = await addDoc(ordersCollection, newOrder);
+  
+  // Optional: Send notification to restaurant owner
+  if(restaurant.ownerId) {
+    const title = 'New Order Received!';
+    const body = `You have a new order from ${customerName} for a total of $${total.toFixed(2)}`;
+    console.log(`(Notification Stub) To: ${restaurant.ownerId}, Title: ${title}, Body: ${body}`);
+  }
+
+  return docRef.id;
 }
 
-const sendFcmNotificationFlow = ai.defineFlow(
-  {
-    name: 'sendFcmNotificationFlow',
-    inputSchema: SendFcmNotificationInputSchema,
-    outputSchema: z.void(),
-  },
-  async (input) => {
+
+export async function rateRestaurant(orderId: string, restaurantId: string, newRating: number): Promise<void> {
+    const restaurantRef = doc(db, 'restaurants', restaurantId);
+    const orderRef = doc(db, 'orders', orderId);
+
     try {
-        const userDocRef = doc(db, 'users', input.userId);
-        const userDoc = await getDoc(userDocRef);
-        
-        if (!userDoc.exists()) {
-            console.warn(`User document not found for userId: ${input.userId}`);
-            return;
-        }
+        await runTransaction(db, async (transaction) => {
+            const restaurantDoc = await transaction.get(restaurantRef);
+            if (!restaurantDoc.exists()) {
+                throw "Restaurant not found!";
+            }
+             const orderDoc = await transaction.get(orderRef);
+            if (!orderDoc.exists()) {
+                throw "Order not found!";
+            }
+            if (orderDoc.data().ratingGiven) {
+                throw "This order has already been rated.";
+            }
+            
+            const data = restaurantDoc.data();
+            const currentRating = data.rating || 0;
+            const reviewCount = data.reviewCount || 0;
 
-        const fcmToken = userDoc.data()?.fcmToken;
+            const newReviewCount = reviewCount + 1;
+            const updatedRating = ((currentRating * reviewCount) + newRating) / newReviewCount;
 
-        if (!fcmToken) {
-            console.warn(`FCM token not found for userId: ${input.userId}`);
-            return;
-        }
+            transaction.update(restaurantRef, {
+                rating: updatedRating,
+                reviewCount: newReviewCount
+            });
 
-        const message = {
-            notification: {
-                title: input.title,
-                body: input.body,
-            },
-            webpush: {
-                fcm_options: {
-                    link: input.url,
-                },
-                notification: {
-                    icon: '/favicon.ico',
-                }
-            },
-            token: fcmToken,
-        };
-
-        await getMessaging(app).send(message);
-        console.log(`Successfully sent message to user ${input.userId}`);
-
-    } catch (error) {
-      console.error('Error sending FCM message:', error);
-      // We don't rethrow the error to prevent the caller from failing if notifications fail.
+            transaction.update(orderRef, { ratingGiven: true });
+        });
+    } catch (e) {
+        console.error("Transaction failed: ", e);
+        throw e;
     }
-  }
-);
+}

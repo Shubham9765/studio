@@ -2,11 +2,10 @@
 'use server';
 
 import { db } from './firebase';
-import { collection, doc, addDoc, serverTimestamp, runTransaction, updateDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, serverTimestamp, runTransaction, updateDoc, getDoc } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import type { CartItem } from '@/hooks/use-cart';
 import type { Restaurant } from '@/lib/types';
-import { sendFcmNotification } from '@/ai/flows/send-fcm-notification';
 
 
 export async function createOrder(
@@ -37,14 +36,11 @@ export async function createOrder(
 
   const docRef = await addDoc(ordersCollection, newOrder);
   
-  // Send notification to restaurant owner
+  // Optional: Send notification to restaurant owner
   if(restaurant.ownerId) {
     const title = 'New Order Received!';
     const body = `You have a new order from ${customerName} for a total of $${total.toFixed(2)}`;
-    
-    // Fire-and-forget notification
-    sendFcmNotification({ userId: restaurant.ownerId, title, body, url: '/owner/orders' })
-      .catch(error => console.error("Failed to send new order notification:", error));
+    console.log(`(Notification Stub) To: ${restaurant.ownerId}, Title: ${title}, Body: ${body}`);
   }
 
   return docRef.id;
