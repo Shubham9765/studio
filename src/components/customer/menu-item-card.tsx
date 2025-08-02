@@ -2,7 +2,7 @@
 'use client';
 
 import Image from 'next/image';
-import type { MenuItem, Restaurant } from '@/lib/types';
+import type { MenuItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
@@ -51,33 +51,35 @@ export function MenuItemCard({ item, restaurantId }: MenuItemCardProps) {
 
     return (
         <div className={cn(
-            "rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden flex flex-col justify-between transition-all duration-300",
-            !item.isAvailable && "bg-muted/50 text-muted-foreground"
+            "group relative rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden flex flex-col justify-between transition-all duration-300",
+            !item.isAvailable && "bg-muted/50 text-muted-foreground cursor-not-allowed",
+            item.isAvailable && "hover:shadow-lg hover:-translate-y-1"
         )}>
             {item.imageUrl && (
-                 <div className="relative">
+                 <div className="relative overflow-hidden">
                     <Image
                         src={item.imageUrl}
                         alt={item.name}
-                        width={400}
-                        height={250}
-                        className={cn("object-cover w-full h-48", !item.isAvailable && "grayscale")}
+                        width={300}
+                        height={200}
+                        className={cn("object-cover w-full h-32 transition-transform duration-300 group-hover:scale-105", !item.isAvailable && "grayscale")}
                     />
-                     {!item.isAvailable && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <span className="text-white font-bold text-lg tracking-wider">UNAVAILABLE</span>
+                    {!item.isAvailable && (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                            <span className="text-white font-bold text-sm tracking-wider">UNAVAILABLE</span>
                         </div>
-                     )}
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
             )}
-            <div className="p-4 flex-grow">
-                <h3 className="font-bold text-lg">{item.name}</h3>
-                <p className="text-sm text-muted-foreground mt-1 h-12 overflow-hidden">{item.description}</p>
+            <div className="p-3 flex-grow flex flex-col">
+                <h3 className="font-semibold text-sm leading-tight truncate flex-grow">{item.name}</h3>
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2 h-8">{item.description}</p>
             </div>
-             <div className="flex justify-between items-center p-4 pt-2">
-                <p className="font-semibold text-primary text-lg">${item.price.toFixed(2)}</p>
-                <Button size="sm" disabled={!item.isAvailable} onClick={handleAddToCart}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
+             <div className="flex justify-between items-center px-3 pb-3">
+                <p className="font-bold text-primary text-base">${item.price.toFixed(2)}</p>
+                <Button size="sm" className="h-8 text-xs" disabled={!item.isAvailable} onClick={handleAddToCart}>
+                    <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
                     Add
                 </Button>
             </div>

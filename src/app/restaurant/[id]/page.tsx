@@ -206,7 +206,7 @@ export default function RestaurantPage() {
                 Object.entries(groupedMenuItems).map(([category, items]) => (
                     <section key={category} className="mb-12">
                         <h2 className="text-3xl font-bold font-headline mb-6 border-b-2 border-primary pb-2">{category}</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                             {items.map(item => (
                                 <MenuItemCard key={item.id} item={item} restaurantId={restaurant.id} />
                             ))}
