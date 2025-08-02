@@ -1,6 +1,6 @@
 
 import { db } from './firebase';
-import { collection, getDocs, doc, setDoc, query, where, getDoc, collectionGroup } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, query, where, getDoc, collectionGroup, limit } from 'firebase/firestore';
 import type { Restaurant, MenuItem, Order } from '@/lib/types';
 import { MOCK_RESTAURANTS } from '@/lib/seed';
 

@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import type { Order } from '@/lib/types';
-import { getOrdersByCustomerId, rateRestaurant } from '@/services/restaurantService';
+import { rateRestaurant } from '@/services/restaurantService';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
