@@ -8,10 +8,10 @@ import type { z } from 'zod';
 import type { RestaurantSchema } from '@/components/owner/restaurant-registration-form';
 import type { EditRestaurantSchema } from '@/components/owner/edit-restaurant-form';
 import type { MenuItemSchema } from '@/components/owner/menu-item-form';
-import { sendFcmNotification } from '@/ai/flows/send-fcm-notification';
 
 
 async function sendNotification(userId: string, title: string, body: string, url: string) {
+    const { sendFcmNotification } = await import('@/ai/flows/send-fcm-notification');
     // This is a fire-and-forget operation. We don't want to block the UI
     // or show an error to the user if the notification fails to send.
     sendFcmNotification({ userId, title, body, url })
