@@ -175,6 +175,14 @@ export default function MyOrdersPage() {
                                     </div>
                                     <AccordionContent className="p-6 pt-0">
                                         <OrderStatusTracker status={order.status} />
+                                         {order.deliveryBoy && ['out-for-delivery', 'delivered'].includes(order.status) && (
+                                            <div className="mt-4 p-3 rounded-md bg-muted flex items-center gap-3">
+                                                <Bike className="h-6 w-6 text-primary"/>
+                                                <div>
+                                                    <p className="font-semibold">{order.deliveryBoy.name} is on the way with your order!</p>
+                                                </div>
+                                            </div>
+                                        )}
                                         <div className="mt-6">
                                             <h4 className="font-semibold mb-2">Order Summary</h4>
                                              <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
