@@ -11,7 +11,7 @@ import { auth, db } from '@/services/firebase';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  sendEmailVerification,
+  sendSignInLinkToEmail,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useState } from 'react';
@@ -66,6 +66,7 @@ export function AuthDialog(props: Props) {
   const { open, onOpenChange } = props;
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   
   const signUpForm = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
@@ -95,35 +96,19 @@ export function AuthDialog(props: Props) {
         setIsSubmitting(false);
         return;
       }
+
+      const actionCodeSettings = {
+        url: `${window.location.origin}/finish-signup`,
+        handleCodeInApp: true,
+      };
       
-      // Create user directly
-      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      const user = userCredential.user;
-
-      // Send verification email
-      await sendEmailVerification(user);
-
-      // Create user document in Firestore
-      const userRef = doc(db, 'users', user.uid);
-      await setDoc(userRef, {
-          uid: user.uid,
-          username: values.username,
-          displayName: values.username,
-          email: user.email,
-          phone: values.phone,
-          role: values.role,
-          createdAt: new Date(),
-          status: 'active',
-          emailVerified: false // Initially false
-      });
+      await sendSignInLinkToEmail(auth, values.email, actionCodeSettings);
       
-      toast({
-        title: "Account Created!",
-        description: "Please check your email to verify your account. You can now log in.",
-      });
-
-      // Close the dialog and switch to the login tab
-      onOpenChange(false);
+      // Store user info and password in local storage to retrieve after email verification
+      window.localStorage.setItem('emailForSignIn', values.email);
+      window.localStorage.setItem('signUpData', JSON.stringify(values));
+      
+      setEmailSent(true);
 
     } catch (error: any) {
       toast({
@@ -177,7 +162,7 @@ export function AuthDialog(props: Props) {
 
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => { onOpenChange(isOpen); if(!isOpen) setEmailSent(false);}}>
       <DialogContent className="sm:max-w-md">
          <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
@@ -226,107 +211,119 @@ export function AuthDialog(props: Props) {
                 </Form>
             </TabsContent>
             <TabsContent value="signup">
-                <DialogHeader className="mb-4">
-                    <DialogTitle>Create an Account</DialogTitle>
-                    <DialogDescription>
-                    Sign up to get started with Village Eats.
-                    </DialogDescription>
-                </DialogHeader>
-                <Form {...signUpForm}>
-                    <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-2">
-                        <FormField
-                            control={signUpForm.control}
-                            name="username"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Username</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="your_username" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={signUpForm.control}
-                            name="email"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Email</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="you@email.com" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={signUpForm.control}
-                            name="phone"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Phone Number</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="+91" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={signUpForm.control}
-                            name="password"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Password</FormLabel>
-                                <FormControl>
-                                    <Input type="password" placeholder="••••••••" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={signUpForm.control}
-                            name="role"
-                            render={({ field }) => (
-                                <FormItem className="space-y-3 pt-2">
-                                <FormLabel>I am a...</FormLabel>
-                                <FormControl>
-                                    <RadioGroup
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                    className="flex items-center space-x-1 sm:space-x-4"
-                                    >
-                                    <FormItem className="flex items-center space-x-2 space-y-0">
-                                        <FormControl>
-                                        <RadioGroupItem value="customer" />
-                                        </FormControl>
-                                        <FormLabel className="font-normal">Customer</FormLabel>
+                {emailSent ? (
+                     <div className="text-center py-8">
+                        <MailCheck className="mx-auto h-16 w-16 text-green-500 mb-4" />
+                        <h3 className="text-xl font-bold">Check your email</h3>
+                        <p className="text-muted-foreground mt-2">
+                            We've sent a verification link to your email address. Please click the link to complete your sign-up.
+                        </p>
+                    </div>
+                ) : (
+                <>
+                    <DialogHeader className="mb-4">
+                        <DialogTitle>Create an Account</DialogTitle>
+                        <DialogDescription>
+                        Sign up to get started with Village Eats.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Form {...signUpForm}>
+                        <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-2">
+                            <FormField
+                                control={signUpForm.control}
+                                name="username"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Username</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="your_username" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
                                     </FormItem>
-                                    <FormItem className="flex items-center space-x-2 space-y-0">
-                                        <FormControl>
-                                        <RadioGroupItem value="owner" />
-                                        </FormControl>
-                                        <FormLabel className="font-normal">Owner</FormLabel>
+                                )}
+                            />
+                            <FormField
+                                control={signUpForm.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Email</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="you@email.com" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
                                     </FormItem>
-                                    <FormItem className="flex items-center space-x-2 space-y-0">
-                                        <FormControl>
-                                        <RadioGroupItem value="delivery" />
-                                        </FormControl>
-                                        <FormLabel className="font-normal">Delivery</FormLabel>
+                                )}
+                            />
+                            <FormField
+                                control={signUpForm.control}
+                                name="phone"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Phone Number</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="+91" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
                                     </FormItem>
-                                    </RadioGroup>
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <Button type="submit" className="w-full !mt-6" disabled={isSubmitting}>
-                            {isSubmitting ? 'Creating Account...' : 'Sign Up'}
-                        </Button>
-                    </form>
-                </Form>
+                                )}
+                            />
+                            <FormField
+                                control={signUpForm.control}
+                                name="password"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Password</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" placeholder="••••••••" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={signUpForm.control}
+                                name="role"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-3 pt-2">
+                                    <FormLabel>I am a...</FormLabel>
+                                    <FormControl>
+                                        <RadioGroup
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                        className="flex items-center space-x-1 sm:space-x-4"
+                                        >
+                                        <FormItem className="flex items-center space-x-2 space-y-0">
+                                            <FormControl>
+                                            <RadioGroupItem value="customer" />
+                                            </FormControl>
+                                            <FormLabel className="font-normal">Customer</FormLabel>
+                                        </FormItem>
+                                        <FormItem className="flex items-center space-x-2 space-y-0">
+                                            <FormControl>
+                                            <RadioGroupItem value="owner" />
+                                            </FormControl>
+                                            <FormLabel className="font-normal">Owner</FormLabel>
+                                        </FormItem>
+                                        <FormItem className="flex items-center space-x-2 space-y-0">
+                                            <FormControl>
+                                            <RadioGroupItem value="delivery" />
+                                            </FormControl>
+                                            <FormLabel className="font-normal">Delivery</FormLabel>
+                                        </FormItem>
+                                        </RadioGroup>
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="submit" className="w-full !mt-6" disabled={isSubmitting}>
+                                {isSubmitting ? 'Sending verification...' : 'Sign Up'}
+                            </Button>
+                        </form>
+                    </Form>
+                </>
+                )}
             </TabsContent>
          </Tabs>
       </DialogContent>
