@@ -14,7 +14,7 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-const VAPID_KEY = 'BPP9s-clx8lC_g_3WhCat2u_sUeEX3rkb7a9f_UATqvr9VPQchNU7s8n3nEMLzK5sZkUi2s2LjpqD9UPq9u22iY';
+const VAPID_KEY = 'BCRPec9LBTgPSoCdKMkEybDUggXVqFVAkXu2RvtfPTDJJzeljomV3-T3QwxrxfTBdmtszoF6m8ew45gTy1G9N6Y';
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
