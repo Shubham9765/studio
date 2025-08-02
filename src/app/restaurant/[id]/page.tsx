@@ -8,16 +8,57 @@ import type { Restaurant, MenuItem } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Star, Clock, Utensils, Search } from 'lucide-react';
+import { AlertTriangle, Star, Clock, Utensils, Search, ShoppingCart, X } from 'lucide-react';
 import { MenuItemCard } from '@/components/customer/menu-item-card';
 import { Cart } from '@/components/customer/cart';
 import { Input } from '@/components/ui/input';
 import { usePathname } from 'next/navigation';
+import { useCart } from '@/hooks/use-cart';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
 
 
 interface GroupedMenuItems {
   [category: string]: MenuItem[];
 }
+
+function FloatingCartBar() {
+    const { cart, cartCount, totalPrice, restaurant } = useCart();
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+    if (cartCount === 0) return null;
+
+    return (
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+            <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-background/95 backdrop-blur-sm p-4 border-t z-40">
+                 <SheetTrigger asChild>
+                    <Button className="w-full h-14 text-lg">
+                        <div className="flex justify-between items-center w-full">
+                            <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-base">{cartCount}</Badge>
+                                <span>View Your Cart</span>
+                            </div>
+                            <span>${totalPrice.toFixed(2)}</span>
+                        </div>
+                    </Button>
+                 </SheetTrigger>
+            </div>
+            <SheetContent side="bottom" className="h-4/5 flex flex-col">
+                <SheetHeader className="text-left">
+                    <SheetTitle>Your Order</SheetTitle>
+                </SheetHeader>
+                <div className="flex-grow overflow-hidden">
+                    {restaurant && <Cart restaurant={restaurant} isSheet={true} />}
+                </div>
+                 <Button className="w-full h-12 text-lg mt-4" onClick={() => setIsSheetOpen(false)}>
+                    Continue Browsing
+                </Button>
+            </SheetContent>
+        </Sheet>
+    )
+}
+
 
 export default function RestaurantPage() {
   const pathname = usePathname();
@@ -147,9 +188,9 @@ export default function RestaurantPage() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-8">
+        <div className="grid lg:grid-cols-4 gap-8">
           {/* Menu Section */}
-          <div className="md:col-span-2 lg:col-span-3">
+          <div className="lg:col-span-3">
              <div className="mb-8 relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input 
@@ -164,7 +205,7 @@ export default function RestaurantPage() {
                 Object.entries(groupedMenuItems).map(([category, items]) => (
                     <section key={category} className="mb-12">
                         <h2 className="text-3xl font-bold font-headline mb-6 border-b-2 border-primary pb-2">{category}</h2>
-                        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             {items.map(item => (
                                 <MenuItemCard key={item.id} item={item} restaurantId={restaurant.id} />
                             ))}
@@ -183,14 +224,15 @@ export default function RestaurantPage() {
                 </div>
             )}
           </div>
-          {/* Cart Section */}
-          <aside className="lg:col-span-1">
+          {/* Cart Section for Desktop */}
+          <aside className="hidden lg:block lg:col-span-1">
              <div className="sticky top-24">
                 <Cart restaurant={restaurant} />
              </div>
           </aside>
         </div>
       </main>
+      <FloatingCartBar />
     </div>
   );
 }
