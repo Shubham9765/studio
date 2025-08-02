@@ -2,9 +2,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { getAdminDashboardData, type AdminDashboardData } from '@/services/adminService';
-import type { AppUser } from './use-auth';
-import type { Restaurant } from '@/lib/types';
+import { getAdminDashboardData } from '@/services/adminClientService';
+import type { AdminDashboardData } from '@/services/adminClientService';
 
 const initialData: AdminDashboardData = {
     customerCount: 0,

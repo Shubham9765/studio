@@ -7,7 +7,7 @@ import type { MenuItem, Restaurant } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChefHat, Utensils } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getRestaurants, getTopRatedMenuItems } from '@/services/restaurantService';
+import { getRestaurants, getTopRatedMenuItems } from '@/services/restaurantClientService';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MenuItemSearchCard } from './customer/menu-item-search-card';
 

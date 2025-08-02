@@ -2,8 +2,58 @@
 'use client';
 
 import { db } from './firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import type { Order } from '@/lib/types';
+import { collection, query, where, onSnapshot, getDocs, limit } from 'firebase/firestore';
+import type { Order, Restaurant } from '@/lib/types';
+
+
+export interface OwnerDashboardData {
+    restaurant: Restaurant | null;
+    todaysOrders: number;
+    pendingDeliveries: number;
+    menuItemsCount: number;
+    reviewCount: number;
+}
+
+
+export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashboardData> {
+  if (!ownerId) {
+    throw new Error('Owner ID is required to fetch dashboard data.');
+  }
+
+  const q = query(collection(db, 'restaurants'), where('ownerId', '==', ownerId), limit(1));
+  const restaurantSnapshot = await getDocs(q);
+
+  if (restaurantSnapshot.empty) {
+    return {
+        restaurant: null,
+        todaysOrders: 0,
+        pendingDeliveries: 0,
+        menuItemsCount: 0,
+        reviewCount: 0,
+    };
+  }
+
+  const restaurantDoc = restaurantSnapshot.docs[0];
+  const restaurant = { ...restaurantDoc.data(), id: restaurantDoc.id } as Restaurant;
+  
+  const menuItemsQuery = query(collection(db, 'restaurants', restaurant.id, 'menuItems'));
+  const menuItemsSnapshot = await getDocs(menuItemsQuery);
+  const menuItemsCount = menuItemsSnapshot.size;
+
+  const todaysOrders = Math.floor(Math.random() * 20) + 5; 
+  const pendingDeliveries = Math.floor(Math.random() * 5);
+  const reviewCount = restaurant.reviewCount || 0;
+
+
+  return {
+    restaurant,
+    todaysOrders,
+    pendingDeliveries,
+    menuItemsCount,
+    reviewCount
+  };
+}
+
 
 export function listenToOrdersForRestaurant(restaurantId: string, callback: (orders: Order[]) => void): () => void {
     const ordersRef = collection(db, 'orders');

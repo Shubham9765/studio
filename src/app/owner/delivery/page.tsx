@@ -3,7 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { getRestaurantByOwnerId, addDeliveryBoyToRestaurant, removeDeliveryBoyFromRestaurant } from '@/services/ownerService';
+import { addDeliveryBoyToRestaurant, removeDeliveryBoyFromRestaurant } from '@/services/ownerService';
+import { getRestaurantByOwnerId } from '@/services/restaurantClientService';
 import type { Restaurant, DeliveryBoy } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

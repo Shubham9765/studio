@@ -6,7 +6,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Header } from '@/components/header';
 import { RestaurantCard } from '@/components/restaurant-card';
 import { MenuItemSearchCard } from '@/components/customer/menu-item-search-card';
-import { searchRestaurantsAndMenuItems } from '@/services/restaurantService';
+import { searchRestaurantsAndMenuItems } from '@/services/restaurantClientService';
 import type { Restaurant, MenuItem } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';

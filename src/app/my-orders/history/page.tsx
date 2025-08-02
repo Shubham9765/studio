@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
+import { getOrdersByCustomerId as getOrdersByCustomerIdClient } from '@/services/restaurantClientService';
 
 
 function RatingDialog({ order, onRatingSuccess }: { order: Order, onRatingSuccess: (orderId: string) => void }) {
@@ -95,7 +96,7 @@ export default function OrderHistoryPage() {
         if (!user) return;
         try {
             setLoading(true);
-            const userOrders = await getOrdersByCustomerId(user.uid);
+            const userOrders = await getOrdersByCustomerIdClient(user.uid);
             const historicalOrders = userOrders.filter(o => ['delivered', 'cancelled'].includes(o.status));
             setOrders(historicalOrders);
         } catch (e: any) {

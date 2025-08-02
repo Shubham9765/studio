@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 import { useToast } from '@/hooks/use-toast';
-import { getRestaurantById } from '@/services/restaurantService';
+import { getRestaurantById } from '@/services/restaurantClientService';
 
 interface MenuItemCardProps {
     item: MenuItem;

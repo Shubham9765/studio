@@ -2,7 +2,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { getOwnerDashboardData, type OwnerDashboardData } from '@/services/ownerService';
+import { getOwnerDashboardData } from '@/services/ownerClientService';
+import type { OwnerDashboardData } from '@/services/ownerClientService';
 import { useAuth } from './use-auth';
 
 export function useOwnerDashboardData() {

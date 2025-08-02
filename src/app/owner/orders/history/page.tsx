@@ -8,7 +8,7 @@ import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { getOrdersForRestaurant, getRestaurantByOwnerId } from '@/services/ownerService';
+import { getOrdersForRestaurant, getRestaurantByOwnerId } from '@/services/restaurantClientService';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, BookOpen, History } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';

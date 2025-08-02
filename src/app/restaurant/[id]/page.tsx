@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { getRestaurantById, getMenuItemsForRestaurant } from '@/services/restaurantService';
+import { getRestaurantById, getMenuItemsForRestaurant } from '@/services/restaurantClientService';
 import type { Restaurant, MenuItem } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';

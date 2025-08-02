@@ -57,55 +57,6 @@ export async function createRestaurant(ownerId: string, data: z.infer<typeof Res
     return docRef.id;
 }
 
-
-export interface OwnerDashboardData {
-    restaurant: Restaurant | null;
-    todaysOrders: number;
-    pendingDeliveries: number;
-    menuItemsCount: number;
-    reviewCount: number;
-}
-
-
-export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashboardData> {
-  if (!ownerId) {
-    throw new Error('Owner ID is required to fetch dashboard data.');
-  }
-
-  const q = query(collection(db, 'restaurants'), where('ownerId', '==', ownerId), limit(1));
-  const restaurantSnapshot = await getDocs(q);
-
-  if (restaurantSnapshot.empty) {
-    return {
-        restaurant: null,
-        todaysOrders: 0,
-        pendingDeliveries: 0,
-        menuItemsCount: 0,
-        reviewCount: 0,
-    };
-  }
-
-  const restaurantDoc = restaurantSnapshot.docs[0];
-  const restaurant = { ...restaurantDoc.data(), id: restaurantDoc.id } as Restaurant;
-  
-  const menuItemsQuery = query(collection(db, 'restaurants', restaurant.id, 'menuItems'));
-  const menuItemsSnapshot = await getDocs(menuItemsQuery);
-  const menuItemsCount = menuItemsSnapshot.size;
-
-  const todaysOrders = Math.floor(Math.random() * 20) + 5; 
-  const pendingDeliveries = Math.floor(Math.random() * 5);
-  const reviewCount = restaurant.reviewCount || 0;
-
-
-  return {
-    restaurant,
-    todaysOrders,
-    pendingDeliveries,
-    menuItemsCount,
-    reviewCount
-  };
-}
-
 export async function updateRestaurant(restaurantId: string, data: z.infer<typeof EditRestaurantSchema>) {
     if (!restaurantId) {
         throw new Error('A restaurant ID is required to update a restaurant.');
@@ -128,15 +79,6 @@ export async function updateRestaurant(restaurantId: string, data: z.infer<typeo
 }
 
 // Menu Item Functions
-
-export async function getMenuItems(restaurantId: string): Promise<MenuItem[]> {
-    const menuItemsRef = collection(db, 'restaurants', restaurantId, 'menuItems');
-    const snapshot = await getDocs(menuItemsRef);
-    if (snapshot.empty) {
-        return [];
-    }
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as MenuItem));
-}
 
 export async function addMenuItem(restaurantId: string, data: z.infer<typeof MenuItemSchema>) {
     const menuItemsRef = collection(db, 'restaurants', restaurantId, 'menuItems');
@@ -164,31 +106,7 @@ export async function updateMenuItemAvailability(restaurantId: string, itemId: s
     await updateDoc(itemRef, { isAvailable });
 }
 
-
-export async function getRestaurantByOwnerId(ownerId: string): Promise<Restaurant | null> {
-    const q = query(collection(db, 'restaurants'), where('ownerId', '==', ownerId), limit(1));
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-        return null;
-    }
-
-    const restaurantDoc = snapshot.docs[0];
-    return { ...restaurantDoc.data(), id: restaurantDoc.id } as Restaurant;
-}
-
 // Order Functions
-export async function getOrdersForRestaurant(restaurantId: string): Promise<Order[]> {
-    const ordersRef = collection(db, 'orders');
-    const q = query(ordersRef, where('restaurantId', '==', restaurantId));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-        return [];
-    }
-    const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
-    return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
-}
-
 export async function updateOrderPaymentStatus(orderId: string, paymentStatus: 'completed' | 'pending'): Promise<void> {
     const orderRef = doc(db, 'orders', orderId);
     await updateDoc(orderRef, { paymentStatus });
@@ -262,20 +180,4 @@ export async function assignDeliveryBoy(orderId: string, deliveryBoy: {id: strin
     const title = 'New Delivery Assignment';
     const body = `You have been assigned a new order to deliver. Order #${orderId.substring(0,6)}`;
     await sendNotification(deliveryBoy.id, title, body, '/delivery');
-}
-
-
-export async function getOrdersForDeliveryBoy(deliveryBoyId: string): Promise<Order[]> {
-    const ordersRef = collection(db, 'orders');
-    const q = query(
-        ordersRef, 
-        where('deliveryBoy.id', '==', deliveryBoyId)
-    );
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-        return [];
-    }
-    const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
-    
-    return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
 }
