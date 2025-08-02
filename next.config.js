@@ -1,8 +1,5 @@
 
-import type {NextConfig} from 'next';
-import withPWA from 'next-pwa';
-
-const pwaConfig = withPWA({
+const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
   skipWaiting: true,
@@ -10,8 +7,7 @@ const pwaConfig = withPWA({
   sw: 'firebase-messaging-sw.js', // Use our custom service worker
 });
 
-
-const nextConfig: NextConfig = {
+const nextConfig = {
   /* config options here */
   typescript: {
     ignoreBuildErrors: true,
@@ -35,4 +31,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default pwaConfig(nextConfig);
+module.exports = withPWA(nextConfig);
