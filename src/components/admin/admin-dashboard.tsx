@@ -3,7 +3,7 @@
 
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff, FileText } from 'lucide-react';
+import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff, FileText, MapPin, PlusCircle, Trash2 } from 'lucide-react';
 import { useAdminDashboardData } from '@/hooks/use-admin-dashboard-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,11 +17,12 @@ import { format } from 'date-fns';
 import { useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
-import { updateUserStatus, updateRestaurantStatus } from '@/services/adminService';
+import { updateUserStatus, updateRestaurantStatus, addServiceableCity, removeServiceableCity } from '@/services/adminService';
 import { useToast } from '@/hooks/use-toast';
 import { runFlow } from '@genkit-ai/next/client';
 import { generateSalesReport, type GenerateSalesReportOutput } from '@/ai/flows/generate-sales-report';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Input } from '../ui/input';
 
 
 function StatCard({ title, value, icon, description, loading }: { title: string, value: string | number, icon: React.ReactNode, description: string, loading: boolean }) {
@@ -319,6 +320,77 @@ function Reports() {
     )
 }
 
+function ServiceableLocations({ locations, loading, onUpdate }: { locations: string[], loading: boolean, onUpdate: () => void }) {
+    const [newCity, setNewCity] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { toast } = useToast();
+
+    const handleAddCity = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newCity.trim()) return;
+
+        setIsSubmitting(true);
+        try {
+            await addServiceableCity(newCity.trim());
+            toast({ title: 'City Added', description: `${newCity.trim()} is now a serviceable location.` });
+            setNewCity('');
+            onUpdate();
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Update failed', description: error.message });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleRemoveCity = async (city: string) => {
+        if (!confirm(`Are you sure you want to remove "${city}"?`)) return;
+        try {
+            await removeServiceableCity(city);
+            toast({ title: 'City Removed', description: `${city} is no longer a serviceable location.` });
+            onUpdate();
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Update failed', description: error.message });
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Manage Service Locations</CardTitle>
+                <CardDescription>Add or remove cities where your service is available.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <form onSubmit={handleAddCity} className="flex gap-2 mb-4">
+                    <Input
+                        placeholder="Enter city name"
+                        value={newCity}
+                        onChange={(e) => setNewCity(e.target.value)}
+                        disabled={isSubmitting}
+                    />
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? 'Adding...' : <PlusCircle />}
+                    </Button>
+                </form>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {loading ? Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-10 w-full" />) 
+                    : locations.length > 0 ? (
+                        locations.map(city => (
+                            <div key={city} className="flex items-center justify-between p-2 bg-muted rounded-md">
+                                <span className="font-medium">{city}</span>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveCity(city)}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-center text-muted-foreground text-sm py-4">No serviceable locations added yet.</p>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
 
 export default function AdminDashboard() {
   const { data, loading, refreshData } = useAdminDashboardData();
@@ -336,12 +408,13 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid gap-12 lg:grid-cols-3">
-             <div className="lg:col-span-2">
+             <div className="lg:col-span-2 space-y-12">
                 <RestaurantTable restaurants={data.restaurants} loading={loading} onUpdate={refreshData} />
+                <UserTable users={data.users} loading={loading} onUpdate={refreshData} />
              </div>
              <div className="space-y-12">
                 <Reports />
-                <UserTable users={data.users} loading={loading} onUpdate={refreshData} />
+                <ServiceableLocations locations={data.serviceableCities} loading={loading} onUpdate={refreshData} />
              </div>
         </div>
       </main>

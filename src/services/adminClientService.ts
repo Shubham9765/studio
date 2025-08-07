@@ -2,7 +2,7 @@
 'use client';
 
 import { db } from './firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import type { Restaurant } from '@/lib/types';
 import type { AppUser } from '@/hooks/use-auth';
 
@@ -12,6 +12,7 @@ export interface AdminDashboardData {
   pendingApprovalCount: number;
   users: AppUser[];
   restaurants: Restaurant[];
+  serviceableCities: string[];
 }
 
 export async function getAdminDashboardData(): Promise<AdminDashboardData> {
@@ -22,6 +23,10 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   // Fetch all restaurants
   const restaurantsSnapshot = await getDocs(collection(db, 'restaurants'));
   const allRestaurants = restaurantsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Restaurant));
+
+  // Fetch serviceable cities
+  const locationsDoc = await getDoc(doc(db, 'app_config', 'service_locations'));
+  const serviceableCities = locationsDoc.exists() ? locationsDoc.data().cities : [];
 
   // Calculate stats
   const customerCount = allUsers.filter(u => u.role === 'customer').length;
@@ -34,5 +39,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     pendingApprovalCount,
     users: allUsers,
     restaurants: allRestaurants,
+    serviceableCities,
   };
 }
+
+    

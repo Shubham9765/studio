@@ -1,4 +1,6 @@
 
+'use client';
+
 import { db } from './firebase';
 import { collection, getDocs, doc, setDoc, query, where, getDoc, collectionGroup, limit } from 'firebase/firestore';
 import type { Restaurant, MenuItem, Order } from '@/lib/types';
@@ -157,3 +159,14 @@ export async function getOrdersForDeliveryBoy(deliveryBoyId: string): Promise<Or
     
     return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
 }
+
+export async function getServiceableCities(): Promise<string[]> {
+    const docRef = doc(db, 'app_config', 'service_locations');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        return docSnap.data().cities || [];
+    }
+    return [];
+}
+
+    

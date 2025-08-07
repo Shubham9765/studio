@@ -11,6 +11,7 @@ const initialData: AdminDashboardData = {
     pendingApprovalCount: 0,
     users: [],
     restaurants: [],
+    serviceableCities: [],
 };
 
 export function useAdminDashboardData() {
@@ -37,3 +38,5 @@ export function useAdminDashboardData() {
 
   return { data, loading, error, refreshData: fetchData };
 }
+
+    

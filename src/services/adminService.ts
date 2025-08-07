@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from './firebase';
-import { collection, getDocs, query, where, collectionGroup, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, collectionGroup, doc, updateDoc, Timestamp, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import type { Restaurant, Order } from '@/lib/types';
 import type { AppUser } from '@/hooks/use-auth';
 
@@ -28,6 +28,25 @@ export async function getOrdersByDateRange(startDate: Date, endDate: Date): Prom
         return [];
     }
     return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+}
+
+// Service Locations Functions
+const locationsRef = doc(db, 'app_config', 'service_locations');
+
+export async function getServiceableCities(): Promise<string[]> {
+    const docSnap = await getDoc(locationsRef);
+    if (docSnap.exists()) {
+        return docSnap.data().cities || [];
+    }
+    return [];
+}
+
+export async function addServiceableCity(city: string): Promise<void> {
+    await setDoc(locationsRef, { cities: arrayUnion(city) }, { merge: true });
+}
+
+export async function removeServiceableCity(city: string): Promise<void> {
+    await updateDoc(locationsRef, { cities: arrayRemove(city) });
 }
 
     

@@ -5,9 +5,9 @@ import { Header } from '@/components/header';
 import { RestaurantCard } from '@/components/restaurant-card';
 import type { MenuItem, Restaurant } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChefHat, Utensils, MapPin, ArrowRight } from 'lucide-react';
+import { ChefHat, Utensils, MapPin, ArrowRight, AlertTriangle } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
-import { getRestaurants, getTopRatedMenuItems } from '@/services/restaurantClientService';
+import { getRestaurants, getTopRatedMenuItems, getServiceableCities } from '@/services/restaurantClientService';
 import { MenuItemSearchCard } from './customer/menu-item-search-card';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -20,6 +20,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 
 function LoadingSkeleton() {
@@ -71,19 +72,27 @@ function CategoryItem({ name, imageUrl }: { name: string, imageUrl?: string }) {
 export function HomePage() {
   const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
   const [topMenuItems, setTopMenuItems] = useState<MenuItem[]>([]);
+  const [serviceableCities, setServiceableCities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const { location, error: locationError } = useLocation();
+
+  const isServiceAvailable = useMemo(() => {
+    if (!location || serviceableCities.length === 0) return true; // Default to true if location or cities aren't loaded yet
+    return serviceableCities.some(city => city.toLowerCase() === location.city.toLowerCase());
+  }, [location, serviceableCities]);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [restaurants, menuItems] = await Promise.all([
+        const [restaurants, menuItems, cities] = await Promise.all([
           getRestaurants(),
-          getTopRatedMenuItems()
+          getTopRatedMenuItems(),
+          getServiceableCities()
         ]);
         setAllRestaurants(restaurants);
         setTopMenuItems(menuItems);
+        setServiceableCities(cities);
       } catch (error) {
         console.error("Failed to fetch homepage data:", error);
       } finally {
@@ -116,6 +125,16 @@ export function HomePage() {
             </div>
         </div>
 
+        {!isServiceAvailable && location && (
+             <Alert variant="destructive" className="mb-8">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Service Not Available</AlertTitle>
+                <AlertDescription>
+                   We're sorry, but Village Eats is not yet available in {location.city}. We are expanding quickly, so please check back soon!
+                </AlertDescription>
+            </Alert>
+        )}
+
         <section className="text-center py-10 sm:py-12 rounded-xl bg-primary/10 mb-12 relative overflow-hidden">
              <div className="absolute -bottom-8 -right-8">
                 <Utensils className="h-32 w-32 text-primary/10" />
@@ -138,45 +157,49 @@ export function HomePage() {
         {loading ? (
             <LoadingSkeleton />
         ) : (
-          <div className="space-y-12">
-            {categories.length > 0 && (
-                 <section>
-                    <h2 className="text-3xl font-bold font-headline mb-6">Categories</h2>
-                     <div className="flex gap-6 overflow-x-auto pb-4">
-                        {categories.map(cat => <CategoryItem key={cat.name} name={cat.name} imageUrl={cat.imageUrl} />)}
-                     </div>
-                </section>
-            )}
+          isServiceAvailable && (
+            <div className="space-y-12">
+              {categories.length > 0 && (
+                  <section>
+                      <h2 className="text-3xl font-bold font-headline mb-6">Categories</h2>
+                      <div className="flex gap-6 overflow-x-auto pb-4">
+                          {categories.map(cat => <CategoryItem key={cat.name} name={cat.name} imageUrl={cat.imageUrl} />)}
+                      </div>
+                  </section>
+              )}
 
-            {topMenuItems.length > 0 && (
-                <section>
-                    <h2 className="text-3xl font-bold font-headline mb-6">Top Rated Dishes</h2>
-                     <Carousel opts={{ align: "start", loop: true, }} className="w-full">
-                        <CarouselContent>
-                            {topMenuItems.map((item) => (
-                            <CarouselItem key={item.id} className="md:basis-1/2 lg:basis-1/3">
-                                <MenuItemSearchCard item={item} />
-                            </CarouselItem>
-                            ))}
-                        </CarouselContent>
-                        <CarouselPrevious className="hidden sm:flex" />
-                        <CarouselNext className="hidden sm:flex" />
-                    </Carousel>
-                </section>
-            )}
+              {topMenuItems.length > 0 && (
+                  <section>
+                      <h2 className="text-3xl font-bold font-headline mb-6">Top Rated Dishes</h2>
+                      <Carousel opts={{ align: "start", loop: true, }} className="w-full">
+                          <CarouselContent>
+                              {topMenuItems.map((item) => (
+                              <CarouselItem key={item.id} className="md:basis-1/2 lg:basis-1/3">
+                                  <MenuItemSearchCard item={item} />
+                              </CarouselItem>
+                              ))}
+                          </CarouselContent>
+                          <CarouselPrevious className="hidden sm:flex" />
+                          <CarouselNext className="hidden sm:flex" />
+                      </Carousel>
+                  </section>
+              )}
 
-            <section id="restaurants">
-              <h2 className="text-3xl font-bold font-headline mb-6">All Restaurants</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {allRestaurants.map(restaurant => (
-                  <RestaurantCard key={restaurant.id} restaurant={restaurant} />
-              ))}
-              </div>
-            </section>
-          </div>
+              <section id="restaurants">
+                <h2 className="text-3xl font-bold font-headline mb-6">All Restaurants</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {allRestaurants.map(restaurant => (
+                    <RestaurantCard key={restaurant.id} restaurant={restaurant} />
+                ))}
+                </div>
+              </section>
+            </div>
+          )
         )}
 
       </main>
     </div>
   );
 }
+
+    
