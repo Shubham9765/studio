@@ -5,7 +5,7 @@ import { Header } from '@/components/header';
 import { RestaurantCard } from '@/components/restaurant-card';
 import type { MenuItem, Restaurant, BannerConfig } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChefHat, Utensils, MapPin, ArrowRight, AlertTriangle } from 'lucide-react';
+import { ChefHat, Utensils, MapPin, ArrowRight, AlertTriangle, Search } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { getRestaurants, getTopRatedMenuItems, getServiceableCities, getBannerConfig } from '@/services/restaurantClientService';
 import { MenuItemSearchCard } from './customer/menu-item-search-card';
@@ -21,6 +21,8 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Input } from './ui/input';
+import { useRouter } from 'next/navigation';
 
 
 function LoadingSkeleton() {
@@ -78,7 +80,7 @@ function PromotionalBanner({ config }: { config: BannerConfig | null }) {
     <section 
         className="mb-12 relative group"
     >
-      {config.imageUrl && (
+      {config.imageUrl ? (
         <Image 
           src={config.imageUrl}
           alt={config.heading || 'Promotional banner'}
@@ -86,6 +88,8 @@ function PromotionalBanner({ config }: { config: BannerConfig | null }) {
           height={400}
           className="w-full h-auto object-contain rounded-xl shadow-lg group-hover:shadow-2xl transition-all duration-300"
         />
+      ) : (
+        <div className="h-48 bg-muted rounded-xl"></div>
       )}
       <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/40 rounded-xl flex flex-col justify-center items-center text-center p-4">
         <div className="relative z-10 text-white">
@@ -110,6 +114,32 @@ function PromotionalBanner({ config }: { config: BannerConfig | null }) {
       </div>
     </section>
   )
+}
+
+function MobileSearch() {
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+    }
+  };
+
+  return (
+    <div className="md:hidden mb-6">
+      <form onSubmit={handleSearch} className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <Input
+          placeholder="Search restaurants or dishes..."
+          className="pl-12 text-base h-12 rounded-full w-full bg-muted border-transparent focus-visible:ring-primary"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </form>
+    </div>
+  );
 }
 
 export function HomePage() {
@@ -170,6 +200,8 @@ export function HomePage() {
               {location ? <span className="font-bold">{location.city || 'your location'}</span> : <Skeleton className="h-5 w-24" />}
             </div>
         </div>
+
+        <MobileSearch />
 
         {!isServiceAvailable && location && (
              <Alert variant="destructive" className="mb-8">

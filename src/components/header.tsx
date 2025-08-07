@@ -147,9 +147,6 @@ export function Header() {
                 <Button size="sm" onClick={() => setAuthDialogOpen(true)}>Sign Up</Button>
               </>
             )}
-             <Button variant="ghost" size="icon" className="md:hidden" onClick={() => router.push('/search')}>
-              <Search className="h-5 w-5" />
-            </Button>
           </div>
         </div>
       </header>
