@@ -76,26 +76,26 @@ function PromotionalBanner({ config }: { config: BannerConfig | null }) {
 
   return (
     <section 
-        className="text-center py-10 sm:py-12 rounded-xl bg-primary/10 mb-12 relative overflow-hidden bg-cover bg-center transition-transform duration-300 ease-in-out hover:scale-[1.02] shadow-lg hover:shadow-2xl"
+        className="text-center py-10 sm:py-16 md:py-20 rounded-xl bg-primary/10 mb-12 relative overflow-hidden bg-cover bg-center transition-transform duration-300 ease-in-out hover:scale-[1.02] shadow-lg hover:shadow-2xl"
         style={{ backgroundImage: `url(${config.imageUrl})` }}
     >
         <div className="absolute inset-0 bg-gradient-to-br from-black/20 to-black/50"></div>
         <div className="absolute -bottom-8 -right-8">
             <Utensils className="h-32 w-32 text-white/5" />
         </div>
-        <div className="relative z-10 text-white px-4">
+        <div className="relative z-10 text-white px-4 sm:px-6 md:px-8">
             {config.isHeadingEnabled && (
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-headline mb-4" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.7)' }}>
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold font-headline mb-4" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.7)' }}>
                   {config.heading}
                 </h1>
             )}
             {config.isDescriptionEnabled && (
-                <p className="text-lg text-white/90 max-w-2xl mx-auto mb-8" style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.8)' }}>
+                <p className="text-lg md:text-xl text-white/90 max-w-2xl lg:max-w-3xl mx-auto mb-8" style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.8)' }}>
                   {config.description}
                 </p>
             )}
             {config.isButtonEnabled && (
-                <Button size="lg" asChild className="bg-white text-primary hover:bg-white/90 shadow-lg">
+                <Button size="lg" asChild className="bg-white text-primary hover:bg-white/90 shadow-lg text-base md:text-lg px-8 py-6">
                     <Link href={config.buttonLink}>
                         {config.buttonText} <ArrowRight className="ml-2 h-5 w-5" />
                     </Link>
@@ -224,5 +224,3 @@ export function HomePage() {
     </div>
   );
 }
-
-    
