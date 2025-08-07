@@ -69,6 +69,47 @@ function CategoryItem({ name, imageUrl }: { name: string, imageUrl?: string }) {
   )
 }
 
+function PromotionalBanner() {
+  // In the future, this data will be fetched from Firestore
+  const bannerConfig = {
+    isEnabled: true,
+    heading: 'Get 50% Off Your First Order!',
+    description: 'Use code FIRST50 at checkout. Hurry, offer ends soon!',
+    buttonText: 'Order Now',
+    buttonLink: '#restaurants',
+    imageUrl: '', // Admin can set this in the future
+  };
+
+  if (!bannerConfig.isEnabled) {
+    return null;
+  }
+
+  return (
+    <section 
+        className="text-center py-10 sm:py-12 rounded-xl bg-primary/10 mb-12 relative overflow-hidden bg-cover bg-center"
+        style={{ backgroundImage: `url(${bannerConfig.imageUrl})` }}
+    >
+        <div className="absolute inset-0 bg-primary/20 backdrop-blur-sm"></div>
+        <div className="absolute -bottom-8 -right-8">
+            <Utensils className="h-32 w-32 text-primary/10" />
+        </div>
+        <div className="relative z-10">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-headline text-primary mb-4">
+              {bannerConfig.heading}
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+              {bannerConfig.description}
+            </p>
+            <Button size="lg" asChild>
+                <Link href={bannerConfig.buttonLink}>
+                    {bannerConfig.buttonText} <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+            </Button>
+        </div>
+    </section>
+  )
+}
+
 export function HomePage() {
   const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
   const [topMenuItems, setTopMenuItems] = useState<MenuItem[]>([]);
@@ -135,24 +176,7 @@ export function HomePage() {
             </Alert>
         )}
 
-        <section className="text-center py-10 sm:py-12 rounded-xl bg-primary/10 mb-12 relative overflow-hidden">
-             <div className="absolute -bottom-8 -right-8">
-                <Utensils className="h-32 w-32 text-primary/10" />
-            </div>
-            <div className="relative z-10">
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-headline text-primary mb-4">
-                Get 50% Off Your First Order!
-                </h1>
-                <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-                Use code <span className="font-bold text-primary bg-background/50 px-2 py-1 rounded-md">FIRST50</span> at checkout. Hurry, offer ends soon!
-                </p>
-                <Button size="lg" asChild>
-                    <Link href="#restaurants">
-                        Order Now <ArrowRight className="ml-2 h-5 w-5" />
-                    </Link>
-                </Button>
-            </div>
-        </section>
+        <PromotionalBanner />
         
         {loading ? (
             <LoadingSkeleton />
@@ -201,5 +225,3 @@ export function HomePage() {
     </div>
   );
 }
-
-    
