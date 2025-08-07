@@ -3,7 +3,7 @@
 
 import { db } from './firebase';
 import { collection, getDocs, doc, setDoc, query, where, getDoc, collectionGroup, limit } from 'firebase/firestore';
-import type { Restaurant, MenuItem, Order } from '@/lib/types';
+import type { Restaurant, MenuItem, Order, BannerConfig } from '@/lib/types';
 import { MOCK_RESTAURANTS } from '@/lib/seed';
 
 export async function getRestaurants(): Promise<Restaurant[]> {
@@ -169,4 +169,11 @@ export async function getServiceableCities(): Promise<string[]> {
     return [];
 }
 
-    
+export async function getBannerConfig(): Promise<BannerConfig | null> {
+    const docRef = doc(db, 'app_config', 'banner');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        return docSnap.data() as BannerConfig;
+    }
+    return null;
+}

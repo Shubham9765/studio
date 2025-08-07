@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAdminDashboardData } from '@/services/adminClientService';
 import type { AdminDashboardData } from '@/services/adminClientService';
+import type { BannerConfig } from '@/lib/types';
 
 const initialData: AdminDashboardData = {
     customerCount: 0,
@@ -12,6 +13,7 @@ const initialData: AdminDashboardData = {
     users: [],
     restaurants: [],
     serviceableCities: [],
+    bannerConfig: null,
 };
 
 export function useAdminDashboardData() {
@@ -38,5 +40,3 @@ export function useAdminDashboardData() {
 
   return { data, loading, error, refreshData: fetchData };
 }
-
-    

@@ -3,26 +3,32 @@
 
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff, FileText, MapPin, PlusCircle, Trash2 } from 'lucide-react';
+import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff, FileText, MapPin, PlusCircle, Trash2, Megaphone } from 'lucide-react';
 import { useAdminDashboardData } from '@/hooks/use-admin-dashboard-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { AppUser } from '@/hooks/use-auth';
-import type { Restaurant } from '@/lib/types';
+import type { Restaurant, BannerConfig } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
-import { updateUserStatus, updateRestaurantStatus, addServiceableCity, removeServiceableCity } from '@/services/adminService';
+import { updateUserStatus, updateRestaurantStatus, addServiceableCity, removeServiceableCity, updateBannerConfig } from '@/services/adminService';
 import { useToast } from '@/hooks/use-toast';
 import { runFlow } from '@genkit-ai/next/client';
 import { generateSalesReport, type GenerateSalesReportOutput } from '@/ai/flows/generate-sales-report';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '../ui/input';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
 
 
 function StatCard({ title, value, icon, description, loading }: { title: string, value: string | number, icon: React.ReactNode, description: string, loading: boolean }) {
@@ -391,6 +397,119 @@ function ServiceableLocations({ locations, loading, onUpdate }: { locations: str
     )
 }
 
+const bannerSchema = z.object({
+  isEnabled: z.boolean(),
+  heading: z.string().min(1, 'Heading is required.'),
+  description: z.string().min(1, 'Description is required.'),
+  buttonText: z.string().min(1, 'Button text is required.'),
+  buttonLink: z.string().min(1, 'Button link is required.'),
+  imageUrl: z.string().url('Must be a valid URL.').or(z.literal('')),
+});
+
+
+function BannerManager({ initialConfig, onUpdate }: { initialConfig: BannerConfig | null, onUpdate: () => void }) {
+    const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const form = useForm<z.infer<typeof bannerSchema>>({
+        resolver: zodResolver(bannerSchema),
+        defaultValues: {
+            isEnabled: initialConfig?.isEnabled ?? false,
+            heading: initialConfig?.heading ?? '',
+            description: initialConfig?.description ?? '',
+            buttonText: initialConfig?.buttonText ?? '',
+            buttonLink: initialConfig?.buttonLink ?? '',
+            imageUrl: initialConfig?.imageUrl ?? '',
+        }
+    });
+
+    useEffect(() => {
+        form.reset({
+            isEnabled: initialConfig?.isEnabled ?? false,
+            heading: initialConfig?.heading ?? '',
+            description: initialConfig?.description ?? '',
+            buttonText: initialConfig?.buttonText ?? '',
+            buttonLink: initialConfig?.buttonLink ?? '',
+            imageUrl: initialConfig?.imageUrl ?? '',
+        })
+    }, [initialConfig, form]);
+
+    const onSubmit = async (data: z.infer<typeof bannerSchema>) => {
+        setIsSubmitting(true);
+        try {
+            await updateBannerConfig(data);
+            toast({ title: 'Success', description: 'Promotional banner updated successfully.' });
+            onUpdate();
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Manage Promotional Banner</CardTitle>
+                <CardDescription>Customize the banner on the customer homepage.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                        <Controller
+                            control={form.control}
+                            name="isEnabled"
+                            render={({ field }) => (
+                                <Switch
+                                    id="isEnabled"
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            )}
+                        />
+                         <Label htmlFor="isEnabled" className="text-base">Enable Banner</Label>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="heading">Heading</Label>
+                        <Input id="heading" {...form.register('heading')} placeholder="e.g., Get 50% Off!"/>
+                        {form.formState.errors.heading && <p className="text-sm text-destructive">{form.formState.errors.heading.message}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="description">Description</Label>
+                        <Textarea id="description" {...form.register('description')} placeholder="e.g., Use code FIRST50..."/>
+                         {form.formState.errors.description && <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>}
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <Label htmlFor="imageUrl">Background Image URL</Label>
+                        <Input id="imageUrl" {...form.register('imageUrl')} placeholder="https://example.com/banner.png"/>
+                        {form.formState.errors.imageUrl && <p className="text-sm text-destructive">{form.formState.errors.imageUrl.message}</p>}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="buttonText">Button Text</Label>
+                            <Input id="buttonText" {...form.register('buttonText')} placeholder="Order Now"/>
+                            {form.formState.errors.buttonText && <p className="text-sm text-destructive">{form.formState.errors.buttonText.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="buttonLink">Button Link</Label>
+                            <Input id="buttonLink" {...form.register('buttonLink')} placeholder="#restaurants"/>
+                            {form.formState.errors.buttonLink && <p className="text-sm text-destructive">{form.formState.errors.buttonLink.message}</p>}
+                        </div>
+                    </div>
+                    
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? 'Saving...' : 'Save Banner Settings'}
+                    </Button>
+                </form>
+            </CardContent>
+        </Card>
+    )
+}
+
 
 export default function AdminDashboard() {
   const { data, loading, refreshData } = useAdminDashboardData();
@@ -413,6 +532,7 @@ export default function AdminDashboard() {
                 <UserTable users={data.users} loading={loading} onUpdate={refreshData} />
              </div>
              <div className="space-y-12">
+                <BannerManager initialConfig={data.bannerConfig} onUpdate={refreshData} />
                 <Reports />
                 <ServiceableLocations locations={data.serviceableCities} loading={loading} onUpdate={refreshData} />
              </div>
@@ -421,5 +541,3 @@ export default function AdminDashboard() {
     </div>
   );
 }
-
-    

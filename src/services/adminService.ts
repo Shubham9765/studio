@@ -3,7 +3,7 @@
 
 import { db } from './firebase';
 import { collection, getDocs, query, where, collectionGroup, doc, updateDoc, Timestamp, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
-import type { Restaurant, Order } from '@/lib/types';
+import type { Restaurant, Order, BannerConfig } from '@/lib/types';
 import type { AppUser } from '@/hooks/use-auth';
 
 export async function updateRestaurantStatus(restaurantId: string, status: Restaurant['status']): Promise<void> {
@@ -49,4 +49,9 @@ export async function removeServiceableCity(city: string): Promise<void> {
     await updateDoc(locationsRef, { cities: arrayRemove(city) });
 }
 
-    
+// Banner Config Functions
+const bannerConfigRef = doc(db, 'app_config', 'banner');
+
+export async function updateBannerConfig(config: BannerConfig): Promise<void> {
+    await setDoc(bannerConfigRef, config, { merge: true });
+}

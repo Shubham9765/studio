@@ -34,7 +34,7 @@ export interface Restaurant {
 export interface MenuItem {
   id: string;
   restaurantId: string;
-  name: string;
+  name:string;
   description: string;
   price: number;
   category: string;
@@ -65,4 +65,13 @@ export interface Order {
         name: string;
     };
     ratingGiven?: boolean;
+}
+
+export interface BannerConfig {
+    isEnabled: boolean;
+    heading: string;
+    description: string;
+    buttonText: string;
+    buttonLink: string;
+    imageUrl: string;
 }

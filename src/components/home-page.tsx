@@ -3,11 +3,11 @@
 
 import { Header } from '@/components/header';
 import { RestaurantCard } from '@/components/restaurant-card';
-import type { MenuItem, Restaurant } from '@/lib/types';
+import type { MenuItem, Restaurant, BannerConfig } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChefHat, Utensils, MapPin, ArrowRight, AlertTriangle } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
-import { getRestaurants, getTopRatedMenuItems, getServiceableCities } from '@/services/restaurantClientService';
+import { getRestaurants, getTopRatedMenuItems, getServiceableCities, getBannerConfig } from '@/services/restaurantClientService';
 import { MenuItemSearchCard } from './customer/menu-item-search-card';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -69,25 +69,15 @@ function CategoryItem({ name, imageUrl }: { name: string, imageUrl?: string }) {
   )
 }
 
-function PromotionalBanner() {
-  // In the future, this data will be fetched from Firestore
-  const bannerConfig = {
-    isEnabled: true,
-    heading: 'Get 50% Off Your First Order!',
-    description: 'Use code FIRST50 at checkout. Hurry, offer ends soon!',
-    buttonText: 'Order Now',
-    buttonLink: '#restaurants',
-    imageUrl: '', // Admin can set this in the future
-  };
-
-  if (!bannerConfig.isEnabled) {
+function PromotionalBanner({ config }: { config: BannerConfig | null }) {
+  if (!config?.isEnabled) {
     return null;
   }
 
   return (
     <section 
         className="text-center py-10 sm:py-12 rounded-xl bg-primary/10 mb-12 relative overflow-hidden bg-cover bg-center"
-        style={{ backgroundImage: `url(${bannerConfig.imageUrl})` }}
+        style={{ backgroundImage: `url(${config.imageUrl})` }}
     >
         <div className="absolute inset-0 bg-primary/20 backdrop-blur-sm"></div>
         <div className="absolute -bottom-8 -right-8">
@@ -95,14 +85,14 @@ function PromotionalBanner() {
         </div>
         <div className="relative z-10">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-headline text-primary mb-4">
-              {bannerConfig.heading}
+              {config.heading}
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-              {bannerConfig.description}
+              {config.description}
             </p>
             <Button size="lg" asChild>
-                <Link href={bannerConfig.buttonLink}>
-                    {bannerConfig.buttonText} <ArrowRight className="ml-2 h-5 w-5" />
+                <Link href={config.buttonLink}>
+                    {config.buttonText} <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
             </Button>
         </div>
@@ -114,6 +104,7 @@ export function HomePage() {
   const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
   const [topMenuItems, setTopMenuItems] = useState<MenuItem[]>([]);
   const [serviceableCities, setServiceableCities] = useState<string[]>([]);
+  const [bannerConfig, setBannerConfig] = useState<BannerConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const { location, error: locationError } = useLocation();
 
@@ -126,14 +117,16 @@ export function HomePage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [restaurants, menuItems, cities] = await Promise.all([
+        const [restaurants, menuItems, cities, banner] = await Promise.all([
           getRestaurants(),
           getTopRatedMenuItems(),
-          getServiceableCities()
+          getServiceableCities(),
+          getBannerConfig(),
         ]);
         setAllRestaurants(restaurants);
         setTopMenuItems(menuItems);
         setServiceableCities(cities);
+        setBannerConfig(banner);
       } catch (error) {
         console.error("Failed to fetch homepage data:", error);
       } finally {
@@ -176,7 +169,7 @@ export function HomePage() {
             </Alert>
         )}
 
-        <PromotionalBanner />
+        <PromotionalBanner config={bannerConfig} />
         
         {loading ? (
             <LoadingSkeleton />

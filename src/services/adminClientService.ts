@@ -3,7 +3,7 @@
 
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
-import type { Restaurant } from '@/lib/types';
+import type { Restaurant, BannerConfig } from '@/lib/types';
 import type { AppUser } from '@/hooks/use-auth';
 
 export interface AdminDashboardData {
@@ -13,6 +13,7 @@ export interface AdminDashboardData {
   users: AppUser[];
   restaurants: Restaurant[];
   serviceableCities: string[];
+  bannerConfig: BannerConfig | null;
 }
 
 export async function getAdminDashboardData(): Promise<AdminDashboardData> {
@@ -24,9 +25,12 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const restaurantsSnapshot = await getDocs(collection(db, 'restaurants'));
   const allRestaurants = restaurantsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Restaurant));
 
-  // Fetch serviceable cities
+  // Fetch app_config
   const locationsDoc = await getDoc(doc(db, 'app_config', 'service_locations'));
   const serviceableCities = locationsDoc.exists() ? locationsDoc.data().cities : [];
+  
+  const bannerConfigDoc = await getDoc(doc(db, 'app_config', 'banner'));
+  const bannerConfig = bannerConfigDoc.exists() ? bannerConfigDoc.data() as BannerConfig : null;
 
   // Calculate stats
   const customerCount = allUsers.filter(u => u.role === 'customer').length;
@@ -40,7 +44,6 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     users: allUsers,
     restaurants: allRestaurants,
     serviceableCities,
+    bannerConfig,
   };
 }
-
-    
