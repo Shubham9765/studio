@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/hooks/use-auth';
 import { CartProvider } from '@/hooks/use-cart';
 import { NotificationProvider } from '@/hooks/use-notifications';
+import { LocationProvider } from '@/hooks/use-location';
 
 export const metadata: Metadata = {
   title: 'Village Eats',
@@ -26,12 +27,14 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
-          <NotificationProvider>
-            <CartProvider>
-              {children}
-              <Toaster />
-            </CartProvider>
-          </NotificationProvider>
+            <NotificationProvider>
+              <LocationProvider>
+                <CartProvider>
+                  {children}
+                  <Toaster />
+                </CartProvider>
+              </LocationProvider>
+            </NotificationProvider>
         </AuthProvider>
       </body>
     </html>

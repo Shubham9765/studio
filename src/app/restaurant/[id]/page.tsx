@@ -12,7 +12,7 @@ import { AlertTriangle, Star, Clock, Utensils, Search, ShoppingCart, X } from 'l
 import { MenuItemCard } from '@/components/customer/menu-item-card';
 import { Cart } from '@/components/customer/cart';
 import { Input } from '@/components/ui/input';
-import { usePathname } from 'next/navigation';
+import { usePathname, notFound } from 'next/navigation';
 import { useCart } from '@/hooks/use-cart';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -72,21 +72,24 @@ export default function RestaurantPage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!id) return;
       try {
         setLoading(true);
-        const [restaurantData, menuItemsData] = await Promise.all([
-          getRestaurantById(id),
-          getMenuItemsForRestaurant(id)
-        ]);
+        const restaurantData = await getRestaurantById(id);
 
         if (!restaurantData) {
-          setError('Restaurant not found.');
+          notFound();
           return;
         }
 
         if(restaurantData.status !== 'approved' || !restaurantData.isOpen) {
             setError('This restaurant is currently unavailable.');
+            setRestaurant(restaurantData);
+            setLoading(false);
+            return;
         }
+        
+        const menuItemsData = await getMenuItemsForRestaurant(id);
 
         setRestaurant(restaurantData);
         setMenuItems(menuItemsData);
@@ -97,9 +100,7 @@ export default function RestaurantPage() {
       }
     };
 
-    if (id) {
-        fetchData();
-    }
+    fetchData();
   }, [id]);
 
   const filteredMenuItems = menuItems.filter(item => 
@@ -136,25 +137,11 @@ export default function RestaurantPage() {
     );
   }
   
-  if (error) {
-    return (
-        <div className="min-h-screen bg-background">
-            <Header />
-            <main className="container py-8 flex items-center justify-center">
-                <Alert variant="destructive" className="w-1/2">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>An Error Occurred</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>
-            </main>
-        </div>
-    )
-  }
-
-
   if (!restaurant) {
-    return null; // Should be handled by notFound, but as a fallback.
+     return notFound();
   }
+  
+  const isRestaurantUnavailable = restaurant.status !== 'approved' || !restaurant.isOpen;
 
   return (
     <div className="min-h-screen bg-background">
@@ -188,6 +175,16 @@ export default function RestaurantPage() {
             </div>
           </div>
         </div>
+        
+        {isRestaurantUnavailable && (
+             <Alert variant="destructive" className="mb-8">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Restaurant Currently Unavailable</AlertTitle>
+                <AlertDescription>
+                    {error || 'This restaurant is not accepting orders at the moment. Please check back later.'}
+                </AlertDescription>
+            </Alert>
+        )}
 
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Menu Section */}
@@ -199,10 +196,11 @@ export default function RestaurantPage() {
                     className="pl-12 text-base h-12 rounded-full"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    disabled={isRestaurantUnavailable}
                 />
             </div>
 
-            {Object.keys(groupedMenuItems).length > 0 ? (
+            {Object.keys(groupedMenuItems).length > 0 && !isRestaurantUnavailable ? (
                 Object.entries(groupedMenuItems).map(([category, items]) => (
                     <section key={category} className="mb-12">
                         <h2 className="text-3xl font-bold font-headline mb-6 border-b-2 border-primary pb-2">{category}</h2>
@@ -214,15 +212,17 @@ export default function RestaurantPage() {
                     </section>
                 ))
             ) : (
-                <div className="text-center py-16">
-                    <Utensils className="mx-auto h-16 w-16 text-muted-foreground" />
-                    <h3 className="mt-4 text-xl font-medium">
-                        {searchTerm ? 'No items match your search' : 'No Menu Items Found'}
-                    </h3>
-                    <p className="mt-1 text-muted-foreground">
-                        {searchTerm ? 'Try a different search term.' : 'This restaurant has not added any menu items yet.'}
-                    </p>
-                </div>
+                !isRestaurantUnavailable && (
+                    <div className="text-center py-16">
+                        <Utensils className="mx-auto h-16 w-16 text-muted-foreground" />
+                        <h3 className="mt-4 text-xl font-medium">
+                            {searchTerm ? 'No items match your search' : 'No Menu Items Found'}
+                        </h3>
+                        <p className="mt-1 text-muted-foreground">
+                            {searchTerm ? 'Try a different search term.' : 'This restaurant has not added any menu items yet.'}
+                        </p>
+                    </div>
+                )
             )}
           </div>
           {/* Cart Section for Desktop */}

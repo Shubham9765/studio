@@ -28,6 +28,7 @@ export interface Restaurant {
   };
   deliveryBoys?: DeliveryBoy[];
   reviewCount?: number;
+  categoryImageUrl?: string;
 }
 
 export interface MenuItem {

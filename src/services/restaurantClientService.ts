@@ -73,45 +73,21 @@ export async function searchRestaurantsAndMenuItems(searchTerm: string): Promise
     // Fetch all approved restaurants
     const allRestaurants = await getRestaurants();
 
-    // Fetch menu items for each restaurant
-    const menuItemsPromises = allRestaurants.map(r => getMenuItemsForRestaurant(r.id));
-    const allMenuItemsArrays = await Promise.all(menuItemsPromises);
-    const allMenuItems = allMenuItemsArrays.flat();
-    
-    // Filter restaurants based on search term
-    const matchingRestaurants = allRestaurants.filter(r => 
-        r.name.toLowerCase().includes(lowercasedTerm) ||
-        r.cuisine.toLowerCase().includes(lowercasedTerm)
+    const matchingRestaurants = allRestaurants.filter(restaurant =>
+        restaurant.name.toLowerCase().includes(lowercasedTerm) ||
+        restaurant.cuisine.toLowerCase().includes(lowercasedTerm)
     );
+    
+    // Fetch all menu items from all restaurants
+    const allMenuItems = (await Promise.all(
+        allRestaurants.map(r => getMenuItemsForRestaurant(r.id))
+    )).flat();
 
-    // Filter menu items based on search term
-    const matchingMenuItems = allMenuItems.filter(item =>
-        item.isAvailable && (
-            item.name.toLowerCase().includes(lowercasedTerm) ||
-            item.description.toLowerCase().includes(lowercasedTerm) ||
-            item.category.toLowerCase().includes(lowercasedTerm)
-        )
+    const matchingMenuItems = allMenuItems.filter(item => 
+        item.name.toLowerCase().includes(lowercasedTerm) ||
+        item.description.toLowerCase().includes(lowercasedTerm) ||
+        item.category.toLowerCase().includes(lowercasedTerm)
     );
-
-    // Get IDs of restaurants that have matching menu items
-    const restaurantIdsFromMenuItems = new Set(matchingMenuItems.map(item => item.restaurantId));
-    
-    // Get IDs of restaurants that are already in the matching list
-    const existingRestaurantIds = new Set(matchingRestaurants.map(r => r.id));
-
-    // Find which restaurants need to be added to the list
-    const additionalRestaurantIds: string[] = [];
-    restaurantIdsFromMenuItems.forEach(id => {
-        if (!existingRestaurantIds.has(id)) {
-            additionalRestaurantIds.push(id);
-        }
-    });
-    
-    // Add the missing restaurants from the full list
-    if (additionalRestaurantIds.length > 0) {
-        const additionalRestaurants = allRestaurants.filter(r => additionalRestaurantIds.includes(r.id));
-        matchingRestaurants.push(...additionalRestaurants);
-    }
 
     return { restaurants: matchingRestaurants, menuItems: matchingMenuItems };
 }
