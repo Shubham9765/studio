@@ -76,14 +76,19 @@ function PromotionalBanner({ config }: { config: BannerConfig | null }) {
 
   return (
     <section 
-        className="text-center py-10 sm:py-16 md:py-20 rounded-xl bg-primary/10 mb-12 relative overflow-hidden bg-cover bg-center transition-transform duration-300 ease-in-out hover:scale-[1.02] shadow-lg hover:shadow-2xl"
-        style={{ backgroundImage: `url(${config.imageUrl})` }}
+        className="mb-12 relative group"
     >
-        <div className="absolute inset-0 bg-gradient-to-br from-black/20 to-black/50"></div>
-        <div className="absolute -bottom-8 -right-8">
-            <Utensils className="h-32 w-32 text-white/5" />
-        </div>
-        <div className="relative z-10 text-white px-4 sm:px-6 md:px-8">
+      {config.imageUrl && (
+        <Image 
+          src={config.imageUrl}
+          alt={config.heading || 'Promotional banner'}
+          width={1200}
+          height={400}
+          className="w-full h-auto object-contain rounded-xl shadow-lg group-hover:shadow-2xl transition-all duration-300"
+        />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/40 rounded-xl flex flex-col justify-center items-center text-center p-4">
+        <div className="relative z-10 text-white">
             {config.isHeadingEnabled && (
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold font-headline mb-4" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.7)' }}>
                   {config.heading}
@@ -102,6 +107,7 @@ function PromotionalBanner({ config }: { config: BannerConfig | null }) {
                 </Button>
             )}
         </div>
+      </div>
     </section>
   )
 }
