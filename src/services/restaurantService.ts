@@ -32,6 +32,7 @@ export async function createOrder(
       paymentDetails: orderDetails.paymentDetails || {},
       deliveryAddress: orderDetails.deliveryAddress || 'N/A',
       customerPhone: orderDetails.customerPhone || 'N/A',
+      customerAddress: orderDetails.customerAddress,
   };
 
   const docRef = await addDoc(ordersCollection, newOrder);

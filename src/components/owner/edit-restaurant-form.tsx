@@ -22,6 +22,7 @@ import { Switch } from '../ui/switch';
 import { updateRestaurant } from '@/services/ownerService';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { ScrollArea } from '../ui/scroll-area';
+import { Textarea } from '../ui/textarea';
 
 export const EditRestaurantSchema = z.object({
   name: z.string().min(3, { message: 'Restaurant name must be at least 3 characters.' }),
@@ -33,6 +34,7 @@ export const EditRestaurantSchema = z.object({
   paymentMethodOption: z.enum(['cash', 'upi', 'both']).default('cash'),
   upiId: z.string().optional(),
   upiQrCodeUrl: z.string().url({ message: "Please enter a valid URL for the QR code." }).optional().or(z.literal('')),
+  address: z.string().min(10, "Please enter a full address.").optional().or(z.literal('')),
 });
 
 interface EditRestaurantFormProps {
@@ -65,6 +67,7 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
       paymentMethodOption: getPaymentMethodOption(restaurant?.paymentMethods),
       upiId: restaurant?.paymentMethods?.upiId || '',
       upiQrCodeUrl: restaurant?.paymentMethods?.upiQrCodeUrl || '',
+      address: restaurant?.address || '',
     },
   });
 
@@ -82,6 +85,7 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
         paymentMethodOption: getPaymentMethodOption(restaurant.paymentMethods),
         upiId: restaurant.paymentMethods?.upiId || '',
         upiQrCodeUrl: restaurant.paymentMethods?.upiQrCodeUrl || '',
+        address: restaurant.address || '',
       });
     }
   }, [restaurant, isOpen, form]);
@@ -95,6 +99,7 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
         description: 'Your restaurant details have been successfully saved.',
       });
       onRestaurantUpdated();
+      onOpenChange(false);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -142,6 +147,22 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
                     </FormControl>
                     <FormDescription>
                       The main image for your restaurant shown to customers.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Address</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="123 Main St, Anytown, USA" {...field} />
+                    </FormControl>
+                     <FormDescription>
+                      Used to calculate delivery distance and show your location.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

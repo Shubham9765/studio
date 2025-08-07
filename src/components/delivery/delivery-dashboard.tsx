@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { updateOrderStatus } from '@/services/ownerService';
+import { updateOrderStatus, updateDeliveryBoyLocation } from '@/services/ownerService';
 import { getOrdersForDeliveryBoy } from '@/services/restaurantClientService';
 import type { Order } from '@/lib/types';
 import { Header } from '@/components/header';
@@ -25,6 +25,31 @@ export default function DeliveryDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let locationWatcher: number | null = null;
+    if (user?.uid) {
+        locationWatcher = window.navigator.geolocation.watchPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                updateDeliveryBoyLocation(user.uid, { latitude, longitude });
+            },
+            (err) => {
+                console.warn(`ERROR(${err.code}): ${err.message}`);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0,
+            }
+        );
+    }
+    return () => {
+        if (locationWatcher) {
+            window.navigator.geolocation.clearWatch(locationWatcher);
+        }
+    };
+  }, [user?.uid]);
 
   const fetchAssignedOrders = async () => {
     if (user?.uid) {
@@ -124,6 +149,16 @@ export default function DeliveryDashboard() {
                             <p className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" /> {order.customerName}</p>
                             <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {order.customerPhone}</p>
                             <p className="flex items-start gap-2"><MapPin className="h-4 w-4 text-muted-foreground mt-1" /> {order.deliveryAddress}</p>
+                            {order.customerAddress?.latitude && order.customerAddress?.longitude && (
+                                <a 
+                                    href={`https://www.google.com/maps/dir/?api=1&destination=${order.customerAddress.latitude},${order.customerAddress.longitude}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline text-sm"
+                                >
+                                    View on Map
+                                </a>
+                            )}
                         </div>
                     </div>
                     <Separator/>

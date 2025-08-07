@@ -29,6 +29,9 @@ export interface Restaurant {
   deliveryBoys?: DeliveryBoy[];
   reviewCount?: number;
   categoryImageUrl?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface MenuItem {
@@ -65,6 +68,14 @@ export interface Order {
         name: string;
     };
     ratingGiven?: boolean;
+    customerAddress?: {
+        id: string;
+        name: string;
+        address: string;
+        phone: string;
+        latitude?: number;
+        longitude?: number;
+    };
 }
 
 export interface BannerConfig {
@@ -78,5 +89,3 @@ export interface BannerConfig {
     buttonLink: string;
     imageUrl: string;
 }
-
-    

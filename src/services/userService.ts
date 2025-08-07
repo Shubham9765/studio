@@ -5,8 +5,9 @@ import type { Address } from '@/hooks/use-auth';
 
 interface UserProfileData {
     displayName?: string;
-    address?: string; // Can be removed if fully migrated
     addresses?: Address[];
+    latitude?: number;
+    longitude?: number;
 }
 
 export async function updateUserProfile(userId: string, data: UserProfileData): Promise<void> {
@@ -26,6 +27,11 @@ export async function updateUserProfile(userId: string, data: UserProfileData): 
   if (data.addresses) {
       updateData.addresses = data.addresses;
   }
+  
+  if (data.latitude !== undefined && data.longitude !== undefined) {
+      updateData.latitude = data.latitude;
+      updateData.longitude = data.longitude;
+  }
 
   if (Object.keys(updateData).length === 0) {
       // Nothing to update
@@ -34,5 +40,3 @@ export async function updateUserProfile(userId: string, data: UserProfileData): 
 
   await updateDoc(userRef, updateData);
 }
-
-    

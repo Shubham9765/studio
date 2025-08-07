@@ -10,6 +10,24 @@ import type { EditRestaurantSchema } from '@/components/owner/edit-restaurant-fo
 import type { MenuItemSchema } from '@/components/owner/menu-item-form';
 
 
+async function getCoordinatesForAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
+    try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+        const data = await response.json();
+        if (data && data.length > 0) {
+            return {
+                latitude: parseFloat(data[0].lat),
+                longitude: parseFloat(data[0].lon),
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error("Geocoding failed:", error);
+        return null; // Don't block the update if geocoding fails
+    }
+}
+
+
 export async function createRestaurant(ownerId: string, data: z.infer<typeof RestaurantSchema>) {
     if (!ownerId) {
         throw new Error('An owner ID is required to create a restaurant.');
@@ -53,6 +71,11 @@ export async function updateRestaurant(restaurantId: string, data: z.infer<typeo
     const restaurantRef = doc(db, 'restaurants', restaurantId);
     
     const { paymentMethodOption, upiId, upiQrCodeUrl, ...restData } = data;
+    
+    let coords = null;
+    if (restData.address) {
+        coords = await getCoordinatesForAddress(restData.address);
+    }
 
     const paymentMethods = {
         cash: paymentMethodOption === 'cash' || paymentMethodOption === 'both',
@@ -63,6 +86,7 @@ export async function updateRestaurant(restaurantId: string, data: z.infer<typeo
 
     await updateDoc(restaurantRef, {
         ...restData,
+        ...(coords && { latitude: coords.latitude, longitude: coords.longitude }),
         paymentMethods
     });
 }
@@ -168,4 +192,12 @@ export async function assignDeliveryBoy(orderId: string, deliveryBoy: {id: strin
     } catch (error) {
         console.error("Failed to send delivery notification:", error);
     }
+}
+
+export async function updateDeliveryBoyLocation(deliveryBoyId: string, location: { latitude: number; longitude: number }): Promise<void> {
+  const userRef = doc(db, 'users', deliveryBoyId);
+  await updateDoc(userRef, {
+    latitude: location.latitude,
+    longitude: location.longitude,
+  });
 }

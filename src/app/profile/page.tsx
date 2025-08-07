@@ -36,10 +36,30 @@ const addressSchema = z.object({
     name: z.string().min(2, 'Address label must be at least 2 characters.'),
     address: z.string().min(10, 'Address must be at least 10 characters.'),
     phone: z.string().min(10, 'Please enter a valid phone number.'),
+    latitude: z.number().optional(),
+    longitude: z.number().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 type AddressFormValues = z.infer<typeof addressSchema>;
+
+async function getCoordinatesForAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
+    try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+        const data = await response.json();
+        if (data && data.length > 0) {
+            return {
+                latitude: parseFloat(data[0].lat),
+                longitude: parseFloat(data[0].lon),
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error("Geocoding failed:", error);
+        return null;
+    }
+}
+
 
 export default function ProfilePage() {
   const { user, loading, refreshAuth } = useAuth();
@@ -98,13 +118,13 @@ export default function ProfilePage() {
       setIsSubmitting(true);
       const currentAddresses = user.addresses || [];
       let updatedAddresses: Address[];
+      
+      const coords = await getCoordinatesForAddress(data.address);
 
       if (editingAddress) {
-          // Update existing address
-          updatedAddresses = currentAddresses.map(addr => addr.id === editingAddress.id ? { ...addr, ...data } : addr);
+          updatedAddresses = currentAddresses.map(addr => addr.id === editingAddress.id ? { ...addr, ...data, ...coords } : addr);
       } else {
-          // Add new address
-          const newAddress: Address = { ...data, id: new Date().getTime().toString() };
+          const newAddress: Address = { ...data, id: new Date().getTime().toString(), ...coords };
           updatedAddresses = [...currentAddresses, newAddress];
       }
 

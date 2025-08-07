@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import type { Order } from '@/lib/types';
+import type { Order, AppUser } from '@/lib/types';
 import { getOrdersByCustomerId } from '@/services/restaurantClientService';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,6 +24,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/services/firebase';
 
 const statusSteps = [
     { status: 'pending', icon: Package, label: 'Order Placed' },
@@ -65,6 +67,41 @@ function OrderStatusTracker({ status }: { status: Order['status'] }) {
             </div>
         </div>
     )
+}
+
+function DeliveryBoyTracker({ order }: { order: Order }) {
+    const [deliveryBoyLocation, setDeliveryBoyLocation] = useState<{ latitude?: number; longitude?: number } | null>(null);
+
+    useEffect(() => {
+        if (order.deliveryBoy?.id) {
+            const unsub = onSnapshot(doc(db, "users", order.deliveryBoy.id), (doc) => {
+                const data = doc.data() as AppUser;
+                setDeliveryBoyLocation({ latitude: data.latitude, longitude: data.longitude });
+            });
+            return () => unsub();
+        }
+    }, [order.deliveryBoy?.id]);
+
+    if (!order.deliveryBoy) return null;
+
+    return (
+        <div className="mt-4 p-3 rounded-md bg-muted flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <Bike className="h-6 w-6 text-primary flex-shrink-0" />
+            <div className="flex-grow">
+                <p className="font-semibold">{order.deliveryBoy.name} is on the way with your order!</p>
+                {deliveryBoyLocation?.latitude && (
+                    <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${deliveryBoyLocation.latitude},${deliveryBoyLocation.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline"
+                    >
+                        View live location on map
+                    </a>
+                )}
+            </div>
+        </div>
+    );
 }
 
 export default function MyOrdersPage() {
@@ -175,13 +212,8 @@ export default function MyOrdersPage() {
                                     </div>
                                     <AccordionContent className="p-6 pt-0">
                                         <OrderStatusTracker status={order.status} />
-                                         {order.deliveryBoy && ['out-for-delivery', 'delivered'].includes(order.status) && (
-                                            <div className="mt-4 p-3 rounded-md bg-muted flex items-center gap-3">
-                                                <Bike className="h-6 w-6 text-primary"/>
-                                                <div>
-                                                    <p className="font-semibold">{order.deliveryBoy.name} is on the way with your order!</p>
-                                                </div>
-                                            </div>
+                                        {['out-for-delivery', 'delivered'].includes(order.status) && (
+                                            <DeliveryBoyTracker order={order} />
                                         )}
                                         <div className="mt-6">
                                             <h4 className="font-semibold mb-2">Order Summary</h4>

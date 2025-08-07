@@ -22,6 +22,8 @@ export interface Address {
     name: string;
     address: string;
     phone: string;
+    latitude?: number;
+    longitude?: number;
 }
 
 export interface AppUser extends User {
@@ -32,6 +34,8 @@ export interface AppUser extends User {
   address?: string; // Kept for backwards compatibility if needed, but addresses array is primary
   addresses?: Address[];
   fcmToken?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface AuthContextType {
@@ -65,6 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             address: userData?.address || '',
             addresses: userData?.addresses || [],
             fcmToken: userData?.fcmToken,
+            latitude: userData?.latitude,
+            longitude: userData?.longitude,
           };
           return appUser;
         } else {

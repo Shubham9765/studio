@@ -32,9 +32,7 @@ export default function CheckoutPage() {
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi'>('cash');
     const [transactionId, setTransactionId] = useState('');
     
-    const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>(undefined);
-    const [deliveryAddress, setDeliveryAddress] = useState('');
-    const [customerPhone, setCustomerPhone] = useState('');
+    const [selectedAddress, setSelectedAddress] = useState<Address | undefined>(undefined);
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -45,26 +43,16 @@ export default function CheckoutPage() {
     useEffect(() => {
         if (user?.addresses && user.addresses.length > 0) {
             const defaultAddress = user.addresses[0];
-            setSelectedAddressId(defaultAddress.id);
-            setDeliveryAddress(defaultAddress.address);
-            setCustomerPhone(defaultAddress.phone);
+            setSelectedAddress(defaultAddress);
         }
     }, [user]);
     
-    const handleAddressSelection = (address: Address) => {
-        setSelectedAddressId(address.id);
-        setDeliveryAddress(address.address);
-        setCustomerPhone(address.phone);
-    }
-
     const deliveryFee = restaurant?.deliveryCharge || 0;
     const finalTotal = totalPrice + deliveryFee;
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!user || !restaurant) return;
-        
-        if (!deliveryAddress || !customerPhone) {
+        if (!user || !restaurant || !selectedAddress) {
             toast({
                 variant: 'destructive',
                 title: 'Address Required',
@@ -88,8 +76,9 @@ export default function CheckoutPage() {
                 paymentMethod,
                 paymentStatus: paymentMethod === 'upi' ? 'pending' : 'pending',
                 ...(paymentMethod === 'upi' && { paymentDetails: { transactionId } }),
-                deliveryAddress: deliveryAddress,
-                customerPhone: customerPhone,
+                deliveryAddress: selectedAddress.address,
+                customerPhone: selectedAddress.phone,
+                customerAddress: selectedAddress,
             };
 
             await createOrder(user.uid, user.displayName || 'N/A', restaurant as Restaurant, cart, finalTotal, orderDetails);
@@ -193,7 +182,8 @@ export default function CheckoutPage() {
                                         <Label>Select Delivery Address</Label>
                                         {(user.addresses?.length || 0) > 0 ? (
                                             <RadioGroup 
-                                                value={selectedAddressId} 
+                                                value={selectedAddress?.id} 
+                                                onValueChange={(id) => setSelectedAddress(user.addresses?.find(a => a.id === id))}
                                                 className="grid grid-cols-1 sm:grid-cols-2 gap-4"
                                             >
                                                 {user.addresses?.map(addr => (
@@ -201,7 +191,6 @@ export default function CheckoutPage() {
                                                         key={addr.id}
                                                         htmlFor={addr.id} 
                                                         className="flex items-start rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary cursor-pointer"
-                                                        onClick={() => handleAddressSelection(addr)}
                                                     >
                                                         <RadioGroupItem value={addr.id} id={addr.id} className="mr-4 mt-1" />
                                                         <div className="space-y-1">
