@@ -400,8 +400,11 @@ function ServiceableLocations({ locations, loading, onUpdate }: { locations: str
 const bannerSchema = z.object({
   isEnabled: z.boolean(),
   heading: z.string().min(1, 'Heading is required.'),
+  isHeadingEnabled: z.boolean(),
   description: z.string().min(1, 'Description is required.'),
+  isDescriptionEnabled: z.boolean(),
   buttonText: z.string().min(1, 'Button text is required.'),
+  isButtonEnabled: z.boolean(),
   buttonLink: z.string().min(1, 'Button link is required.'),
   imageUrl: z.string().url('Must be a valid URL.').or(z.literal('')),
 });
@@ -416,8 +419,11 @@ function BannerManager({ initialConfig, onUpdate }: { initialConfig: BannerConfi
         defaultValues: {
             isEnabled: initialConfig?.isEnabled ?? false,
             heading: initialConfig?.heading ?? '',
+            isHeadingEnabled: initialConfig?.isHeadingEnabled ?? true,
             description: initialConfig?.description ?? '',
+            isDescriptionEnabled: initialConfig?.isDescriptionEnabled ?? true,
             buttonText: initialConfig?.buttonText ?? '',
+            isButtonEnabled: initialConfig?.isButtonEnabled ?? true,
             buttonLink: initialConfig?.buttonLink ?? '',
             imageUrl: initialConfig?.imageUrl ?? '',
         }
@@ -427,8 +433,11 @@ function BannerManager({ initialConfig, onUpdate }: { initialConfig: BannerConfi
         form.reset({
             isEnabled: initialConfig?.isEnabled ?? false,
             heading: initialConfig?.heading ?? '',
+            isHeadingEnabled: initialConfig?.isHeadingEnabled ?? true,
             description: initialConfig?.description ?? '',
+            isDescriptionEnabled: initialConfig?.isDescriptionEnabled ?? true,
             buttonText: initialConfig?.buttonText ?? '',
+            isButtonEnabled: initialConfig?.isButtonEnabled ?? true,
             buttonLink: initialConfig?.buttonLink ?? '',
             imageUrl: initialConfig?.imageUrl ?? '',
         })
@@ -455,7 +464,7 @@ function BannerManager({ initialConfig, onUpdate }: { initialConfig: BannerConfi
             </CardHeader>
             <CardContent>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <div className="flex items-center space-x-2">
+                     <div className="flex items-center space-x-2 p-3 rounded-md border bg-muted/50">
                         <Controller
                             control={form.control}
                             name="isEnabled"
@@ -467,35 +476,44 @@ function BannerManager({ initialConfig, onUpdate }: { initialConfig: BannerConfi
                                 />
                             )}
                         />
-                         <Label htmlFor="isEnabled" className="text-base">Enable Banner</Label>
+                         <Label htmlFor="isEnabled" className="text-base font-semibold">Enable Banner on Homepage</Label>
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="heading">Heading</Label>
+                        <div className="flex items-center space-x-2">
+                             <Controller control={form.control} name="isHeadingEnabled" render={({ field }) => ( <Switch id="isHeadingEnabled" checked={field.value} onCheckedChange={field.onChange}/> )}/>
+                             <Label htmlFor="isHeadingEnabled">Enable Heading</Label>
+                        </div>
                         <Input id="heading" {...form.register('heading')} placeholder="e.g., Get 50% Off!"/>
                         {form.formState.errors.heading && <p className="text-sm text-destructive">{form.formState.errors.heading.message}</p>}
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="description">Description</Label>
+                        <div className="flex items-center space-x-2">
+                            <Controller control={form.control} name="isDescriptionEnabled" render={({ field }) => ( <Switch id="isDescriptionEnabled" checked={field.value} onCheckedChange={field.onChange}/> )}/>
+                            <Label htmlFor="isDescriptionEnabled">Enable Description</Label>
+                        </div>
                         <Textarea id="description" {...form.register('description')} placeholder="e.g., Use code FIRST50..."/>
                          {form.formState.errors.description && <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>}
                     </div>
                     
-                    <div className="space-y-2">
-                        <Label htmlFor="imageUrl">Background Image URL</Label>
+                     <div className="space-y-2">
+                         <Label htmlFor="imageUrl">Background Image URL</Label>
                         <Input id="imageUrl" {...form.register('imageUrl')} placeholder="https://example.com/banner.png"/>
                         {form.formState.errors.imageUrl && <p className="text-sm text-destructive">{form.formState.errors.imageUrl.message}</p>}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="buttonText">Button Text</Label>
+                            <div className="flex items-center space-x-2">
+                                <Controller control={form.control} name="isButtonEnabled" render={({ field }) => ( <Switch id="isButtonEnabled" checked={field.value} onCheckedChange={field.onChange}/> )}/>
+                                <Label htmlFor="isButtonEnabled">Enable Button</Label>
+                            </div>
                             <Input id="buttonText" {...form.register('buttonText')} placeholder="Order Now"/>
                             {form.formState.errors.buttonText && <p className="text-sm text-destructive">{form.formState.errors.buttonText.message}</p>}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="buttonLink">Button Link</Label>
+                            <Label htmlFor="buttonLink">Button Link Target</Label>
                             <Input id="buttonLink" {...form.register('buttonLink')} placeholder="#restaurants"/>
                             {form.formState.errors.buttonLink && <p className="text-sm text-destructive">{form.formState.errors.buttonLink.message}</p>}
                         </div>
@@ -541,3 +559,5 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
+    

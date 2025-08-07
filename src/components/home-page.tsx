@@ -76,25 +76,31 @@ function PromotionalBanner({ config }: { config: BannerConfig | null }) {
 
   return (
     <section 
-        className="text-center py-10 sm:py-12 rounded-xl bg-primary/10 mb-12 relative overflow-hidden bg-cover bg-center"
+        className="text-center py-10 sm:py-12 rounded-xl bg-primary/10 mb-12 relative overflow-hidden bg-cover bg-center transition-transform duration-300 ease-in-out hover:scale-[1.02] shadow-lg hover:shadow-2xl"
         style={{ backgroundImage: `url(${config.imageUrl})` }}
     >
-        <div className="absolute inset-0 bg-primary/20 backdrop-blur-sm"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-black/20 to-black/50"></div>
         <div className="absolute -bottom-8 -right-8">
-            <Utensils className="h-32 w-32 text-primary/10" />
+            <Utensils className="h-32 w-32 text-white/5" />
         </div>
-        <div className="relative z-10">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-headline text-primary mb-4">
-              {config.heading}
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-              {config.description}
-            </p>
-            <Button size="lg" asChild>
-                <Link href={config.buttonLink}>
-                    {config.buttonText} <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-            </Button>
+        <div className="relative z-10 text-white px-4">
+            {config.isHeadingEnabled && (
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-headline mb-4" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.7)' }}>
+                  {config.heading}
+                </h1>
+            )}
+            {config.isDescriptionEnabled && (
+                <p className="text-lg text-white/90 max-w-2xl mx-auto mb-8" style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.8)' }}>
+                  {config.description}
+                </p>
+            )}
+            {config.isButtonEnabled && (
+                <Button size="lg" asChild className="bg-white text-primary hover:bg-white/90 shadow-lg">
+                    <Link href={config.buttonLink}>
+                        {config.buttonText} <ArrowRight className="ml-2 h-5 w-5" />
+                    </Link>
+                </Button>
+            )}
         </div>
     </section>
   )
@@ -218,3 +224,5 @@ export function HomePage() {
     </div>
   );
 }
+
+    

@@ -70,8 +70,13 @@ export interface Order {
 export interface BannerConfig {
     isEnabled: boolean;
     heading: string;
+    isHeadingEnabled: boolean;
     description: string;
+    isDescriptionEnabled: boolean;
     buttonText: string;
+    isButtonEnabled: boolean;
     buttonLink: string;
     imageUrl: string;
 }
+
+    
