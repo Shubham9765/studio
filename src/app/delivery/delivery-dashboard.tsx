@@ -172,18 +172,18 @@ export default function DeliveryDashboard() {
                 <CardContent className="flex-grow space-y-4">
                    <div>
                         <h4 className="font-semibold mb-2">Delivery Details</h4>
-                        <div className="space-y-1 text-sm">
+                        <div className="space-y-2 text-sm">
                             <p className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" /> {order.customerName}</p>
                             <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {order.customerPhone}</p>
                             <p className="flex items-start gap-2"><MapPin className="h-4 w-4 text-muted-foreground mt-1" /> {order.deliveryAddress}</p>
                             {order.customerAddress?.latitude && order.customerAddress?.longitude && (
-                                <Button asChild variant="link" className="p-0 h-auto">
+                                <Button asChild variant="outline" size="sm" className="w-full">
                                 <a 
                                     href={`https://www.google.com/maps/dir/?api=1&destination=${order.customerAddress.latitude},${order.customerAddress.longitude}`} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="text-primary hover:underline text-sm"
                                 >
+                                    <MapPin className="mr-2 h-4 w-4" />
                                     Get Directions
                                 </a>
                                 </Button>

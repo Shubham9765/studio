@@ -8,7 +8,7 @@ import { listenToOrdersForCustomer } from '@/services/restaurantClientService';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, PackageSearch, Package, ChefHat, Bike, PartyPopper, Copy, History } from 'lucide-react';
+import { AlertTriangle, PackageSearch, Package, ChefHat, Bike, PartyPopper, Copy, History, MapPin } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Accordion,
@@ -92,14 +92,16 @@ function DeliveryBoyTracker({ order }: { order: Order }) {
             <div className="flex-grow">
                 <p className="font-semibold">{order.deliveryBoy.name} is on the way with your order!</p>
                 {deliveryBoyLocation?.latitude && deliveryBoyLocation?.longitude && (
-                    <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${deliveryBoyLocation.latitude},${deliveryBoyLocation.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline"
-                    >
-                        View live location on map
-                    </a>
+                     <Button asChild size="sm" className="mt-2">
+                        <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${deliveryBoyLocation.latitude},${deliveryBoyLocation.longitude}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <MapPin className="mr-2 h-4 w-4" />
+                            View Live Location
+                        </a>
+                    </Button>
                 )}
             </div>
         </div>
