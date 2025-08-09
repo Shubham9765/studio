@@ -19,7 +19,6 @@ import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 import { updateUserStatus, updateRestaurantStatus, addServiceableCity, removeServiceableCity, updateBannerConfig } from '@/services/adminService';
 import { useToast } from '@/hooks/use-toast';
-import { runFlow } from '@genkit-ai/next/client';
 import { generateSalesReport, type GenerateSalesReportOutput } from '@/ai/flows/generate-sales-report';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '../ui/input';
@@ -238,7 +237,7 @@ function Reports() {
 
         setIsGenerating(true);
         try {
-            const reportData = await runFlow(generateSalesReport, {
+            const reportData = await generateSalesReport({
                 startDate: date.from.toISOString(),
                 endDate: date.to ? date.to.toISOString() : date.from.toISOString(),
             });
@@ -559,5 +558,3 @@ export default function AdminDashboard() {
     </div>
   );
 }
-
-    
