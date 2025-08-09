@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import type { Order, AppUser } from '@/lib/types';
-import { getOrdersByCustomerId } from '@/services/restaurantClientService';
+import { listenToOrdersForCustomer } from '@/services/restaurantClientService';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -119,19 +119,19 @@ export default function MyOrdersPage() {
             return;
         }
 
-        const fetchOrders = async () => {
-            try {
-                setLoading(true);
-                const userOrders = await getOrdersByCustomerId(user.uid);
-                setOrders(userOrders);
-            } catch (e: any) {
-                setError('Failed to fetch your orders.');
-            } finally {
-                setLoading(false);
-            }
-        };
+        setLoading(true);
+        const unsubscribe = listenToOrdersForCustomer(user.uid, (userOrders) => {
+            const activeOrders = userOrders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
+            setOrders(activeOrders);
+            setLoading(false);
+        }, (err) => {
+            setError('Failed to fetch your orders.');
+            console.error(err);
+            setLoading(false);
+        });
 
-        fetchOrders();
+        // Cleanup subscription on component unmount
+        return () => unsubscribe();
     }, [user, authLoading, router]);
 
     const handleCopyId = (id: string) => {
@@ -174,8 +174,6 @@ export default function MyOrdersPage() {
         )
     }
 
-    const activeOrders = orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
-
     return (
         <div className="min-h-screen bg-background">
             <Header />
@@ -189,9 +187,9 @@ export default function MyOrdersPage() {
                         </Link>
                     </Button>
                 </div>
-                {activeOrders.length > 0 ? (
-                    <Accordion type="single" collapsible className="w-full space-y-4">
-                        {activeOrders.map(order => (
+                {orders.length > 0 ? (
+                    <Accordion type="single" collapsible className="w-full space-y-4" defaultValue={orders[0]?.id}>
+                        {orders.map(order => (
                              <Card key={order.id}>
                                 <AccordionItem value={order.id} className="border-b-0">
                                     <div className="flex items-center p-6">

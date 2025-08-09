@@ -2,7 +2,7 @@
 'use client';
 
 import { db } from './firebase';
-import { collection, getDocs, doc, setDoc, query, where, getDoc, collectionGroup, limit } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, query, where, getDoc, collectionGroup, limit, onSnapshot, orderBy } from 'firebase/firestore';
 import type { Restaurant, MenuItem, Order, BannerConfig } from '@/lib/types';
 import { MOCK_RESTAURANTS } from '@/lib/seed';
 
@@ -53,6 +53,29 @@ export async function seedRestaurants() {
   });
   await Promise.all(promises);
   console.log('Seeded restaurants');
+}
+
+export function listenToOrdersForCustomer(
+    customerId: string, 
+    callback: (orders: Order[]) => void,
+    onError: (error: Error) => void
+): () => void {
+    const ordersRef = collection(db, 'orders');
+    const q = query(
+        ordersRef, 
+        where('customerId', '==', customerId),
+        orderBy('createdAt', 'desc')
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+        callback(orders);
+    }, (error) => {
+        console.error("Error listening to orders:", error);
+        onError(error);
+    });
+
+    return unsubscribe;
 }
 
 export async function getOrdersByCustomerId(customerId: string): Promise<Order[]> {
