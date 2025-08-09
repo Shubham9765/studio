@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import type { Order, AppUser } from '@/lib/types';
 import { listenToOrdersForCustomer } from '@/services/restaurantClientService';
@@ -26,6 +26,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/services/firebase';
+import { LiveMap } from '@/components/live-map';
+
 
 const statusSteps = [
     { status: 'pending', icon: Package, label: 'Order Placed' },
@@ -86,24 +88,32 @@ function DeliveryBoyTracker({ order }: { order: Order }) {
 
     if (!order.deliveryBoy) return null;
 
+    const showMap = deliveryBoyLocation?.latitude && deliveryBoyLocation?.longitude && order.customerAddress?.latitude && order.customerAddress?.longitude;
+
     return (
-        <div className="mt-4 p-3 rounded-md bg-muted flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <Bike className="h-6 w-6 text-primary flex-shrink-0" />
-            <div className="flex-grow">
-                <p className="font-semibold">{order.deliveryBoy.name} is on the way with your order!</p>
-                {deliveryBoyLocation?.latitude && deliveryBoyLocation?.longitude && (
-                     <Button asChild size="sm" className="mt-2">
-                        <a
-                            href={`https://www.google.com/maps/search/?api=1&query=${deliveryBoyLocation.latitude},${deliveryBoyLocation.longitude}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <MapPin className="mr-2 h-4 w-4" />
-                            View Live Location
-                        </a>
-                    </Button>
-                )}
+        <div className="mt-4 p-4 rounded-md bg-muted space-y-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <Bike className="h-8 w-8 text-primary flex-shrink-0" />
+                <div className="flex-grow">
+                    <p className="font-semibold">{order.deliveryBoy.name} is on the way with your order!</p>
+                    <p className="text-sm text-muted-foreground">You can track their progress on the map below.</p>
+                </div>
             </div>
+            
+            {showMap ? (
+                 <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+                     <LiveMap 
+                        customerLat={order.customerAddress!.latitude!}
+                        customerLng={order.customerAddress!.longitude!}
+                        deliveryBoyLat={deliveryBoyLocation.latitude!}
+                        deliveryBoyLng={deliveryBoyLocation.longitude!}
+                     />
+                 </Suspense>
+            ) : (
+                <div className="h-64 w-full rounded-md bg-background flex items-center justify-center">
+                    <p className="text-muted-foreground">Waiting for location data...</p>
+                </div>
+            )}
         </div>
     );
 }
