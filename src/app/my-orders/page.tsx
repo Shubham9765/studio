@@ -26,7 +26,12 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/services/firebase';
-import { LiveMap } from '@/components/live-map';
+import dynamic from 'next/dynamic';
+
+const LiveMap = dynamic(() => import('@/components/live-map').then(mod => mod.LiveMap), {
+    ssr: false,
+    loading: () => <Skeleton className="h-64 w-full" />
+});
 
 
 const statusSteps = [
@@ -102,12 +107,14 @@ function DeliveryBoyTracker({ order }: { order: Order }) {
             
             {showMap ? (
                  <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-                     <LiveMap 
-                        customerLat={order.customerAddress!.latitude!}
-                        customerLng={order.customerAddress!.longitude!}
-                        deliveryBoyLat={deliveryBoyLocation.latitude!}
-                        deliveryBoyLng={deliveryBoyLocation.longitude!}
-                     />
+                     <div className="h-64 w-full rounded-md overflow-hidden">
+                        <LiveMap 
+                            customerLat={order.customerAddress!.latitude!}
+                            customerLng={order.customerAddress!.longitude!}
+                            deliveryBoyLat={deliveryBoyLocation.latitude!}
+                            deliveryBoyLng={deliveryBoyLocation.longitude!}
+                        />
+                     </div>
                  </Suspense>
             ) : (
                 <div className="h-64 w-full rounded-md bg-background flex items-center justify-center">

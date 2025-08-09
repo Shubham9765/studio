@@ -20,8 +20,13 @@ import { Separator } from '../ui/separator';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocation } from '@/hooks/use-location';
-import { LiveMap } from '@/components/live-map';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import dynamic from 'next/dynamic';
+
+const LiveMap = dynamic(() => import('@/components/live-map').then(mod => mod.LiveMap), {
+    ssr: false,
+    loading: () => <Skeleton className="h-full w-full" />
+});
 
 function MapDialog({ order, deliveryBoyLocation }: { order: Order; deliveryBoyLocation: { latitude: number; longitude: number } | null }) {
     const showMap = deliveryBoyLocation?.latitude && deliveryBoyLocation?.longitude && order.customerAddress?.latitude && order.customerAddress?.longitude;
@@ -213,13 +218,15 @@ export default function DeliveryDashboard() {
                          {showMap ? (
                             <div className='w-full h-full relative'>
                                 <Suspense fallback={<Skeleton className="h-full w-full" />}>
-                                    <LiveMap
-                                        isInteractive={false}
-                                        customerLat={order.customerAddress!.latitude!}
-                                        customerLng={order.customerAddress!.longitude!}
-                                        deliveryBoyLat={deliveryBoyLocation.latitude!}
-                                        deliveryBoyLng={deliveryBoyLocation.longitude!}
-                                    />
+                                    <div className="w-full h-full rounded-md overflow-hidden">
+                                        <LiveMap
+                                            isInteractive={false}
+                                            customerLat={order.customerAddress!.latitude!}
+                                            customerLng={order.customerAddress!.longitude!}
+                                            deliveryBoyLat={deliveryBoyLocation.latitude!}
+                                            deliveryBoyLng={deliveryBoyLocation.longitude!}
+                                        />
+                                    </div>
                                 </Suspense>
                                 <div className='absolute inset-0 bg-black/20 flex items-center justify-center'>
                                     <MapDialog order={order} deliveryBoyLocation={deliveryBoyLocation} />
@@ -284,4 +291,3 @@ export default function DeliveryDashboard() {
     </div>
   );
 }
-
