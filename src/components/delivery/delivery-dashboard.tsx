@@ -11,7 +11,7 @@ import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Bike, Check, User, Phone, MapPin, History } from 'lucide-react';
+import { AlertTriangle, Bike, Check, User, Phone, MapPin, History, Expand } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -21,6 +21,43 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocation } from '@/hooks/use-location';
 import { LiveMap } from '@/components/live-map';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+
+function MapDialog({ order, deliveryBoyLocation }: { order: Order; deliveryBoyLocation: { latitude: number; longitude: number } | null }) {
+    const showMap = deliveryBoyLocation?.latitude && deliveryBoyLocation?.longitude && order.customerAddress?.latitude && order.customerAddress?.longitude;
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full">
+                    <Expand className="mr-2 h-4 w-4" />
+                    View Full Map
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-4">
+                <DialogHeader>
+                    <DialogTitle>Live Tracking for Order #{order.id.substring(0, 6)}</DialogTitle>
+                </DialogHeader>
+                <div className="flex-grow w-full rounded-md overflow-hidden">
+                    {showMap ? (
+                        <Suspense fallback={<Skeleton className="h-full w-full" />}>
+                            <LiveMap
+                                customerLat={order.customerAddress!.latitude!}
+                                customerLng={order.customerAddress!.longitude!}
+                                deliveryBoyLat={deliveryBoyLocation.latitude!}
+                                deliveryBoyLng={deliveryBoyLocation.longitude!}
+                            />
+                        </Suspense>
+                    ) : (
+                        <div className="h-full w-full bg-muted flex items-center justify-center text-center p-4">
+                            <p className="text-sm text-muted-foreground">Map will be displayed once customer and delivery locations are available.</p>
+                        </div>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 export default function DeliveryDashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -172,26 +209,44 @@ export default function DeliveryDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow space-y-4">
-                    {showMap ? (
-                        <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-                            <LiveMap 
-                                customerLat={order.customerAddress!.latitude!}
-                                customerLng={order.customerAddress!.longitude!}
-                                deliveryBoyLat={deliveryBoyLocation.latitude!}
-                                deliveryBoyLng={deliveryBoyLocation.longitude!}
-                            />
-                        </Suspense>
-                    ) : (
-                        <div className="h-48 w-full rounded-md bg-muted flex items-center justify-center text-center p-4">
-                           <p className="text-sm text-muted-foreground">Map will be displayed once customer and delivery locations are available.</p>
-                        </div>
-                    )}
+                    <div className="h-48 w-full rounded-md bg-muted flex items-center justify-center text-center p-4">
+                         {showMap ? (
+                            <div className='w-full h-full relative'>
+                                <Suspense fallback={<Skeleton className="h-full w-full" />}>
+                                    <LiveMap
+                                        isInteractive={false}
+                                        customerLat={order.customerAddress!.latitude!}
+                                        customerLng={order.customerAddress!.longitude!}
+                                        deliveryBoyLat={deliveryBoyLocation.latitude!}
+                                        deliveryBoyLng={deliveryBoyLocation.longitude!}
+                                    />
+                                </Suspense>
+                                <div className='absolute inset-0 bg-black/20 flex items-center justify-center'>
+                                    <MapDialog order={order} deliveryBoyLocation={deliveryBoyLocation} />
+                                </div>
+                            </div>
+                        ) : (
+                           <p className="text-sm text-muted-foreground">Map will be displayed once locations are available.</p>
+                        )}
+                    </div>
                    <div>
                         <h4 className="font-semibold mb-2">Delivery Details</h4>
                         <div className="space-y-2 text-sm">
                             <p className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" /> {order.customerName}</p>
                             <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {order.customerPhone}</p>
                             <p className="flex items-start gap-2"><MapPin className="h-4 w-4 text-muted-foreground mt-1" /> {order.deliveryAddress}</p>
+                            {showMap && (
+                                <Button asChild variant="outline" size="sm" className="w-full">
+                                <a 
+                                    href={`https://www.google.com/maps/dir/?api=1&origin=${deliveryBoyLocation.latitude},${deliveryBoyLocation.longitude}&destination=${order.customerAddress.latitude},${order.customerAddress.longitude}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                >
+                                    <MapPin className="mr-2 h-4 w-4" />
+                                    Get Directions
+                                </a>
+                                </Button>
+                            )}
                         </div>
                     </div>
                     <Separator/>
@@ -229,3 +284,4 @@ export default function DeliveryDashboard() {
     </div>
   );
 }
+

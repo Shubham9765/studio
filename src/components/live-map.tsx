@@ -3,12 +3,16 @@
 
 import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
 import L from 'leaflet';
+import { useEffect } from 'react';
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
+import 'leaflet-routing-machine';
 
 interface LiveMapProps {
     customerLat: number;
     customerLng: number;
     deliveryBoyLat: number;
     deliveryBoyLng: number;
+    isInteractive?: boolean;
 }
 
 // Inline SVG for the delivery icon to avoid dealing with static file paths
@@ -43,35 +47,69 @@ const homeIcon = new L.DivIcon({
 })
 
 
-export function LiveMap({ customerLat, customerLng, deliveryBoyLat, deliveryBoyLng }: LiveMapProps) {
+function Routing({ map, from, to }: { map: L.Map | null, from: [number, number], to: [number, number] }) {
+    useEffect(() => {
+        if (!map) return;
+        
+        // @ts-ignore - L.Routing is from the leaflet-routing-machine plugin
+        const routingControl = L.Routing.control({
+            waypoints: [
+                L.latLng(from[0], from[1]),
+                L.latLng(to[0], to[1])
+            ],
+            routeWhileDragging: true,
+            show: false, // Hide the default ugly itinerary
+            addWaypoints: false, // Prevent users from adding new waypoints
+            draggableWaypoints: false,
+            fitSelectedRoutes: true,
+            // Custom icons
+            createMarker: function() { return null; }, // Use our own markers
+             lineOptions: {
+                styles: [{ color: '#FF6B6B', opacity: 0.8, weight: 6 }]
+            }
+        }).addTo(map);
+
+        return () => {
+            if (map && routingControl) {
+                map.removeControl(routingControl);
+            }
+        };
+    }, [map, from, to]);
+
+    return null;
+}
+
+
+export function LiveMap({ customerLat, customerLng, deliveryBoyLat, deliveryBoyLng, isInteractive = true }: LiveMapProps) {
+    const [map, setMap] = useState<L.Map | null>(null);
+
     if (!deliveryBoyLat || !deliveryBoyLng || !customerLat || !customerLng) {
-        return <div className="h-64 w-full rounded-md bg-muted flex items-center justify-center text-muted-foreground">Map loading...</div>;
+        return <div className="h-full w-full rounded-md bg-muted flex items-center justify-center text-muted-foreground">Map loading...</div>;
     }
     
-    // Create a straight line as a placeholder for the route
-    const route: [number, number][] = [[deliveryBoyLat, deliveryBoyLng], [customerLat, customerLng]];
-    const bounds = L.latLngBounds(route);
+    const bounds = L.latLngBounds([deliveryBoyLat, deliveryBoyLng], [customerLat, customerLng]);
 
     return (
         <MapContainer
             bounds={bounds}
-            scrollWheelZoom={true}
-            className="h-64 w-full rounded-md z-0"
-            // Pad the bounds slightly to ensure markers aren't on the edge
+            scrollWheelZoom={isInteractive}
+            zoomControl={isInteractive}
+            dragging={isInteractive}
+            touchZoom={isInteractive}
+            doubleClickZoom={isInteractive}
+            className="h-full w-full z-0"
             boundsOptions={{ padding: [50, 50] }}
+            whenCreated={setMap}
         >
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {/* Customer's Location Marker */}
+            
             <Marker position={[customerLat, customerLng]} icon={homeIcon}/>
-
-            {/* Delivery Person's Moving Marker */}
             <Marker position={[deliveryBoyLat, deliveryBoyLng]} icon={deliveryIcon} />
-
-            {/* The Route Line */}
-            <Polyline positions={route} color="#FF6B6B" weight={3} dashArray="5, 10" />
+            
+            <Routing map={map} from={[deliveryBoyLat, deliveryBoyLng]} to={[customerLat, customerLng]} />
         </MapContainer>
     );
 }
