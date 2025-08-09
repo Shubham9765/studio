@@ -13,17 +13,37 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, CheckCircle, ShoppingCart, Banknote, Landmark, Home, Building, PlusCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ShoppingCart, Banknote, Landmark, Crosshair, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { createOrder } from '@/services/restaurantService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { Order, Restaurant } from '@/lib/types';
 import type { Address } from '@/hooks/use-auth';
+import { useLocation } from '@/hooks/use-location';
+
+async function getCoordinatesForAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
+    try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+        const data = await response.json();
+        if (data && data.length > 0) {
+            return {
+                latitude: parseFloat(data[0].lat),
+                longitude: parseFloat(data[0].lon),
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error("Geocoding failed:", error);
+        return null;
+    }
+}
+
 
 export default function CheckoutPage() {
     const { cart, restaurant, totalPrice, clearCart } = useCart();
     const { user, loading: authLoading } = useAuth();
+    const { location, requestLocation, error: locationError } = useLocation();
     const router = useRouter();
     const { toast } = useToast();
 
@@ -32,31 +52,48 @@ export default function CheckoutPage() {
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi'>('cash');
     const [transactionId, setTransactionId] = useState('');
     
-    const [selectedAddress, setSelectedAddress] = useState<Address | undefined>(undefined);
+    const [deliveryAddress, setDeliveryAddress] = useState('');
+    const [deliveryPhone, setDeliveryPhone] = useState('');
+    const [deliveryCoords, setDeliveryCoords] = useState<{latitude: number, longitude: number} | null>(null);
+    const [isLocating, setIsLocating] = useState(false);
 
     useEffect(() => {
         if (!authLoading && !user) {
             router.push('/');
         }
+        if (user?.phone) {
+            setDeliveryPhone(user.phone);
+        }
     }, [authLoading, user, router]);
 
+    const handleUseCurrentLocation = () => {
+        setIsLocating(true);
+        requestLocation();
+    };
+
     useEffect(() => {
-        if (user?.addresses && user.addresses.length > 0) {
-            const defaultAddress = user.addresses[0];
-            setSelectedAddress(defaultAddress);
+        if (location && isLocating) {
+            setDeliveryAddress('Using current location');
+            setDeliveryCoords({ latitude: location.latitude, longitude: location.longitude });
+            setIsLocating(false);
+            toast({ title: "Location Set!", description: "Your current location will be used for delivery." });
         }
-    }, [user]);
+        if (locationError && isLocating) {
+            toast({ variant: 'destructive', title: "Location Error", description: locationError });
+            setIsLocating(false);
+        }
+    }, [location, locationError, isLocating, toast]);
     
     const deliveryFee = restaurant?.deliveryCharge || 0;
     const finalTotal = totalPrice + deliveryFee;
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!user || !restaurant || !selectedAddress) {
+        if (!user || !restaurant || !deliveryAddress || !deliveryPhone) {
             toast({
                 variant: 'destructive',
-                title: 'Address Required',
-                description: 'Please select a delivery address to continue.',
+                title: 'Information Required',
+                description: 'Please provide a delivery address and phone number.',
             });
             return;
         }
@@ -72,13 +109,37 @@ export default function CheckoutPage() {
 
         setIsSubmitting(true);
         try {
+            let finalCoords = deliveryCoords;
+            // If we don't have coords yet (i.e., user typed address), geocode it.
+            if (!finalCoords && deliveryAddress !== 'Using current location') {
+                 finalCoords = await getCoordinatesForAddress(deliveryAddress);
+                 if (!finalCoords) {
+                     toast({ variant: 'destructive', title: 'Address Not Found', description: "Could not find coordinates for the address. Please try a different address." });
+                     setIsSubmitting(false);
+                     return;
+                 }
+            }
+            if (!finalCoords) {
+                toast({ variant: 'destructive', title: 'Location Missing', description: "Could not determine delivery location. Please use your current location or enter a valid address." });
+                setIsSubmitting(false);
+                return;
+            }
+
+            const customerAddressForOrder: Address = {
+                id: 'order-location',
+                name: 'Delivery Location',
+                address: deliveryAddress,
+                phone: deliveryPhone,
+                ...finalCoords,
+            };
+
             const orderDetails: Partial<Order> = {
                 paymentMethod,
                 paymentStatus: paymentMethod === 'upi' ? 'pending' : 'pending',
                 ...(paymentMethod === 'upi' && { paymentDetails: { transactionId } }),
-                deliveryAddress: selectedAddress.address, // For display
-                customerPhone: selectedAddress.phone, // For display
-                customerAddress: selectedAddress, // The full object with coordinates
+                deliveryAddress: deliveryAddress, // For display
+                customerPhone: deliveryPhone, // For display
+                customerAddress: customerAddressForOrder, // The full object with coordinates
             };
 
             await createOrder(user.uid, user.displayName || 'N/A', restaurant as Restaurant, cart, finalTotal, orderDetails);
@@ -179,44 +240,31 @@ export default function CheckoutPage() {
                                 </CardHeader>
                                 <CardContent className="space-y-6">
                                      <div className="space-y-4">
-                                        <Label>Select Delivery Address</Label>
-                                        {(user.addresses?.length || 0) > 0 ? (
-                                            <RadioGroup 
-                                                value={selectedAddress?.id} 
-                                                onValueChange={(id) => setSelectedAddress(user.addresses?.find(a => a.id === id))}
-                                                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-                                            >
-                                                {user.addresses?.map(addr => (
-                                                    <Label 
-                                                        key={addr.id}
-                                                        htmlFor={addr.id} 
-                                                        className="flex items-start rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary cursor-pointer"
-                                                    >
-                                                        <RadioGroupItem value={addr.id} id={addr.id} className="mr-4 mt-1" />
-                                                        <div className="space-y-1">
-                                                            <div className="flex items-center gap-2 font-bold">
-                                                                {addr.name.toLowerCase() === 'home' ? <Home className="h-4 w-4" /> : <Building className="h-4 w-4" />}
-                                                                {addr.name}
-                                                            </div>
-                                                            <p className="text-sm text-muted-foreground">{addr.address}</p>
-                                                            <p className="text-sm text-muted-foreground">{addr.phone}</p>
-                                                        </div>
-                                                    </Label>
-                                                ))}
-                                            </RadioGroup>
-                                        ) : (
-                                            <Alert>
-                                                <AlertTriangle className="h-4 w-4" />
-                                                <AlertTitle>No Addresses Found</AlertTitle>
-                                                <AlertDescription>
-                                                    You haven't saved any delivery addresses yet. Please add one in your profile.
-                                                </AlertDescription>
-                                            </Alert>
-                                        )}
-                                        <Button type="button" variant="outline" size="sm" onClick={() => router.push('/profile')}>
-                                            <PlusCircle className="mr-2 h-4 w-4" />
-                                            Manage Addresses
-                                        </Button>
+                                        <Label>Delivery Location</Label>
+                                        <div className="flex gap-2">
+                                            <Input 
+                                                placeholder="Enter delivery address or use current location"
+                                                value={deliveryAddress}
+                                                onChange={(e) => {
+                                                    setDeliveryAddress(e.target.value);
+                                                    setDeliveryCoords(null); // Clear coords if user types
+                                                }}
+                                                required
+                                            />
+                                            <Button type="button" variant="outline" size="icon" onClick={handleUseCurrentLocation} disabled={isLocating}>
+                                                {isLocating ? <Loader2 className="animate-spin" /> : <Crosshair />}
+                                            </Button>
+                                        </div>
+                                         <div>
+                                            <Label htmlFor="phone">Contact Phone</Label>
+                                            <Input 
+                                                id="phone"
+                                                placeholder="Enter your phone number"
+                                                value={deliveryPhone}
+                                                onChange={(e) => setDeliveryPhone(e.target.value)}
+                                                required
+                                            />
+                                         </div>
                                     </div>
                                     <Separator />
                                      <div className="space-y-4">
@@ -270,7 +318,7 @@ export default function CheckoutPage() {
 
                                 </CardContent>
                                 <CardFooter>
-                                     <Button type="submit" className="w-full" disabled={isSubmitting || !selectedAddress}>
+                                     <Button type="submit" className="w-full" disabled={isSubmitting || !deliveryAddress}>
                                         {isSubmitting ? 'Placing Order...' : `Place Order - $${finalTotal.toFixed(2)}`}
                                      </Button>
                                 </CardFooter>
