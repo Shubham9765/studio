@@ -16,7 +16,7 @@ interface MenuItemSearchCardProps {
 }
 
 export function MenuItemSearchCard({ item }: MenuItemSearchCardProps) {
-    const { addItem, restaurant: cartRestaurant, clearCart } = useCart();
+    const { addItem } = useCart();
     const { toast } = useToast();
 
     const handleAddToCart = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -24,32 +24,22 @@ export function MenuItemSearchCard({ item }: MenuItemSearchCardProps) {
         e.stopPropagation();
 
         if (!item.isAvailable) return;
-
-        const handleAddItem = async () => {
-            const fullRestaurant = await getRestaurantById(item.restaurantId);
-            if (!fullRestaurant) {
-                toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: "Could not find restaurant information.",
-                });
-                return;
-            }
-            addItem({ ...item, quantity: 1 }, fullRestaurant);
+        
+        const fullRestaurant = await getRestaurantById(item.restaurantId);
+        if (!fullRestaurant) {
             toast({
-                title: "Added to cart",
-                description: `${item.name} has been added to your order.`,
+                variant: "destructive",
+                title: "Error",
+                description: "Could not find restaurant information.",
             });
+            return;
         }
         
-        if (cartRestaurant && cartRestaurant.id !== item.restaurantId) {
-             if (confirm('Your cart contains items from another restaurant. Would you like to clear it and add this item instead?')) {
-                clearCart();
-                await handleAddItem();
-            }
-        } else {
-            await handleAddItem();
-        }
+        addItem({ ...item, quantity: 1 }, fullRestaurant);
+        toast({
+            title: "Added to cart",
+            description: `${item.name} has been added to your order.`,
+        });
     }
 
 

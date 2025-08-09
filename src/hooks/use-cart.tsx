@@ -39,10 +39,12 @@ export function CartProvider({ children }: CartProviderProps) {
   });
 
   const addItem = (item: CartItem, restaurantData: Partial<Restaurant>) => {
-    // If the cart is from a different restaurant, clear it first.
+    // If the cart is from a different restaurant, ask for confirmation before clearing.
     if (restaurant && restaurant.id !== restaurantData.id) {
-        setCart([{...item, quantity: 1}]);
-        setRestaurant(restaurantData);
+        if (window.confirm('Your cart contains items from another restaurant. Would you like to clear it and add this item instead?')) {
+            setCart([{ ...item, quantity: 1 }]);
+            setRestaurant(restaurantData);
+        }
         return;
     }
 
