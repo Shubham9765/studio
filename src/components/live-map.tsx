@@ -1,6 +1,7 @@
+
 'use client';
 
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { useEffect, useState } from 'react';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
@@ -14,14 +15,14 @@ interface LiveMapProps {
     isInteractive?: boolean;
 }
 
-// Inline SVG for the delivery icon to avoid dealing with static file paths
+// Inline SVG for the delivery icon
 const deliveryIconSvg = `
-  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="50" cy="50" r="45" fill="#FF6B6B" stroke="#FFFFFF" stroke-width="4"/>
-    <path d="M25,55 L35,45 L45,55 M35,45 L35,25" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
-    <path d="M55,60 L75,60 L70,75 L60,75 L55,60" fill="#FFFFFF" />
-    <circle cx="30" cy="75" r="8" fill="#FFFFFF" stroke="#FF6B6B" stroke-width="2"/>
-    <circle cx="80" cy="75" r="8" fill="#FFFFFF" stroke="#FF6B6B" stroke-width="2"/>
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+    <g transform="translate(5, 5) scale(0.9)">
+      <circle cx="50" cy="50" r="48" fill="#FF6B6B" stroke="#FFFFFF" stroke-width="4"/>
+      <path d="M66.3 36.6c-1.3-1.6-3.1-2.6-5-3.1-1.2-.3-2.4-.4-3.6-.2-2.1.3-4.1 1.2-5.7 2.6l-2.4 2.1-5.5-6.6c-.6-.7-1.4-1.2-2.3-1.5-1.1-.3-2.2-.3-3.3.1-.9.3-1.8.8-2.5 1.5l-9.3 9.3c-.6.6-.9 1.3-.9 2.1s.3 1.5.9 2.1l2.8 2.8c.6.6 1.3.9 2.1.9s1.5-.3 2.1-.9l5-5 4.5 5.4c1.1 1.3 2.7 2.1 4.4 2.1.5 0 1-.1 1.5-.2 2.1-.5 3.9-1.9 4.8-3.8l5.3-10.7 2.4-2.4c.5-.4 1-.6 1.5-.6.6 0 1.2.2 1.6.7z" fill="#fff"/>
+      <path d="M47.5 70.2c-2.8 0-5.1 2.3-5.1 5.1s2.3 5.1 5.1 5.1 5.1-2.3 5.1-5.1-2.3-5.1-5.1-5.1zm-24.8 0c-2.8 0-5.1 2.3-5.1 5.1s2.3 5.1 5.1 5.1 5.1-2.3 5.1-5.1-2.3-5.1-5.1-5.1z" fill="#fff"/>
+    </g>
   </svg>
 `;
 
@@ -32,9 +33,12 @@ const deliveryIcon = new L.DivIcon({
     iconAnchor: [20, 40],
 });
 
+// Inline SVG for the home icon
 const homeIconSvg = `
-  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-     <path d="M 50,10 L 90,50 L 80,50 L 80,90 L 60,90 L 60,60 L 40,60 L 40,90 L 20,90 L 20,50 L 10,50 Z" fill="#4A90E2" stroke="#FFFFFF" stroke-width="4"/>
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+    <g transform="translate(5, 5) scale(0.9)">
+        <path d="M 50,15 L 10,50 L 22,50 L 22,85 L 42,85 L 42,60 L 58,60 L 58,85 L 78,85 L 78,50 L 90,50 Z" fill="#4A90E2" stroke="#FFFFFF" stroke-width="4" />
+    </g>
   </svg>
 `;
 
@@ -46,10 +50,12 @@ const homeIcon = new L.DivIcon({
 })
 
 
-function Routing({ map, from, to }: { map: L.Map | null, from: [number, number], to: [number, number] }) {
+function Routing({ from, to }: { from: [number, number], to: [number, number] }) {
+    const map = useMap();
+
     useEffect(() => {
         if (!map) return;
-        
+
         // @ts-ignore - L.Routing is from the leaflet-routing-machine plugin
         const routingControl = L.Routing.control({
             waypoints: [
@@ -57,12 +63,11 @@ function Routing({ map, from, to }: { map: L.Map | null, from: [number, number],
                 L.latLng(to[0], to[1])
             ],
             routeWhileDragging: false,
-            show: false, // Hide the default ugly itinerary
-            addWaypoints: false, // Prevent users from adding new waypoints
+            show: false,
+            addWaypoints: false,
             draggableWaypoints: false,
             fitSelectedRoutes: true,
-            // Custom icons
-            createMarker: function() { return null; }, // Use our own markers
+            createMarker: () => null, // Use our own markers outside this control
              lineOptions: {
                 styles: [{ color: '#FF6B6B', opacity: 0.8, weight: 6 }]
             }
@@ -80,8 +85,6 @@ function Routing({ map, from, to }: { map: L.Map | null, from: [number, number],
 
 
 export function LiveMap({ customerLat, customerLng, deliveryBoyLat, deliveryBoyLng, isInteractive = true }: LiveMapProps) {
-    const [map, setMap] = useState<L.Map | null>(null);
-
     if (!deliveryBoyLat || !deliveryBoyLng || !customerLat || !customerLng) {
         return <div className="h-full w-full rounded-md bg-muted flex items-center justify-center text-muted-foreground">Map loading...</div>;
     }
@@ -90,6 +93,7 @@ export function LiveMap({ customerLat, customerLng, deliveryBoyLat, deliveryBoyL
 
     return (
         <MapContainer
+            key={`${deliveryBoyLat}-${deliveryBoyLng}`} // Re-render map when location changes to update route
             bounds={bounds}
             scrollWheelZoom={isInteractive}
             zoomControl={isInteractive}
@@ -98,7 +102,6 @@ export function LiveMap({ customerLat, customerLng, deliveryBoyLat, deliveryBoyL
             doubleClickZoom={isInteractive}
             className="h-full w-full z-0"
             boundsOptions={{ padding: [50, 50] }}
-            whenCreated={setMap}
         >
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -108,7 +111,7 @@ export function LiveMap({ customerLat, customerLng, deliveryBoyLat, deliveryBoyL
             <Marker position={[customerLat, customerLng]} icon={homeIcon}/>
             <Marker position={[deliveryBoyLat, deliveryBoyLng]} icon={deliveryIcon} />
             
-            {map && <Routing map={map} from={[deliveryBoyLat, deliveryBoyLng]} to={[customerLat, customerLng]} />}
+            <Routing from={[deliveryBoyLat, deliveryBoyLng]} to={[customerLat, customerLng]} />
         </MapContainer>
     );
 }
