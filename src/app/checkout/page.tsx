@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, CheckCircle, ShoppingCart, Banknote, Landmark, Crosshair, Loader2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ShoppingCart, Banknote, Landmark, Crosshair, Loader2, Home, Building } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { createOrder } from '@/services/restaurantService';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,6 +21,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { Order, Restaurant } from '@/lib/types';
 import type { Address } from '@/hooks/use-auth';
 import { useLocation } from '@/hooks/use-location';
+import Link from 'next/link';
 
 async function getCoordinatesForAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
     try {
@@ -52,48 +53,64 @@ export default function CheckoutPage() {
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi'>('cash');
     const [transactionId, setTransactionId] = useState('');
     
-    const [deliveryAddress, setDeliveryAddress] = useState('');
-    const [deliveryPhone, setDeliveryPhone] = useState('');
-    const [deliveryCoords, setDeliveryCoords] = useState<{latitude: number, longitude: number} | null>(null);
+    const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+    const [isUsingCurrentLocation, setIsUsingCurrentLocation] = useState(false);
     const [isLocating, setIsLocating] = useState(false);
-
+    
     useEffect(() => {
         if (!authLoading && !user) {
             router.push('/');
         }
-        if (user?.phone) {
-            setDeliveryPhone(user.phone);
+        // Set the first saved address as the default selection
+        if (user?.addresses && user.addresses.length > 0 && !selectedAddress) {
+            setSelectedAddress(user.addresses[0]);
         }
-    }, [authLoading, user, router]);
+    }, [authLoading, user, router, selectedAddress]);
 
     const handleUseCurrentLocation = () => {
         setIsLocating(true);
+        setIsUsingCurrentLocation(true);
+        setSelectedAddress(null); // Deselect any saved address
         requestLocation();
     };
 
     useEffect(() => {
-        if (location && isLocating) {
-            setDeliveryAddress('Using current location');
-            setDeliveryCoords({ latitude: location.latitude, longitude: location.longitude });
-            setIsLocating(false);
-            toast({ title: "Location Set!", description: "Your current location will be used for delivery." });
+        if (location && isUsingCurrentLocation) {
+             toast({ title: "Location Set!", description: "Your current location will be used for delivery." });
         }
-        if (locationError && isLocating) {
+        if (locationError && isUsingCurrentLocation) {
             toast({ variant: 'destructive', title: "Location Error", description: locationError });
-            setIsLocating(false);
         }
-    }, [location, locationError, isLocating, toast]);
+        setIsLocating(false);
+    }, [location, locationError, isUsingCurrentLocation, toast]);
     
     const deliveryFee = restaurant?.deliveryCharge || 0;
     const finalTotal = totalPrice + deliveryFee;
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!user || !restaurant || !deliveryAddress || !deliveryPhone) {
+        
+        let finalAddress: Address | null = selectedAddress;
+        
+        if (isUsingCurrentLocation) {
+            if (!location) {
+                toast({ variant: 'destructive', title: 'Location Missing', description: "Could not get your current location. Please try again or select a saved address." });
+                return;
+            }
+             finalAddress = {
+                id: 'current-location',
+                name: 'Current Location',
+                address: `Lat: ${location.latitude.toFixed(4)}, Lon: ${location.longitude.toFixed(4)}`,
+                phone: user?.phone || '',
+                ...location,
+            };
+        }
+
+        if (!user || !restaurant || !finalAddress) {
             toast({
                 variant: 'destructive',
                 title: 'Information Required',
-                description: 'Please provide a delivery address and phone number.',
+                description: 'Please select or provide a delivery address.',
             });
             return;
         }
@@ -109,37 +126,25 @@ export default function CheckoutPage() {
 
         setIsSubmitting(true);
         try {
-            let finalCoords = deliveryCoords;
-            // If we don't have coords yet (i.e., user typed address), geocode it.
-            if (!finalCoords && deliveryAddress !== 'Using current location') {
-                 finalCoords = await getCoordinatesForAddress(deliveryAddress);
-                 if (!finalCoords) {
-                     toast({ variant: 'destructive', title: 'Address Not Found', description: "Could not find coordinates for the address. Please try a different address." });
-                     setIsSubmitting(false);
-                     return;
-                 }
+            // Geocode address if it doesn't have coordinates already
+            if (!finalAddress.latitude || !finalAddress.longitude) {
+                const coords = await getCoordinatesForAddress(finalAddress.address);
+                if (coords) {
+                    finalAddress = { ...finalAddress, ...coords };
+                } else {
+                    toast({ variant: 'destructive', title: 'Address Not Found', description: "Could not find coordinates for the address. Please try a different address." });
+                    setIsSubmitting(false);
+                    return;
+                }
             }
-            if (!finalCoords) {
-                toast({ variant: 'destructive', title: 'Location Missing', description: "Could not determine delivery location. Please use your current location or enter a valid address." });
-                setIsSubmitting(false);
-                return;
-            }
-
-            const customerAddressForOrder: Address = {
-                id: 'order-location',
-                name: 'Delivery Location',
-                address: deliveryAddress,
-                phone: deliveryPhone,
-                ...finalCoords,
-            };
 
             const orderDetails: Partial<Order> = {
                 paymentMethod,
                 paymentStatus: paymentMethod === 'upi' ? 'pending' : 'pending',
                 ...(paymentMethod === 'upi' && { paymentDetails: { transactionId } }),
-                deliveryAddress: deliveryAddress, // For display
-                customerPhone: deliveryPhone, // For display
-                customerAddress: customerAddressForOrder, // The full object with coordinates
+                deliveryAddress: finalAddress.address,
+                customerPhone: finalAddress.phone,
+                customerAddress: finalAddress,
             };
 
             await createOrder(user.uid, user.displayName || 'N/A', restaurant as Restaurant, cart, finalTotal, orderDetails);
@@ -239,34 +244,64 @@ export default function CheckoutPage() {
                                     <CardDescription>Confirm your details and place the order.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
-                                     <div className="space-y-4">
+                                    <div className="space-y-4">
                                         <Label>Delivery Location</Label>
-                                        <div className="flex gap-2">
-                                            <Input 
-                                                placeholder="Enter delivery address or use current location"
-                                                value={deliveryAddress}
-                                                onChange={(e) => {
-                                                    setDeliveryAddress(e.target.value);
-                                                    setDeliveryCoords(null); // Clear coords if user types
-                                                }}
-                                                required
-                                            />
-                                            <Button type="button" variant="outline" size="icon" onClick={handleUseCurrentLocation} disabled={isLocating}>
-                                                {isLocating ? <Loader2 className="animate-spin" /> : <Crosshair />}
-                                            </Button>
-                                        </div>
-                                         <div>
-                                            <Label htmlFor="phone">Contact Phone</Label>
-                                            <Input 
-                                                id="phone"
-                                                placeholder="Enter your phone number"
-                                                value={deliveryPhone}
-                                                onChange={(e) => setDeliveryPhone(e.target.value)}
-                                                required
-                                            />
-                                         </div>
+                                        
+                                        {user.addresses && user.addresses.length > 0 ? (
+                                             <RadioGroup 
+                                                value={isUsingCurrentLocation ? 'current' : selectedAddress?.id} 
+                                                onValueChange={(value) => {
+                                                    if (value === 'current') {
+                                                        handleUseCurrentLocation();
+                                                    } else {
+                                                        setIsUsingCurrentLocation(false);
+                                                        setSelectedAddress(user.addresses?.find(a => a.id === value) || null);
+                                                    }
+                                                }} 
+                                                className="space-y-2"
+                                            >
+                                                {user.addresses.map(addr => (
+                                                    <Label key={addr.id} htmlFor={addr.id} className="flex items-start gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:border-primary">
+                                                        <RadioGroupItem value={addr.id} id={addr.id} className="mt-1" />
+                                                         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center mt-1">
+                                                            {addr.name.toLowerCase() === 'home' ? <Home className="h-5 w-5 text-muted-foreground" /> : <Building className="h-5 w-5 text-muted-foreground"/>}
+                                                         </div>
+                                                         <div className="text-sm flex-grow">
+                                                            <p className="font-bold">{addr.name}</p>
+                                                            <p className="text-muted-foreground">{addr.address}</p>
+                                                            <p className="text-muted-foreground">{addr.phone}</p>
+                                                         </div>
+                                                    </Label>
+                                                ))}
+                                                <Label htmlFor="current" className="flex items-start gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:border-primary">
+                                                    <RadioGroupItem value="current" id="current" className="mt-1" />
+                                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center mt-1">
+                                                        <Crosshair className="h-5 w-5 text-muted-foreground"/>
+                                                    </div>
+                                                    <div className="text-sm flex-grow">
+                                                        <p className="font-bold">Use Current Location</p>
+                                                        {isLocating && <p className="text-muted-foreground">Getting your location...</p>}
+                                                        {locationError && <p className="text-destructive text-xs">{locationError}</p>}
+                                                        {location && isUsingCurrentLocation && <p className="text-muted-foreground text-xs">Lat: {location.latitude.toFixed(4)}, Lon: {location.longitude.toFixed(4)}</p>}
+                                                    </div>
+                                                </Label>
+                                             </RadioGroup>
+                                        ) : (
+                                            <Alert>
+                                                <AlertTriangle className="h-4 w-4" />
+                                                <AlertTitle>No Saved Addresses</AlertTitle>
+                                                <AlertDescription>
+                                                    You don't have any saved addresses. Please add one to your profile to continue.
+                                                    <Button asChild variant="link" className="p-0 h-auto ml-1">
+                                                        <Link href="/profile">Go to Profile</Link>
+                                                    </Button>
+                                                </AlertDescription>
+                                            </Alert>
+                                        )}
                                     </div>
+                                    
                                     <Separator />
+
                                      <div className="space-y-4">
                                         <Label>Payment Method</Label>
                                          <RadioGroup value={paymentMethod} onValueChange={(val) => setPaymentMethod(val as 'cash' | 'upi')} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -318,8 +353,8 @@ export default function CheckoutPage() {
 
                                 </CardContent>
                                 <CardFooter>
-                                     <Button type="submit" className="w-full" disabled={isSubmitting || !deliveryAddress}>
-                                        {isSubmitting ? 'Placing Order...' : `Place Order - $${finalTotal.toFixed(2)}`}
+                                     <Button type="submit" className="w-full" disabled={isSubmitting || (!selectedAddress && !isUsingCurrentLocation)}>
+                                        {isSubmitting ? (isLocating ? 'Getting Location...' : 'Placing Order...') : `Place Order - $${finalTotal.toFixed(2)}`}
                                      </Button>
                                 </CardFooter>
                             </Card>
