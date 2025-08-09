@@ -66,7 +66,7 @@ function MapDialog({ order, deliveryBoyLocation }: { order: Order; deliveryBoyLo
 
 export default function DeliveryDashboard() {
   const { user, loading: authLoading } = useAuth();
-  const { location: deliveryBoyLocation, requestLocation } = useLocation();
+  const { location: deliveryBoyLocation, requestLocation, error: locationError } = useLocation();
   const { toast } = useToast();
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -75,38 +75,20 @@ export default function DeliveryDashboard() {
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
-    let locationWatcher: number | null = null;
-    if (user?.uid && navigator.geolocation) {
-        // Initial fetch
-        requestLocation();
-        // Watch for changes
-        locationWatcher = window.navigator.geolocation.watchPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                updateDeliveryBoyLocation(user.uid, { latitude, longitude });
-                // We don't need to call requestLocation here again as watchPosition gives us the coords
-            },
-            (err) => {
-                console.warn(`ERROR(${err.code}): ${err.message}`);
-                toast({
-                    variant: 'destructive',
-                    title: 'Location Error',
-                    description: 'Could not get location. Please ensure location services are enabled.'
-                })
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 5000,
-                maximumAge: 0,
-            }
-        );
+    if (user?.uid && deliveryBoyLocation) {
+        updateDeliveryBoyLocation(user.uid, { latitude: deliveryBoyLocation.latitude, longitude: deliveryBoyLocation.longitude });
     }
-    return () => {
-        if (locationWatcher) {
-            window.navigator.geolocation.clearWatch(locationWatcher);
-        }
-    };
-  }, [user?.uid, toast, requestLocation]);
+  }, [user?.uid, deliveryBoyLocation]);
+
+  useEffect(() => {
+    if(locationError) {
+        toast({
+            variant: 'destructive',
+            title: 'Location Error',
+            description: locationError
+        })
+    }
+  }, [locationError, toast]);
   
   useEffect(() => {
     if (authLoading) return;

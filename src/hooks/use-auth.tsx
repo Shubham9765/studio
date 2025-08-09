@@ -26,12 +26,16 @@ export interface Address {
     longitude?: number;
 }
 
-export interface AppUser extends User {
+export interface AppUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  emailVerified: boolean;
   role?: 'customer' | 'owner' | 'admin' | 'delivery';
   username?: string;
   phone?: string;
   status?: 'active' | 'inactive';
-  address?: string; // Kept for backwards compatibility if needed, but addresses array is primary
   addresses?: Address[];
   fcmToken?: string;
   latitude?: number;
@@ -56,27 +60,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (firebaseUser) {
         const userRef = doc(db, 'users', firebaseUser.uid);
         const docSnap = await getDoc(userRef);
+
+        const baseUser = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            emailVerified: firebaseUser.emailVerified,
+        };
+
         if (docSnap.exists()) {
           const userData = docSnap.data();
-          const appUser: AppUser = {
-            ...firebaseUser,
-            uid: firebaseUser.uid,
-            role: userData?.role,
-            username: userData?.username,
-            displayName: userData?.displayName || userData?.username || firebaseUser.displayName,
-            phone: userData?.phone,
-            status: userData?.status || 'active',
-            address: userData?.address || '',
-            addresses: userData?.addresses || [],
-            fcmToken: userData?.fcmToken,
-            latitude: userData?.latitude,
-            longitude: userData?.longitude,
-          };
-          return appUser;
-        } else {
-          // Default user object if no firestore doc exists yet
           return {
-             ...firebaseUser,
+            ...baseUser,
+            role: userData.role,
+            username: userData.username,
+            displayName: userData.displayName || userData.username || firebaseUser.displayName,
+            phone: userData.phone,
+            status: userData.status || 'active',
+            addresses: userData.addresses || [],
+            fcmToken: userData.fcmToken,
+            latitude: userData.latitude,
+            longitude: userData.longitude,
+          };
+        } else {
+          return {
+             ...baseUser,
              displayName: firebaseUser.displayName,
              addresses: [],
           };
@@ -97,7 +106,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   const refreshAuth = useCallback(async () => {
     const currentUser = auth.currentUser;
-    // No need to setLoading(true) here, as it can cause flashes of the loading screen on re-renders.
     const appUser = await fetchUserData(currentUser);
     setUser(appUser);
   }, [fetchUserData]);
