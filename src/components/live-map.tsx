@@ -3,7 +3,7 @@
 
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import 'leaflet-routing-machine';
 
@@ -52,9 +52,16 @@ const homeIcon = new L.DivIcon({
 
 function Routing({ from, to }: { from: [number, number], to: [number, number] }) {
     const map = useMap();
+    const routingControlRef = useRef<L.Routing.Control | null>(null);
 
     useEffect(() => {
         if (!map) return;
+        
+        // Remove old routing control if it exists
+        if (routingControlRef.current) {
+            map.removeControl(routingControlRef.current);
+            routingControlRef.current = null;
+        }
 
         // @ts-ignore - L.Routing is from the leaflet-routing-machine plugin
         const routingControl = L.Routing.control({
@@ -73,11 +80,8 @@ function Routing({ from, to }: { from: [number, number], to: [number, number] })
             }
         }).addTo(map);
 
-        return () => {
-            if (map && routingControl) {
-                map.removeControl(routingControl);
-            }
-        };
+        routingControlRef.current = routingControl;
+
     }, [map, from, to]);
 
     return null;
@@ -93,7 +97,7 @@ export function LiveMap({ customerLat, customerLng, deliveryBoyLat, deliveryBoyL
 
     return (
         <MapContainer
-            key={`${deliveryBoyLat}-${deliveryBoyLng}`} // Re-render map when location changes to update route
+            key={`${deliveryBoyLat}-${deliveryBoyLng}-${customerLat}-${customerLng}`} // Re-render map when location changes to update route
             bounds={bounds}
             scrollWheelZoom={isInteractive}
             zoomControl={isInteractive}
