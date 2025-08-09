@@ -66,7 +66,7 @@ function MapDialog({ order, deliveryBoyLocation }: { order: Order; deliveryBoyLo
 
 export default function DeliveryDashboard() {
   const { user, loading: authLoading } = useAuth();
-  const { location: deliveryBoyLocation } = useLocation();
+  const { location: deliveryBoyLocation, requestLocation } = useLocation();
   const { toast } = useToast();
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -77,10 +77,14 @@ export default function DeliveryDashboard() {
   useEffect(() => {
     let locationWatcher: number | null = null;
     if (user?.uid && navigator.geolocation) {
+        // Initial fetch
+        requestLocation();
+        // Watch for changes
         locationWatcher = window.navigator.geolocation.watchPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
                 updateDeliveryBoyLocation(user.uid, { latitude, longitude });
+                // We don't need to call requestLocation here again as watchPosition gives us the coords
             },
             (err) => {
                 console.warn(`ERROR(${err.code}): ${err.message}`);
@@ -102,25 +106,8 @@ export default function DeliveryDashboard() {
             window.navigator.geolocation.clearWatch(locationWatcher);
         }
     };
-  }, [user?.uid, toast]);
+  }, [user?.uid, toast, requestLocation]);
   
-  const fetchAssignedOrders = async () => {
-      if (user?.uid) {
-          setLoading(true);
-          const unsubscribe = listenToOrdersForDeliveryBoy(user.uid, (allOrders) => {
-              const activeOrders = allOrders.filter(o => o.status === 'out-for-delivery');
-              setOrders(activeOrders);
-              setLoading(false);
-          }, (err) => {
-              setError('Failed to fetch assigned orders.');
-              console.error(err);
-              setLoading(false);
-          });
-          return unsubscribe;
-      }
-  };
-
-
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -130,7 +117,18 @@ export default function DeliveryDashboard() {
     
     let unsubscribe: (() => void) | undefined;
     const setupListener = async () => {
-        unsubscribe = await fetchAssignedOrders();
+      if (user?.uid) {
+          setLoading(true);
+          unsubscribe = listenToOrdersForDeliveryBoy(user.uid, (allOrders) => {
+              const activeOrders = allOrders.filter(o => o.status === 'out-for-delivery');
+              setOrders(activeOrders);
+              setLoading(false);
+          }, (err) => {
+              setError('Failed to fetch assigned orders.');
+              console.error(err);
+              setLoading(false);
+          });
+      }
     };
 
     setupListener();
@@ -228,7 +226,7 @@ export default function DeliveryDashboard() {
                                         />
                                     </div>
                                 </Suspense>
-                                <div className='absolute inset-0 bg-black/20 flex items-center justify-center'>
+                                 <div className='absolute bottom-2 left-1/2 -translate-x-1/2 w-full px-2'>
                                     <MapDialog order={order} deliveryBoyLocation={deliveryBoyLocation} />
                                 </div>
                             </div>
@@ -242,18 +240,6 @@ export default function DeliveryDashboard() {
                             <p className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" /> {order.customerName}</p>
                             <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {order.customerPhone}</p>
                             <p className="flex items-start gap-2"><MapPin className="h-4 w-4 text-muted-foreground mt-1" /> {order.deliveryAddress}</p>
-                            {showMap && (
-                                <Button asChild variant="outline" size="sm" className="w-full">
-                                <a 
-                                    href={`https://www.google.com/maps/dir/?api=1&origin=${deliveryBoyLocation.latitude},${deliveryBoyLocation.longitude}&destination=${order.customerAddress.latitude},${order.customerAddress.longitude}`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                >
-                                    <MapPin className="mr-2 h-4 w-4" />
-                                    Get Directions
-                                </a>
-                                </Button>
-                            )}
                         </div>
                     </div>
                     <Separator/>

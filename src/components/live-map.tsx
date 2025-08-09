@@ -1,7 +1,7 @@
 
 'use client';
 
-import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import { useEffect, useState } from 'react';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
@@ -109,7 +109,7 @@ export function LiveMap({ customerLat, customerLng, deliveryBoyLat, deliveryBoyL
             <Marker position={[customerLat, customerLng]} icon={homeIcon}/>
             <Marker position={[deliveryBoyLat, deliveryBoyLng]} icon={deliveryIcon} />
             
-            <Routing map={map} from={[deliveryBoyLat, deliveryBoyLng]} to={[customerLat, customerLng]} />
+            {map && <Routing map={map} from={[deliveryBoyLat, deliveryBoyLng]} to={[customerLat, customerLng]} />}
         </MapContainer>
     );
 }

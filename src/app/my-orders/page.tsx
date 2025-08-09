@@ -8,7 +8,7 @@ import { listenToOrdersForCustomer } from '@/services/restaurantClientService';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, PackageSearch, Package, ChefHat, Bike, PartyPopper, Copy, History, MapPin } from 'lucide-react';
+import { AlertTriangle, PackageSearch, Package, ChefHat, Bike, PartyPopper, Copy, History } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Accordion,
