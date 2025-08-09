@@ -186,6 +186,29 @@ export async function getOrdersForDeliveryBoy(deliveryBoyId: string): Promise<Or
     return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
 }
 
+export function listenToOrdersForDeliveryBoy(
+    deliveryBoyId: string, 
+    callback: (orders: Order[]) => void,
+    onError: (error: Error) => void
+): () => void {
+    const ordersRef = collection(db, 'orders');
+    const q = query(
+        ordersRef, 
+        where('deliveryBoy.id', '==', deliveryBoyId)
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+        const sortedOrders = orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+        callback(sortedOrders);
+    }, (error) => {
+        console.error("Error listening to delivery orders:", error);
+        onError(error);
+    });
+
+    return unsubscribe;
+}
+
 export async function getServiceableCities(): Promise<string[]> {
     const docRef = doc(db, 'app_config', 'service_locations');
     const docSnap = await getDoc(docRef);

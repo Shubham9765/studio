@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { updateOrderStatus, updateDeliveryBoyLocation } from '@/services/ownerService';
-import { getOrdersForDeliveryBoy } from '@/services/restaurantClientService';
+import { listenToOrdersForDeliveryBoy } from '@/services/restaurantClientService';
 import type { Order } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,10 +17,12 @@ import { format } from 'date-fns';
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function DeliveryDashboard() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,34 +52,53 @@ export default function DeliveryDashboard() {
         }
     };
   }, [user?.uid]);
-
+  
   const fetchAssignedOrders = async () => {
-    if (user?.uid) {
-      setLoading(true);
-      try {
-        const allOrders = await getOrdersForDeliveryBoy(user.uid);
-        const activeOrders = allOrders.filter(o => o.status === 'out-for-delivery');
-        setOrders(activeOrders);
-      } catch (e: any) {
-        setError('Failed to fetch assigned orders.');
-      } finally {
-        setLoading(false);
+      // This function will be called once to refresh data manually if needed,
+      // but the real-time listener will handle most updates.
+      if (user?.uid) {
+          setLoading(true);
+          const unsubscribe = listenToOrdersForDeliveryBoy(user.uid, (allOrders) => {
+              const activeOrders = allOrders.filter(o => o.status === 'out-for-delivery');
+              setOrders(activeOrders);
+              setLoading(false);
+          }, (err) => {
+              setError('Failed to fetch assigned orders.');
+              console.error(err);
+              setLoading(false);
+          });
+          return unsubscribe;
       }
-    }
   };
 
+
   useEffect(() => {
-    if (!authLoading) {
-      fetchAssignedOrders();
+    if (authLoading) return;
+    if (!user) {
+        router.push('/');
+        return;
     }
-  }, [user, authLoading]);
+    
+    let unsubscribe: (() => void) | undefined;
+    const setupListener = async () => {
+        unsubscribe = await fetchAssignedOrders();
+    };
+
+    setupListener();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [user, authLoading, router]);
 
   const handleMarkAsDelivered = async (orderId: string) => {
     setUpdatingOrderId(orderId);
     try {
       await updateOrderStatus(orderId, 'delivered');
       toast({ title: 'Order Delivered!', description: 'The order has been marked as complete.' });
-      await fetchAssignedOrders(); 
+      // The real-time listener will automatically remove the order from the active list.
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Update Failed', description: e.message });
     } finally {
