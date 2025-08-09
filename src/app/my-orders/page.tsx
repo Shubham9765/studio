@@ -76,7 +76,9 @@ function DeliveryBoyTracker({ order }: { order: Order }) {
         if (order.deliveryBoy?.id) {
             const unsub = onSnapshot(doc(db, "users", order.deliveryBoy.id), (doc) => {
                 const data = doc.data() as AppUser;
-                setDeliveryBoyLocation({ latitude: data.latitude, longitude: data.longitude });
+                if (data.latitude && data.longitude) {
+                    setDeliveryBoyLocation({ latitude: data.latitude, longitude: data.longitude });
+                }
             });
             return () => unsub();
         }
@@ -89,7 +91,7 @@ function DeliveryBoyTracker({ order }: { order: Order }) {
             <Bike className="h-6 w-6 text-primary flex-shrink-0" />
             <div className="flex-grow">
                 <p className="font-semibold">{order.deliveryBoy.name} is on the way with your order!</p>
-                {deliveryBoyLocation?.latitude && (
+                {deliveryBoyLocation?.latitude && deliveryBoyLocation?.longitude && (
                     <a
                         href={`https://www.google.com/maps/search/?api=1&query=${deliveryBoyLocation.latitude},${deliveryBoyLocation.longitude}`}
                         target="_blank"
