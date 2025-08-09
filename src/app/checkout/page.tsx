@@ -56,7 +56,7 @@ export default function CheckoutPage() {
             toast({
                 variant: 'destructive',
                 title: 'Address Required',
-                description: 'Please select or add a delivery address to continue.',
+                description: 'Please select a delivery address to continue.',
             });
             return;
         }
@@ -76,9 +76,9 @@ export default function CheckoutPage() {
                 paymentMethod,
                 paymentStatus: paymentMethod === 'upi' ? 'pending' : 'pending',
                 ...(paymentMethod === 'upi' && { paymentDetails: { transactionId } }),
-                deliveryAddress: selectedAddress.address,
-                customerPhone: selectedAddress.phone,
-                customerAddress: selectedAddress,
+                deliveryAddress: selectedAddress.address, // For display
+                customerPhone: selectedAddress.phone, // For display
+                customerAddress: selectedAddress, // The full object with coordinates
             };
 
             await createOrder(user.uid, user.displayName || 'N/A', restaurant as Restaurant, cart, finalTotal, orderDetails);
@@ -270,7 +270,7 @@ export default function CheckoutPage() {
 
                                 </CardContent>
                                 <CardFooter>
-                                     <Button type="submit" className="w-full" disabled={isSubmitting}>
+                                     <Button type="submit" className="w-full" disabled={isSubmitting || !selectedAddress}>
                                         {isSubmitting ? 'Placing Order...' : `Place Order - $${finalTotal.toFixed(2)}`}
                                      </Button>
                                 </CardFooter>

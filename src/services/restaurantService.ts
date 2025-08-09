@@ -30,9 +30,9 @@ export async function createOrder(
       paymentMethod: orderDetails.paymentMethod || 'cash',
       paymentStatus: orderDetails.paymentStatus || 'pending',
       paymentDetails: orderDetails.paymentDetails || {},
-      deliveryAddress: orderDetails.deliveryAddress || 'N/A',
+      deliveryAddress: orderDetails.deliveryAddress || 'N/A', // The text address for display
       customerPhone: orderDetails.customerPhone || 'N/A',
-      customerAddress: orderDetails.customerAddress,
+      customerAddress: orderDetails.customerAddress, // The full address object with coordinates
   };
 
   const docRef = await addDoc(ordersCollection, newOrder);
