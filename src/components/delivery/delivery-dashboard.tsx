@@ -19,7 +19,6 @@ import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useLocation } from '@/hooks/use-location';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import dynamic from 'next/dynamic';
 
@@ -66,30 +65,64 @@ function MapDialog({ order, deliveryBoyLocation }: { order: Order; deliveryBoyLo
 
 export default function DeliveryDashboard() {
   const { user, loading: authLoading } = useAuth();
-  const { location: deliveryBoyLocation, requestLocation, error: locationError } = useLocation();
   const { toast } = useToast();
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [deliveryBoyLocation, setDeliveryBoyLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   useEffect(() => {
-    if (user?.uid && deliveryBoyLocation) {
-        updateDeliveryBoyLocation(user.uid, { latitude: deliveryBoyLocation.latitude, longitude: deliveryBoyLocation.longitude });
+    let locationWatcher: number | null = null;
+    if (user?.uid && navigator.geolocation) {
+        locationWatcher = window.navigator.geolocation.watchPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                setDeliveryBoyLocation({ latitude, longitude });
+                updateDeliveryBoyLocation(user.uid, { latitude, longitude });
+            },
+            (err) => {
+                console.warn(`ERROR(${err.code}): ${err.message}`);
+                toast({
+                    variant: 'destructive',
+                    title: 'Location Error',
+                    description: 'Could not get location. Please ensure location services are enabled.'
+                })
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0,
+            }
+        );
     }
-  }, [user?.uid, deliveryBoyLocation]);
-
-  useEffect(() => {
-    if(locationError) {
-        toast({
-            variant: 'destructive',
-            title: 'Location Error',
-            description: locationError
-        })
-    }
-  }, [locationError, toast]);
+    return () => {
+        if (locationWatcher) {
+            window.navigator.geolocation.clearWatch(locationWatcher);
+        }
+    };
+  }, [user?.uid, toast]);
   
+  const fetchAssignedOrders = async () => {
+      // This function will be called once to refresh data manually if needed,
+      // but the real-time listener will handle most updates.
+      if (user?.uid) {
+          setLoading(true);
+          const unsubscribe = listenToOrdersForDeliveryBoy(user.uid, (allOrders) => {
+              const activeOrders = allOrders.filter(o => o.status === 'out-for-delivery');
+              setOrders(activeOrders);
+              setLoading(false);
+          }, (err) => {
+              setError('Failed to fetch assigned orders.');
+              console.error(err);
+              setLoading(false);
+          });
+          return unsubscribe;
+      }
+  };
+
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -99,18 +132,7 @@ export default function DeliveryDashboard() {
     
     let unsubscribe: (() => void) | undefined;
     const setupListener = async () => {
-      if (user?.uid) {
-          setLoading(true);
-          unsubscribe = listenToOrdersForDeliveryBoy(user.uid, (allOrders) => {
-              const activeOrders = allOrders.filter(o => o.status === 'out-for-delivery');
-              setOrders(activeOrders);
-              setLoading(false);
-          }, (err) => {
-              setError('Failed to fetch assigned orders.');
-              console.error(err);
-              setLoading(false);
-          });
-      }
+        unsubscribe = await fetchAssignedOrders();
     };
 
     setupListener();
@@ -127,6 +149,7 @@ export default function DeliveryDashboard() {
     try {
       await updateOrderStatus(orderId, 'delivered');
       toast({ title: 'Order Delivered!', description: 'The order has been marked as complete.' });
+      // The real-time listener will automatically remove the order from the active list.
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Update Failed', description: e.message });
     } finally {
