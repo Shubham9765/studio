@@ -3,7 +3,8 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { updateOrderStatus, updateDeliveryBoyLocation } from '@/services/ownerService';
+import { updateOrderStatus } from '@/services/ownerService';
+import { updateDeliveryBoyLocation } from '@/services/userService';
 import { listenToOrdersForDeliveryBoy } from '@/services/restaurantClientService';
 import type { Order } from '@/lib/types';
 import { Header } from '@/components/header';
@@ -30,7 +31,7 @@ export default function DeliveryDashboard() {
 
   useEffect(() => {
     let locationWatcher: number | null = null;
-    if (user?.uid) {
+    if (user?.uid && navigator.geolocation) {
         locationWatcher = window.navigator.geolocation.watchPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
@@ -38,6 +39,11 @@ export default function DeliveryDashboard() {
             },
             (err) => {
                 console.warn(`ERROR(${err.code}): ${err.message}`);
+                toast({
+                    variant: 'destructive',
+                    title: 'Location Error',
+                    description: 'Could not get location. Please ensure location services are enabled.'
+                })
             },
             {
                 enableHighAccuracy: true,
@@ -51,7 +57,7 @@ export default function DeliveryDashboard() {
             window.navigator.geolocation.clearWatch(locationWatcher);
         }
     };
-  }, [user?.uid]);
+  }, [user?.uid, toast]);
   
   const fetchAssignedOrders = async () => {
       // This function will be called once to refresh data manually if needed,

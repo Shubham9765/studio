@@ -1,4 +1,6 @@
 
+'use server';
+
 import { db } from './firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import type { Address } from '@/hooks/use-auth';
@@ -6,8 +8,6 @@ import type { Address } from '@/hooks/use-auth';
 interface UserProfileData {
     displayName?: string;
     addresses?: Address[];
-    latitude?: number;
-    longitude?: number;
 }
 
 export async function updateUserProfile(userId: string, data: UserProfileData): Promise<void> {
@@ -27,11 +27,6 @@ export async function updateUserProfile(userId: string, data: UserProfileData): 
   if (data.addresses) {
       updateData.addresses = data.addresses;
   }
-  
-  if (data.latitude !== undefined && data.longitude !== undefined) {
-      updateData.latitude = data.latitude;
-      updateData.longitude = data.longitude;
-  }
 
   if (Object.keys(updateData).length === 0) {
       // Nothing to update
@@ -39,4 +34,19 @@ export async function updateUserProfile(userId: string, data: UserProfileData): 
   }
 
   await updateDoc(userRef, updateData);
+}
+
+export async function updateDeliveryBoyLocation(deliveryBoyId: string, location: { latitude: number; longitude: number }): Promise<void> {
+  if (!deliveryBoyId) return;
+  const userRef = doc(db, 'users', deliveryBoyId);
+  try {
+    await updateDoc(userRef, {
+      latitude: location.latitude,
+      longitude: location.longitude,
+    });
+  } catch (error) {
+    // It's often okay to silently fail here, as this can be called very frequently.
+    // Logging is fine, but we don't want to show an error to the user for every failed update.
+    console.error("Failed to update delivery boy location:", error);
+  }
 }
