@@ -41,7 +41,7 @@ export function CartProvider({ children }: CartProviderProps) {
   const addItem = (item: CartItem, restaurantData: Partial<Restaurant>) => {
     // If the cart is from a different restaurant, clear it first.
     if (restaurant && restaurant.id !== restaurantData.id) {
-        setCart([item]);
+        setCart([{...item, quantity: 1}]);
         setRestaurant(restaurantData);
         return;
     }

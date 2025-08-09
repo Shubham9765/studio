@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Cart } from '@/components/customer/cart';
+import { ShoppingCart } from 'lucide-react';
 
 export function FloatingCartBar() {
     const { cartCount, totalPrice, restaurant } = useCart();
@@ -16,29 +17,24 @@ export function FloatingCartBar() {
 
     return (
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-background/95 backdrop-blur-sm p-4 border-t z-40">
+            <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-transparent p-4 z-40 flex justify-end">
                  <SheetTrigger asChild>
-                    <Button className="w-full h-14 text-lg">
-                        <div className="flex justify-between items-center w-full">
-                            <div className="flex items-center gap-2">
-                                <Badge variant="secondary" className="text-base">{cartCount}</Badge>
-                                <span>View Your Cart</span>
-                            </div>
-                            <span>${totalPrice.toFixed(2)}</span>
-                        </div>
+                    <Button className="h-16 w-16 rounded-full shadow-lg text-lg flex flex-col items-center justify-center gap-0.5">
+                        <ShoppingCart className="h-6 w-6"/>
+                        <span className="font-bold text-sm">${totalPrice.toFixed(2)}</span>
+                         <Badge variant="secondary" className="absolute -top-1 -right-1 h-6 w-6 flex items-center justify-center rounded-full text-sm">
+                            {cartCount}
+                        </Badge>
                     </Button>
                  </SheetTrigger>
             </div>
-            <SheetContent side="bottom" className="h-4/5 flex flex-col">
+            <SheetContent side="bottom" className="h-4/5 flex flex-col rounded-t-2xl">
                 <SheetHeader className="text-left">
                     <SheetTitle>Your Order</SheetTitle>
                 </SheetHeader>
-                <div className="flex-grow overflow-hidden">
+                <div className="flex-grow overflow-hidden py-4">
                     {restaurant && <Cart restaurant={restaurant} isSheet={true} />}
                 </div>
-                 <Button className="w-full h-12 text-lg mt-4" onClick={() => setIsSheetOpen(false)}>
-                    Continue Browsing
-                </Button>
             </SheetContent>
         </Sheet>
     );

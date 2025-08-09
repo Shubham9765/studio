@@ -20,7 +20,7 @@ interface CartProps {
 }
 
 export function Cart({ restaurant, isSheet = false }: CartProps) {
-  const { cart, restaurant: cartRestaurant, removeItem, updateItemQuantity } = useCart();
+  const { cart, restaurant: cartRestaurant, removeItem, updateItemQuantity, clearCart } = useCart();
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -32,6 +32,13 @@ export function Cart({ restaurant, isSheet = false }: CartProps) {
             variant: 'destructive',
             title: 'Not logged in',
             description: 'Please log in to place an order.',
+        });
+        return;
+    }
+    if (cart.length === 0) {
+        toast({
+            title: 'Cart is empty',
+            description: 'Please add items to your cart before checking out.',
         });
         return;
     }
@@ -48,7 +55,6 @@ export function Cart({ restaurant, isSheet = false }: CartProps) {
       !isSheet && "rounded-lg border bg-card shadow-sm"
   );
   
-  // Render nothing if cart is not for this restaurant
   if (cart.length > 0 && cartRestaurant?.id !== restaurant.id) {
      return (
         <div className={cartContainerClass}>
@@ -59,6 +65,7 @@ export function Cart({ restaurant, isSheet = false }: CartProps) {
                 </div>
                 <div className="text-center text-muted-foreground py-12">
                     <p>Your cart has items from another restaurant.</p>
+                     <Button variant="link" onClick={clearCart}>Clear cart</Button>
                 </div>
             </div>
             <div className="p-6 mt-auto">
@@ -70,20 +77,23 @@ export function Cart({ restaurant, isSheet = false }: CartProps) {
 
   return (
     <div className={cartContainerClass}>
-      <div className={cn("flex items-center justify-center gap-3", isSheet ? "p-0 pb-4" : "p-6")}>
-        <ShoppingCart className="h-7 w-7" />
-        <h2 className="text-2xl font-bold">Your Order</h2>
-      </div>
+      {!isSheet && (
+        <div className="p-6 flex items-center justify-center gap-3">
+          <ShoppingCart className="h-7 w-7" />
+          <h2 className="text-2xl font-bold">Your Order</h2>
+        </div>
+      )}
 
       {cart.length === 0 ? (
         <div className="text-center text-muted-foreground py-12 px-6 flex-grow flex flex-col justify-center items-center">
-          <p>Your cart is empty.</p>
+          <ShoppingCart className="h-12 w-12 mb-4 text-muted" />
+          <p className="font-semibold">Your cart is empty.</p>
           <p className="text-sm">Add items from the menu to get started.</p>
         </div>
       ) : (
         <>
             <ScrollArea className="flex-grow">
-                 <div className="px-6 space-y-4">
+                 <div className={cn("space-y-4", isSheet ? "px-1" : "px-6")}>
                     {cart.map(item => (
                         <div key={item.id} className="flex items-start gap-4">
                             <Image
@@ -97,23 +107,23 @@ export function Cart({ restaurant, isSheet = false }: CartProps) {
                                 <p className="font-semibold">{item.name}</p>
                                 <p className="text-primary font-bold">${(item.price * item.quantity).toFixed(2)}</p>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => updateItemQuantity(item.id, item.quantity - 1)}>
-                                        <Minus className="h-3 w-3" />
+                                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateItemQuantity(item.id, item.quantity - 1)}>
+                                        <Minus className="h-4 w-4" />
                                     </Button>
                                     <span className="font-bold text-sm w-4 text-center">{item.quantity}</span>
-                                    <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => updateItemQuantity(item.id, item.quantity + 1)}>
-                                        <Plus className="h-3 w-3" />
+                                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateItemQuantity(item.id, item.quantity + 1)}>
+                                        <Plus className="h-4 w-4" />
                                     </Button>
                                 </div>
                             </div>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeItem(item.id)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2" onClick={() => removeItem(item.id)}>
                                 <X className="h-4 w-4 text-muted-foreground" />
                             </Button>
                         </div>
                     ))}
                  </div>
             </ScrollArea>
-             <div className="p-6 space-y-3 mt-auto">
+             <div className={cn("space-y-3 mt-auto pt-4", isSheet ? "px-1" : "p-6")}>
                 <Separator />
                 <div className="flex justify-between text-sm">
                     <span>Subtotal</span>
@@ -132,7 +142,7 @@ export function Cart({ restaurant, isSheet = false }: CartProps) {
         </>
       )}
 
-      <div className={cn("mt-auto", isSheet ? "p-0" : "p-6 pt-0")}>
+      <div className={cn("mt-auto", isSheet ? "p-0 pt-4" : "p-6 pt-0")}>
          <Button 
             className="w-full h-12 text-lg" 
             disabled={cart.length === 0 || isCheckingOut}
