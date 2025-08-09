@@ -1,6 +1,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/hooks/use-auth';
 import { CartProvider } from '@/hooks/use-cart';

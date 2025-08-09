@@ -1,4 +1,3 @@
-
 'use client';
 
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
@@ -57,7 +56,7 @@ function Routing({ map, from, to }: { map: L.Map | null, from: [number, number],
                 L.latLng(from[0], from[1]),
                 L.latLng(to[0], to[1])
             ],
-            routeWhileDragging: true,
+            routeWhileDragging: false,
             show: false, // Hide the default ugly itinerary
             addWaypoints: false, // Prevent users from adding new waypoints
             draggableWaypoints: false,
