@@ -61,15 +61,18 @@ export function listenToOrdersForCustomer(
     onError: (error: Error) => void
 ): () => void {
     const ordersRef = collection(db, 'orders');
+    // Removed the orderBy clause to prevent the composite index error.
+    // Sorting will now be handled on the client.
     const q = query(
         ordersRef, 
-        where('customerId', '==', customerId),
-        orderBy('createdAt', 'desc')
+        where('customerId', '==', customerId)
     );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
-        callback(orders);
+        // Sort the orders by date here in the client-side code
+        const sortedOrders = orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+        callback(sortedOrders);
     }, (error) => {
         console.error("Error listening to orders:", error);
         onError(error);
