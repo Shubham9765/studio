@@ -73,10 +73,10 @@ export function MenuItemCard({ item, restaurantId }: MenuItemCardProps) {
                 </div>
             )}
             <div className="p-3 flex-grow flex flex-col">
-                <h3 className="font-semibold text-sm leading-tight truncate flex-grow">{item.name}</h3>
+                <h3 className="font-semibold text-sm leading-tight flex-grow">{item.name}</h3>
                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2 h-8">{item.description}</p>
             </div>
-             <div className="flex justify-between items-center px-3 pb-3">
+             <div className="flex justify-between items-center px-3 pb-3 mt-auto">
                 <p className="font-bold text-primary text-base">${item.price.toFixed(2)}</p>
                 <Button size="sm" className="h-8 text-xs" disabled={!item.isAvailable} onClick={handleAddToCart}>
                     <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
