@@ -58,7 +58,7 @@ export default function CheckoutPage() {
     const [transactionId, setTransactionId] = useState('');
     const [orderNotes, setOrderNotes] = useState('');
     
-    const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+    const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
     const [mapSelectedLocation, setMapSelectedLocation] = useState<Address | null>(null);
     const [deliveryMode, setDeliveryMode] = useState<'saved' | 'current' | 'map'>('saved');
 
@@ -70,28 +70,28 @@ export default function CheckoutPage() {
             router.push('/');
         }
         // Set the first saved address as the default selection
-        if (user?.addresses && user.addresses.length > 0 && !selectedAddress) {
-            setSelectedAddress(user.addresses[0]);
+        if (user?.addresses && user.addresses.length > 0 && !selectedAddressId) {
+            setSelectedAddressId(user.addresses[0].id);
             setDeliveryMode('saved');
         } else if ((!user?.addresses || user.addresses.length === 0) && deliveryMode !== 'map') {
             setDeliveryMode('current'); // Default to current location if no saved addresses
         }
-    }, [authLoading, user, router, selectedAddress, deliveryMode]);
+    }, [authLoading, user, router, selectedAddressId, deliveryMode]);
     
-    const handleDeliveryModeChange = (value: 'saved' | 'current' | 'map' | string) => {
+    const handleDeliveryModeChange = (value: string) => {
         if (value === 'current') {
             setDeliveryMode('current');
             setIsLocating(true);
-            setSelectedAddress(null);
+            setSelectedAddressId(null);
             setMapSelectedLocation(null);
             requestLocation();
         } else if (value === 'map') {
             setDeliveryMode('map');
-            setSelectedAddress(null);
+            setSelectedAddressId(null);
             setIsMapDialogOpen(true);
         } else { // It's a saved address ID
             setDeliveryMode('saved');
-            setSelectedAddress(user?.addresses?.find(a => a.id === value) || null);
+            setSelectedAddressId(value);
             setMapSelectedLocation(null);
         }
     };
@@ -135,7 +135,7 @@ export default function CheckoutPage() {
     const getFinalAddress = (): Address | null => {
         switch (deliveryMode) {
             case 'saved':
-                return selectedAddress;
+                return user?.addresses?.find(a => a.id === selectedAddressId) || null;
             case 'current':
                 if (location) {
                     return {
@@ -163,7 +163,7 @@ export default function CheckoutPage() {
             toast({
                 variant: 'destructive',
                 title: 'Information Required',
-                description: 'Please select or provide a delivery address.',
+                description: 'Please select a delivery address.',
             });
             return;
         }
@@ -176,17 +176,16 @@ export default function CheckoutPage() {
             });
             return;
         }
-
+        
         setIsSubmitting(true);
         try {
-            // Geocode address if it doesn't have coordinates.
-            if ((!finalAddress.latitude || !finalAddress.longitude) && deliveryMode === 'saved') {
+            // Geocode saved address ONLY if it's missing coordinates
+            if (deliveryMode === 'saved' && (!finalAddress.latitude || !finalAddress.longitude)) {
                 const coords = await getCoordinatesForAddress(finalAddress.address);
                 if (coords) {
                     finalAddress = { ...finalAddress, ...coords };
                 } else {
                     // Don't block order if geocoding fails. Proceed without coords.
-                    // The backend serviceability check will use address string if coords are missing.
                     console.warn(`Could not find coordinates for address: ${finalAddress.address}. Proceeding without them.`);
                     toast({
                         title: 'Notice',
@@ -199,9 +198,9 @@ export default function CheckoutPage() {
                 paymentMethod,
                 paymentStatus: paymentMethod === 'upi' ? 'pending' : 'pending',
                 ...(paymentMethod === 'upi' && { paymentDetails: { transactionId } }),
-                deliveryAddress: finalAddress.address,
+                deliveryAddress: finalAddress.address, // Text address for display
                 customerPhone: finalAddress.phone,
-                customerAddress: finalAddress,
+                customerAddress: finalAddress, // Full address object including coords
                 notes: orderNotes,
             };
 
@@ -292,7 +291,7 @@ export default function CheckoutPage() {
         switch (deliveryMode) {
             case 'current': return 'current';
             case 'map': return 'map';
-            case 'saved': return selectedAddress?.id || '';
+            case 'saved': return selectedAddressId || '';
             default: return '';
         }
     }
@@ -346,7 +345,7 @@ export default function CheckoutPage() {
                                             </Label>
                                             <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
                                                 <DialogTrigger asChild>
-                                                    <Label htmlFor="map" className="flex items-start gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:border-primary">
+                                                    <Label htmlFor="map" onClick={() => handleDeliveryModeChange('map')} className="flex items-start gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:border-primary">
                                                         <RadioGroupItem value="map" id="map" className="mt-1" />
                                                         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center mt-1">
                                                             <Map className="h-5 w-5 text-muted-foreground"/>
@@ -447,7 +446,7 @@ export default function CheckoutPage() {
                                 </CardContent>
                                 <CardFooter>
                                      <Button type="submit" className="w-full" disabled={isSubmitting || !getFinalAddress()}>
-                                        {isSubmitting ? (isLocating ? 'Getting Location...' : 'Placing Order...') : `Place Order - $${finalTotal.toFixed(2)}`}
+                                        {isSubmitting ? (deliveryMode === 'current' && isLocating ? 'Getting Location...' : 'Placing Order...') : `Place Order - $${finalTotal.toFixed(2)}`}
                                      </Button>
                                 </CardFooter>
                             </Card>
@@ -507,4 +506,5 @@ export default function CheckoutPage() {
             </main>
         </div>
     );
-}
+
+    
