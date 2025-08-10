@@ -6,6 +6,18 @@ import { collection, doc, addDoc, serverTimestamp, runTransaction, updateDoc, ge
 import type { Order } from '@/lib/types';
 import type { CartItem } from '@/hooks/use-cart';
 import type { Restaurant } from '@/lib/types';
+import { getServiceableCities } from './adminService';
+
+async function getCityFromCoordinates(latitude: number, longitude: number): Promise<string | null> {
+    try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=en`);
+        const data = await response.json();
+        return data.address.city || data.address.town || data.address.village || null;
+    } catch (error) {
+        console.error("Reverse geocoding failed:", error);
+        return null;
+    }
+}
 
 
 export async function createOrder(
@@ -16,6 +28,25 @@ export async function createOrder(
   total: number,
   orderDetails: Partial<Order>
 ): Promise<string> {
+  // Serviceability Check
+  if (!orderDetails.customerAddress?.latitude || !orderDetails.customerAddress?.longitude) {
+      throw new Error("Delivery location is missing coordinates.");
+  }
+  
+  const deliveryCity = await getCityFromCoordinates(orderDetails.customerAddress.latitude, orderDetails.customerAddress.longitude);
+  if (!deliveryCity) {
+      throw new Error("Could not determine the city for the delivery address.");
+  }
+
+  const serviceableCities = await getServiceableCities();
+  const isServiceable = serviceableCities.some(city => city.toLowerCase() === deliveryCity.toLowerCase());
+
+  if (serviceableCities.length > 0 && !isServiceable) {
+      throw new Error(`We're sorry, but we do not currently deliver to ${deliveryCity}.`);
+  }
+  
+  // --- End Serviceability Check ---
+
   const ordersCollection = collection(db, 'orders');
 
   const newOrder: Omit<Order, 'id'> = {

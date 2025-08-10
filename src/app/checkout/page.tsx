@@ -73,10 +73,10 @@ export default function CheckoutPage() {
         if (user?.addresses && user.addresses.length > 0 && !selectedAddress) {
             setSelectedAddress(user.addresses[0]);
             setDeliveryMode('saved');
-        } else if (!user?.addresses || user.addresses.length === 0) {
+        } else if ((!user?.addresses || user.addresses.length === 0) && deliveryMode !== 'map') {
             setDeliveryMode('current'); // Default to current location if no saved addresses
         }
-    }, [authLoading, user, router, selectedAddress]);
+    }, [authLoading, user, router, selectedAddress, deliveryMode]);
     
     const handleDeliveryModeChange = (value: 'saved' | 'current' | 'map' | string) => {
         if (value === 'current') {
@@ -141,7 +141,7 @@ export default function CheckoutPage() {
                     return {
                         id: 'current-location',
                         name: 'Current Location',
-                        address: location.city ? `Current Location in ${location.city}` : `Lat: ${location.latitude.toFixed(4)}, Lon: ${location.longitude.toFixed(4)}`,
+                        address: location.address,
                         phone: user?.phone || '',
                         ...location,
                     };
@@ -205,11 +205,11 @@ export default function CheckoutPage() {
             await createOrder(user.uid, user.displayName || 'N/A', restaurant as Restaurant, cart, finalTotal, orderDetails);
             setOrderPlaced(true);
             clearCart();
-        } catch (error) {
+        } catch (error: any) {
             toast({
                 variant: 'destructive',
                 title: 'Order Failed',
-                description: 'There was an issue placing your order. Please try again.',
+                description: (error.message || 'There was an issue placing your order. Please try again.'),
             });
         } finally {
             setIsSubmitting(false);
@@ -338,7 +338,7 @@ export default function CheckoutPage() {
                                                     <p className="font-bold">Use Current Location</p>
                                                     {deliveryMode === 'current' && isLocating && <p className="text-muted-foreground">Getting your location...</p>}
                                                     {deliveryMode === 'current' && locationError && <p className="text-destructive text-xs">{locationError}</p>}
-                                                    {deliveryMode === 'current' && location && <p className="text-muted-foreground text-xs">Lat: {location.latitude.toFixed(4)}, Lon: {location.longitude.toFixed(4)}</p>}
+                                                    {deliveryMode === 'current' && location && <p className="text-muted-foreground text-xs">{location.address}</p>}
                                                 </div>
                                             </Label>
                                             <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>

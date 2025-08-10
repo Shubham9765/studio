@@ -1,11 +1,12 @@
 
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 
 interface LocationData {
     latitude: number;
     longitude: number;
+    address: string;
     city: string;
 }
 
@@ -21,19 +22,19 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     const [location, setLocation] = useState<LocationData | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchCityName = async (latitude: number, longitude: number) => {
+    const fetchCityName = useCallback(async (latitude: number, longitude: number) => {
         try {
             const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=en`);
             const data = await response.json();
             const city = data.address.city || data.address.town || data.address.village;
-            setLocation({ latitude, longitude, city });
+            setLocation({ latitude, longitude, city, address: data.display_name });
             setError(null);
         } catch (e) {
             setError('Could not fetch location name.');
         }
-    };
+    }, []);
 
-    const requestLocation = () => {
+    const requestLocation = useCallback(() => {
         if (!navigator.geolocation) {
             setError('Geolocation is not supported by your browser.');
             return;
@@ -48,12 +49,12 @@ export function LocationProvider({ children }: { children: ReactNode }) {
                 setError('Unable to retrieve your location. Please enable location services.');
             }
         );
-    };
+    }, [fetchCityName]);
 
     useEffect(() => {
         // Automatically request location on initial load
         requestLocation();
-    }, []);
+    }, [requestLocation]);
 
     return (
         <LocationContext.Provider value={{ location, error, requestLocation }}>
