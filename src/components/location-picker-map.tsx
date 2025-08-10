@@ -5,8 +5,9 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { Button } from './ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Search } from 'lucide-react';
 import { useLocation } from '@/hooks/use-location';
+import { Input } from './ui/input';
 
 interface LocationPickerMapProps {
     onLocationSelect: (location: { latitude: number; longitude: number; address: string }) => void;
@@ -22,31 +23,31 @@ const pinIcon = new L.Icon({
     shadowSize: [41, 41],
 });
 
-function DraggableMarker({ onPositionChange, initialPosition }: { onPositionChange: (pos: L.LatLng) => void; initialPosition: L.LatLngTuple }) {
-    const markerRef = useRef<L.Marker>(null);
+function MapController({ position, setPosition }: { position: L.LatLngTuple, setPosition: (pos: L.LatLng) => void }) {
     const map = useMap();
-    
-    const eventHandlers = useMemo(
-        () => ({
-            dragend() {
-                const marker = markerRef.current;
-                if (marker != null) {
-                    onPositionChange(marker.getLatLng());
-                }
-            },
-        }),
-        [onPositionChange],
-    );
+    const markerRef = useRef<L.Marker>(null);
+
+    const eventHandlers = useMemo(() => ({
+        dragend() {
+            const marker = markerRef.current;
+            if (marker != null) {
+                setPosition(marker.getLatLng());
+            }
+        },
+    }), [setPosition]);
 
     useEffect(() => {
-        map.setView(initialPosition, 16);
-    }, [initialPosition, map]);
+        map.flyTo(position, 16);
+        if (markerRef.current) {
+            markerRef.current.setLatLng(position);
+        }
+    }, [position, map]);
 
     return (
         <Marker
             draggable={true}
             eventHandlers={eventHandlers}
-            position={initialPosition}
+            position={position}
             ref={markerRef}
             icon={pinIcon}
         >
@@ -59,13 +60,15 @@ export function LocationPickerMap({ onLocationSelect }: LocationPickerMapProps) 
     const [selectedPosition, setSelectedPosition] = useState<L.LatLng | null>(null);
     const [isGeocoding, setIsGeocoding] = useState(false);
     const [address, setAddress] = useState<string>('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
 
     useEffect(() => {
         if (currentLocation && !selectedPosition) {
             setSelectedPosition(new L.LatLng(currentLocation.latitude, currentLocation.longitude));
         }
     }, [currentLocation, selectedPosition]);
-
+    
     const reverseGeocode = async (lat: number, lng: number) => {
         setIsGeocoding(true);
         setAddress('Fetching address...');
@@ -83,6 +86,26 @@ export function LocationPickerMap({ onLocationSelect }: LocationPickerMapProps) 
             setIsGeocoding(false);
         }
     };
+
+    const handleSearch = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!searchQuery) return;
+        setIsSearching(true);
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`);
+            const data = await response.json();
+            if (data && data.length > 0) {
+                const { lat, lon } = data[0];
+                setSelectedPosition(new L.LatLng(parseFloat(lat), parseFloat(lon)));
+            } else {
+                alert('Location not found.');
+            }
+        } catch (error) {
+            alert('Failed to perform search.');
+        } finally {
+            setIsSearching(false);
+        }
+    };
     
     useEffect(() => {
         if (selectedPosition) {
@@ -91,7 +114,7 @@ export function LocationPickerMap({ onLocationSelect }: LocationPickerMapProps) 
     }, [selectedPosition]);
     
     const handleConfirm = () => {
-        if (selectedPosition && address) {
+        if (selectedPosition && address && !isGeocoding) {
             onLocationSelect({
                 latitude: selectedPosition.lat,
                 longitude: selectedPosition.lng,
@@ -100,25 +123,37 @@ export function LocationPickerMap({ onLocationSelect }: LocationPickerMapProps) 
         }
     };
 
-    if (!currentLocation && !locationError) {
+    if (!selectedPosition && !locationError) {
         return <div className="h-96 flex items-center justify-center"><Loader2 className="animate-spin h-8 w-8" /></div>
     }
 
-    const initialMapPosition: L.LatLngTuple = currentLocation 
+    const initialMapPosition: L.LatLngTuple = selectedPosition 
+        ? [selectedPosition.lat, selectedPosition.lng]
+        : currentLocation 
         ? [currentLocation.latitude, currentLocation.longitude] 
         : [51.505, -0.09]; // Fallback to London
 
     return (
         <div className="flex flex-col h-full">
+            <form onSubmit={handleSearch} className="flex gap-2 mb-2">
+                <Input 
+                    placeholder="Search city, address..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <Button type="submit" size="icon" disabled={isSearching}>
+                    {isSearching ? <Loader2 className="animate-spin" /> : <Search />}
+                </Button>
+            </form>
             <div className="h-96 w-full rounded-md overflow-hidden relative">
                  <MapContainer center={initialMapPosition} zoom={13} scrollWheelZoom={true} className="h-full w-full">
                     <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
-                    <DraggableMarker 
-                        onPositionChange={(pos) => setSelectedPosition(pos)} 
-                        initialPosition={selectedPosition ? [selectedPosition.lat, selectedPosition.lng] : initialMapPosition}
+                    <MapController 
+                        position={initialMapPosition}
+                        setPosition={setSelectedPosition}
                     />
                 </MapContainer>
             </div>
