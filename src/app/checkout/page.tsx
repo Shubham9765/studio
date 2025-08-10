@@ -179,16 +179,19 @@ export default function CheckoutPage() {
 
         setIsSubmitting(true);
         try {
-            // Geocode address if it doesn't have coordinates already
-            // Current location and map location already have coordinates, so we skip geocoding for them.
+            // Geocode address if it doesn't have coordinates.
             if ((!finalAddress.latitude || !finalAddress.longitude) && deliveryMode === 'saved') {
                 const coords = await getCoordinatesForAddress(finalAddress.address);
                 if (coords) {
                     finalAddress = { ...finalAddress, ...coords };
                 } else {
-                    toast({ variant: 'destructive', title: 'Address Not Found', description: "Could not find coordinates for the address. Please try a different address or set it on the map." });
-                    setIsSubmitting(false);
-                    return;
+                    // Don't block order if geocoding fails. Proceed without coords.
+                    // The backend serviceability check will use address string if coords are missing.
+                    console.warn(`Could not find coordinates for address: ${finalAddress.address}. Proceeding without them.`);
+                    toast({
+                        title: 'Notice',
+                        description: "Couldn't pinpoint exact location. Live tracking may be unavailable.",
+                    });
                 }
             }
 

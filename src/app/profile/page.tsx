@@ -95,9 +95,9 @@ export default function ProfilePage() {
     if (editingAddress) {
         addressForm.reset(editingAddress);
     } else {
-        addressForm.reset({ name: '', address: '', phone: '' });
+        addressForm.reset({ name: '', address: '', phone: user?.phone || '' });
     }
-  }, [editingAddress, addressForm]);
+  }, [editingAddress, addressForm, user?.phone]);
   
   const onProfileSubmit = async (data: ProfileFormValues) => {
     if (!user) return;
@@ -116,11 +116,17 @@ export default function ProfilePage() {
   const onAddressSubmit = async (data: AddressFormValues) => {
       if (!user) return;
       setIsSubmitting(true);
+      
+      const coords = await getCoordinatesForAddress(data.address);
+      if (!coords) {
+          toast({ variant: 'destructive', title: 'Address Not Found', description: 'Could not find coordinates for this address. Please try a more specific address.' });
+          setIsSubmitting(false);
+          return;
+      }
+
       const currentAddresses = user.addresses || [];
       let updatedAddresses: Address[];
       
-      const coords = await getCoordinatesForAddress(data.address);
-
       if (editingAddress) {
           updatedAddresses = currentAddresses.map(addr => addr.id === editingAddress.id ? { ...addr, ...data, ...coords } : addr);
       } else {
