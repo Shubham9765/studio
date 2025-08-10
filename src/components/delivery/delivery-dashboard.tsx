@@ -75,31 +75,52 @@ export default function DeliveryDashboard() {
 
   useEffect(() => {
     let locationWatcher: number | null = null;
-    if (user?.uid && navigator.geolocation) {
-        locationWatcher = window.navigator.geolocation.watchPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                setDeliveryBoyLocation({ latitude, longitude });
-                updateDeliveryBoyLocation(user.uid, { latitude, longitude });
-            },
-            (err) => {
-                console.warn(`ERROR(${err.code}): ${err.message}`);
-                toast({
-                    variant: 'destructive',
-                    title: 'Location Error',
-                    description: 'Could not get location. Please ensure location services are enabled.'
-                })
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 5000,
-                maximumAge: 0,
-            }
-        );
+    let locationInterval: NodeJS.Timeout | null = null;
+
+    const handlePositionUpdate = (position: GeolocationPosition) => {
+        const { latitude, longitude } = position.coords;
+        const newLocation = { latitude, longitude };
+        setDeliveryBoyLocation(newLocation);
+        if (user?.uid) {
+            updateDeliveryBoyLocation(user.uid, newLocation);
+        }
+    };
+
+    const handlePositionError = (err: GeolocationPositionError) => {
+        console.warn(`ERROR(${err.code}): ${err.message}`);
+        toast({
+            variant: 'destructive',
+            title: 'Location Error',
+            description: 'Could not get location. Please ensure location services are enabled.'
+        });
+    };
+    
+    const startLocationTracking = () => {
+        if (user?.uid && navigator.geolocation) {
+            // Watch for high-frequency updates when the app is active
+            locationWatcher = navigator.geolocation.watchPosition(
+                handlePositionUpdate,
+                handlePositionError,
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            );
+
+            // Also set an interval to force updates every minute, for background reliability
+            locationInterval = setInterval(() => {
+                 navigator.geolocation.getCurrentPosition(handlePositionUpdate, handlePositionError, {
+                     enableHighAccuracy: true,
+                 });
+            }, 60000); // 60 seconds
+        }
     }
+
+    startLocationTracking();
+
     return () => {
         if (locationWatcher) {
-            window.navigator.geolocation.clearWatch(locationWatcher);
+            navigator.geolocation.clearWatch(locationWatcher);
+        }
+        if (locationInterval) {
+            clearInterval(locationInterval);
         }
     };
   }, [user?.uid, toast]);
