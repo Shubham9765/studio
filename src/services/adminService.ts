@@ -70,11 +70,11 @@ export async function getCuisineTypes(): Promise<Cuisine[]> {
     });
 
     const cuisineConfigDoc = await getDoc(cuisinesRef);
-    const cuisineConfig = cuisineConfigDoc.exists() ? cuisineConfigDoc.data() : {};
+    const cuisineConfigData = cuisineConfigDoc.exists() ? cuisineConfigDoc.data() : {};
 
     return Array.from(uniqueCuisines).map(name => ({
         name,
-        imageUrl: cuisineConfig[name]?.imageUrl || '',
+        imageUrl: cuisineConfigData[name]?.imageUrl || '',
     }));
 }
 
