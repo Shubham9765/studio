@@ -186,22 +186,9 @@ export default function CheckoutPage() {
                     finalAddress = { ...finalAddress, ...coords };
                 } else {
                     // Don't block order if geocoding fails. Proceed without coords.
+                    // The backend and order tracking will gracefully handle missing coordinates.
                     console.warn(`Could not find coordinates for address: ${finalAddress.address}. Proceeding without them.`);
-                    toast({
-                        title: 'Notice',
-                        description: "Couldn't pinpoint exact location. Live tracking may be unavailable.",
-                    });
                 }
-            }
-            
-            if (!finalAddress.latitude || !finalAddress.longitude) {
-                setIsSubmitting(false);
-                toast({
-                    variant: 'destructive',
-                    title: 'Location Error',
-                    description: 'Delivery location is missing coordinates. Please select a valid address.',
-                });
-                return;
             }
 
             const orderDetails: Partial<Order> = {
