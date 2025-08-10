@@ -57,7 +57,7 @@ export async function updateBannerConfig(config: BannerConfig): Promise<void> {
 }
 
 // Cuisine Functions
-const cuisinesRef = doc(db, 'app_config', 'cuisines');
+const cuisinesConfigRef = doc(db, 'app_config', 'cuisines');
 
 export async function getCuisineTypes(): Promise<Cuisine[]> {
     const restaurantSnapshot = await getDocs(collection(db, 'restaurants'));
@@ -69,19 +69,20 @@ export async function getCuisineTypes(): Promise<Cuisine[]> {
         }
     });
 
-    const cuisineConfigDoc = await getDoc(cuisinesRef);
+    const cuisineConfigDoc = await getDoc(cuisinesConfigRef);
     const cuisineConfigData = cuisineConfigDoc.exists() ? cuisineConfigDoc.data() : {};
 
-    return Array.from(uniqueCuisines).map(name => ({
-        name,
-        imageUrl: cuisineConfigData[name]?.imageUrl || '',
-    }));
+    return Array.from(uniqueCuisines).map(name => {
+        return {
+            name,
+            imageUrl: cuisineConfigData[name]?.imageUrl || '',
+        };
+    });
 }
 
 export async function updateCuisineImageUrl(cuisineName: string, imageUrl: string): Promise<void> {
-    await setDoc(cuisinesRef, {
-        [cuisineName]: {
-            imageUrl: imageUrl
-        }
-    }, { merge: true });
+    const updateData = {
+        [`${cuisineName}.imageUrl`]: imageUrl
+    };
+    await setDoc(cuisinesConfigRef, updateData, { merge: true });
 }
