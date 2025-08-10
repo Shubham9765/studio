@@ -56,15 +56,10 @@ function Routing({ from, to }: { from: [number, number], to: [number, number] })
 
     useEffect(() => {
         if (!map) return;
-        
-        // Remove the old routing control if it exists
-        if (routingControlRef.current) {
-            map.removeControl(routingControlRef.current);
-            routingControlRef.current = null;
-        }
 
+        // Create the routing control instance
         // @ts-ignore - L.Routing is from the leaflet-routing-machine plugin
-        routingControlRef.current = L.Routing.control({
+        const routingControl = L.Routing.control({
             waypoints: [
                 L.latLng(from[0], from[1]),
                 L.latLng(to[0], to[1])
@@ -74,21 +69,21 @@ function Routing({ from, to }: { from: [number, number], to: [number, number] })
             addWaypoints: false,
             draggableWaypoints: false,
             fitSelectedRoutes: true,
-            createMarker: () => null, // Use our own markers outside this control
-             lineOptions: {
+            createMarker: () => null,
+            lineOptions: {
                 styles: [{ color: '#FF6B6B', opacity: 0.8, weight: 6 }]
             }
         }).addTo(map);
 
-        const control = routingControlRef.current;
+        routingControlRef.current = routingControl;
+
         return () => {
-             if (control) {
-                // @ts-ignore
-                map.removeControl(control);
-             }
-        }
+            if (map && routingControlRef.current) {
+                map.removeControl(routingControlRef.current);
+                routingControlRef.current = null;
+            }
+        };
     }, [map, from, to]);
-    
 
     return null;
 }
