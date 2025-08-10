@@ -12,7 +12,7 @@ import { assignDeliveryBoy, updateOrderPaymentStatus, updateOrderStatus } from '
 import { listenToOrdersForRestaurant } from '@/services/ownerClientService';
 import { getRestaurantByOwnerId } from '@/services/restaurantClientService';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, BookOpen, Check, BadgeCent, CircleDollarSign, Printer, User, Phone, MapPin, Package, ChefHat, Bike, PartyPopper, History } from 'lucide-react';
+import { AlertTriangle, BookOpen, Check, BadgeCent, CircleDollarSign, Printer, User, Phone, MapPin, Package, ChefHat, Bike, PartyPopper, History, MessageSquareQuote } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -340,6 +340,17 @@ export default function ManageOrdersPage() {
                                                                 Print KOT & Slip
                                                             </Button>
                                                         </div>
+                                                     </div>
+                                                     <div className="col-span-full">
+                                                        {order.notes && (
+                                                            <div>
+                                                                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                                                                    <MessageSquareQuote className="h-4 w-4 text-primary" />
+                                                                    Special Instructions
+                                                                </h4>
+                                                                <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md">{order.notes}</p>
+                                                            </div>
+                                                        )}
                                                      </div>
                                                      <div className="col-span-full sm:col-span-1">
                                                         <h4 className="font-semibold mb-2">Payment</h4>

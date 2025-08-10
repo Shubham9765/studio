@@ -3,7 +3,7 @@
 
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff, FileText, MapPin, PlusCircle, Trash2, Megaphone } from 'lucide-react';
+import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff, FileText, MapPin, PlusCircle, Trash2, Megaphone, Palette } from 'lucide-react';
 import { useAdminDashboardData } from '@/hooks/use-admin-dashboard-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -28,6 +28,7 @@ import * as z from 'zod';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
+import Link from 'next/link';
 
 
 function StatCard({ title, value, icon, description, loading }: { title: string, value: string | number, icon: React.ReactNode, description: string, loading: boolean }) {
@@ -549,6 +550,17 @@ export default function AdminDashboard() {
                 <UserTable users={data.users} loading={loading} onUpdate={refreshData} />
              </div>
              <div className="space-y-12">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>App Configuration</CardTitle>
+                        <CardDescription>Global settings for the application.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-4">
+                        <Button asChild variant="outline">
+                            <Link href="/admin/cuisines"><Palette className="mr-2 h-4 w-4"/> Manage Cuisines</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
                 <BannerManager initialConfig={data.bannerConfig} onUpdate={refreshData} />
                 <Reports />
                 <ServiceableLocations locations={data.serviceableCities} loading={loading} onUpdate={refreshData} />

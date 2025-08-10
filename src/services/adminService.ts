@@ -3,7 +3,7 @@
 
 import { db } from './firebase';
 import { collection, getDocs, query, where, collectionGroup, doc, updateDoc, Timestamp, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
-import type { Restaurant, Order, BannerConfig } from '@/lib/types';
+import type { Restaurant, Order, BannerConfig, Cuisine } from '@/lib/types';
 import type { AppUser } from '@/hooks/use-auth';
 
 export async function updateRestaurantStatus(restaurantId: string, status: Restaurant['status']): Promise<void> {
@@ -54,4 +54,34 @@ const bannerConfigRef = doc(db, 'app_config', 'banner');
 
 export async function updateBannerConfig(config: BannerConfig): Promise<void> {
     await setDoc(bannerConfigRef, config, { merge: true });
+}
+
+// Cuisine Functions
+const cuisinesRef = doc(db, 'app_config', 'cuisines');
+
+export async function getCuisineTypes(): Promise<Cuisine[]> {
+    const restaurantSnapshot = await getDocs(collection(db, 'restaurants'));
+    const uniqueCuisines = new Set<string>();
+    restaurantSnapshot.forEach(doc => {
+        const data = doc.data() as Restaurant;
+        if (data.cuisine) {
+            uniqueCuisines.add(data.cuisine);
+        }
+    });
+
+    const cuisineConfigDoc = await getDoc(cuisinesRef);
+    const cuisineConfig = cuisineConfigDoc.exists() ? cuisineConfigDoc.data() : {};
+
+    return Array.from(uniqueCuisines).map(name => ({
+        name,
+        imageUrl: cuisineConfig[name]?.imageUrl || '',
+    }));
+}
+
+export async function updateCuisineImageUrl(cuisineName: string, imageUrl: string): Promise<void> {
+    await setDoc(cuisinesRef, {
+        [cuisineName]: {
+            imageUrl: imageUrl
+        }
+    }, { merge: true });
 }

@@ -22,6 +22,7 @@ import type { Order, Restaurant } from '@/lib/types';
 import type { Address } from '@/hooks/use-auth';
 import { useLocation } from '@/hooks/use-location';
 import Link from 'next/link';
+import { Textarea } from '@/components/ui/textarea';
 
 async function getCoordinatesForAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
     try {
@@ -52,6 +53,7 @@ export default function CheckoutPage() {
     const [orderPlaced, setOrderPlaced] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi'>('cash');
     const [transactionId, setTransactionId] = useState('');
+    const [orderNotes, setOrderNotes] = useState('');
     
     const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
     const [isUsingCurrentLocation, setIsUsingCurrentLocation] = useState(false);
@@ -154,6 +156,7 @@ export default function CheckoutPage() {
                 deliveryAddress: finalAddress.address,
                 customerPhone: finalAddress.phone,
                 customerAddress: finalAddress,
+                notes: orderNotes,
             };
 
             await createOrder(user.uid, user.displayName || 'N/A', restaurant as Restaurant, cart, finalTotal, orderDetails);
@@ -311,6 +314,18 @@ export default function CheckoutPage() {
                                     
                                     <Separator />
 
+                                    <div className="space-y-4">
+                                        <Label htmlFor="orderNotes">Special Instructions (Optional)</Label>
+                                        <Textarea 
+                                            id="orderNotes"
+                                            placeholder="e.g., make it extra spicy, no onions, etc."
+                                            value={orderNotes}
+                                            onChange={(e) => setOrderNotes(e.target.value)}
+                                        />
+                                    </div>
+                                    
+                                    <Separator />
+
                                      <div className="space-y-4">
                                         <Label>Payment Method</Label>
                                          <RadioGroup value={paymentMethod} onValueChange={(val) => setPaymentMethod(val as 'cash' | 'upi')} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -379,7 +394,7 @@ export default function CheckoutPage() {
                                 <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
                                 {cart.map(item => (
                                     <div key={item.id} className="flex items-center gap-4">
-                                        <Image src={item.imageUrl || 'https://placehold.co/100x100'} alt={item.name} width={48} height={48} className="rounded-md h-12 w-12 object-cover" />
+                                        <Image src={item.imageUrl || 'https://placehold.co/100x100.png'} alt={item.name} width={48} height={48} className="rounded-md h-12 w-12 object-cover" />
                                         <div className="flex-1">
                                             <p className="font-medium text-sm">{item.name}</p>
                                             <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>

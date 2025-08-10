@@ -81,6 +81,7 @@ export interface Order {
         longitude?: number;
     };
     deliveryOtp?: string;
+    notes?: string;
 }
 
 export interface BannerConfig {
@@ -93,4 +94,9 @@ export interface BannerConfig {
     isButtonEnabled: boolean;
     buttonLink: string;
     imageUrl: string;
+}
+
+export interface Cuisine {
+    name: string;
+    imageUrl?: string;
 }

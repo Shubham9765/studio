@@ -33,6 +33,7 @@ export async function createOrder(
       deliveryAddress: orderDetails.deliveryAddress || 'N/A', // The text address for display
       customerPhone: orderDetails.customerPhone || 'N/A',
       customerAddress: orderDetails.customerAddress, // The full address object with coordinates
+      notes: orderDetails.notes || '',
   };
 
   const docRef = await addDoc(ordersCollection, newOrder);
