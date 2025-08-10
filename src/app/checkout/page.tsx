@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, CheckCircle, ShoppingCart, Banknote, Landmark, Crosshair, Loader2, Home, Building } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ShoppingCart, Banknote, Landmark, Crosshair, Loader2, Home, Building, Map } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { createOrder } from '@/services/restaurantService';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,6 +23,9 @@ import type { Address } from '@/hooks/use-auth';
 import { useLocation } from '@/hooks/use-location';
 import Link from 'next/link';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { LocationPickerMap } from '@/components/location-picker-map';
+
 
 async function getCoordinatesForAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
     try {
@@ -56,8 +59,11 @@ export default function CheckoutPage() {
     const [orderNotes, setOrderNotes] = useState('');
     
     const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
-    const [isUsingCurrentLocation, setIsUsingCurrentLocation] = useState(false);
+    const [mapSelectedLocation, setMapSelectedLocation] = useState<Address | null>(null);
+    const [deliveryMode, setDeliveryMode] = useState<'saved' | 'current' | 'map'>('saved');
+
     const [isLocating, setIsLocating] = useState(false);
+    const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
     
     useEffect(() => {
         if (!authLoading && !user) {
@@ -66,26 +72,54 @@ export default function CheckoutPage() {
         // Set the first saved address as the default selection
         if (user?.addresses && user.addresses.length > 0 && !selectedAddress) {
             setSelectedAddress(user.addresses[0]);
+            setDeliveryMode('saved');
+        } else if (!user?.addresses || user.addresses.length === 0) {
+            setDeliveryMode('current'); // Default to current location if no saved addresses
         }
     }, [authLoading, user, router, selectedAddress]);
-
-    const handleUseCurrentLocation = () => {
-        setIsLocating(true);
-        setIsUsingCurrentLocation(true);
-        setSelectedAddress(null); // Deselect any saved address
-        requestLocation();
+    
+    const handleDeliveryModeChange = (value: 'saved' | 'current' | 'map' | string) => {
+        if (value === 'current') {
+            setDeliveryMode('current');
+            setIsLocating(true);
+            setSelectedAddress(null);
+            setMapSelectedLocation(null);
+            requestLocation();
+        } else if (value === 'map') {
+            setDeliveryMode('map');
+            setSelectedAddress(null);
+            setIsMapDialogOpen(true);
+        } else { // It's a saved address ID
+            setDeliveryMode('saved');
+            setSelectedAddress(user?.addresses?.find(a => a.id === value) || null);
+            setMapSelectedLocation(null);
+        }
     };
 
+
     useEffect(() => {
-        if (location && isUsingCurrentLocation) {
-             toast({ title: "Location Set!", description: "Your current location will be used for delivery." });
+        if (deliveryMode === 'current') {
+            if (location) {
+                toast({ title: "Location Set!", description: "Your current location will be used for delivery." });
+            }
+            if (locationError) {
+                toast({ variant: 'destructive', title: "Location Error", description: locationError });
+            }
+             setIsLocating(false);
         }
-        if (locationError && isUsingCurrentLocation) {
-            toast({ variant: 'destructive', title: "Location Error", description: locationError });
-        }
-        setIsLocating(false);
-    }, [location, locationError, isUsingCurrentLocation, toast]);
-    
+    }, [location, locationError, deliveryMode, toast]);
+
+     const handleMapLocationSelect = (loc: { latitude: number; longitude: number; address: string }) => {
+        setMapSelectedLocation({
+            id: 'map-selected',
+            name: 'Selected on Map',
+            phone: user?.phone || '',
+            ...loc
+        });
+        setIsMapDialogOpen(false);
+        toast({ title: 'Location Pinned!', description: 'Your selected location will be used for delivery.' });
+    };
+
     const deliveryFee = restaurant?.deliveryCharge || 0;
     const subtotal = totalPrice;
     
@@ -98,24 +132,32 @@ export default function CheckoutPage() {
     
     const finalTotal = subtotal + deliveryFee + gstAmount;
 
+    const getFinalAddress = (): Address | null => {
+        switch (deliveryMode) {
+            case 'saved':
+                return selectedAddress;
+            case 'current':
+                if (location) {
+                    return {
+                        id: 'current-location',
+                        name: 'Current Location',
+                        address: `Lat: ${location.latitude.toFixed(4)}, Lon: ${location.longitude.toFixed(4)}`,
+                        phone: user?.phone || '',
+                        ...location,
+                    };
+                }
+                return null;
+            case 'map':
+                return mapSelectedLocation;
+            default:
+                return null;
+        }
+    }
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         
-        let finalAddress: Address | null = selectedAddress;
-        
-        if (isUsingCurrentLocation) {
-            if (!location) {
-                toast({ variant: 'destructive', title: 'Location Missing', description: "Could not get your current location. Please try again or select a saved address." });
-                return;
-            }
-             finalAddress = {
-                id: 'current-location',
-                name: 'Current Location',
-                address: `Lat: ${location.latitude.toFixed(4)}, Lon: ${location.longitude.toFixed(4)}`,
-                phone: user?.phone || '',
-                ...location,
-            };
-        }
+        let finalAddress = getFinalAddress();
 
         if (!user || !restaurant || !finalAddress) {
             toast({
@@ -242,6 +284,15 @@ export default function CheckoutPage() {
         );
     }
 
+    const getRadioValue = () => {
+        switch (deliveryMode) {
+            case 'current': return 'current';
+            case 'map': return 'map';
+            case 'saved': return selectedAddress?.id || '';
+            default: return '';
+        }
+    }
+
     return (
         <div className="min-h-screen bg-background">
             <Header />
@@ -259,51 +310,65 @@ export default function CheckoutPage() {
                                     <div className="space-y-4">
                                         <Label>Delivery Location</Label>
                                         
-                                        {user.addresses && user.addresses.length > 0 ? (
-                                             <RadioGroup 
-                                                value={isUsingCurrentLocation ? 'current' : selectedAddress?.id} 
-                                                onValueChange={(value) => {
-                                                    if (value === 'current') {
-                                                        handleUseCurrentLocation();
-                                                    } else {
-                                                        setIsUsingCurrentLocation(false);
-                                                        setSelectedAddress(user.addresses?.find(a => a.id === value) || null);
-                                                    }
-                                                }} 
-                                                className="space-y-2"
-                                            >
-                                                {user.addresses.map(addr => (
-                                                    <Label key={addr.id} htmlFor={addr.id} className="flex items-start gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:border-primary">
-                                                        <RadioGroupItem value={addr.id} id={addr.id} className="mt-1" />
-                                                         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center mt-1">
-                                                            {addr.name.toLowerCase() === 'home' ? <Home className="h-5 w-5 text-muted-foreground" /> : <Building className="h-5 w-5 text-muted-foreground"/>}
-                                                         </div>
-                                                         <div className="text-sm flex-grow">
-                                                            <p className="font-bold">{addr.name}</p>
-                                                            <p className="text-muted-foreground">{addr.address}</p>
-                                                            <p className="text-muted-foreground">{addr.phone}</p>
-                                                         </div>
-                                                    </Label>
-                                                ))}
-                                                <Label htmlFor="current" className="flex items-start gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:border-primary">
-                                                    <RadioGroupItem value="current" id="current" className="mt-1" />
-                                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center mt-1">
-                                                        <Crosshair className="h-5 w-5 text-muted-foreground"/>
-                                                    </div>
-                                                    <div className="text-sm flex-grow">
-                                                        <p className="font-bold">Use Current Location</p>
-                                                        {isLocating && <p className="text-muted-foreground">Getting your location...</p>}
-                                                        {locationError && <p className="text-destructive text-xs">{locationError}</p>}
-                                                        {location && isUsingCurrentLocation && <p className="text-muted-foreground text-xs">Lat: {location.latitude.toFixed(4)}, Lon: {location.longitude.toFixed(4)}</p>}
-                                                    </div>
+                                        <RadioGroup 
+                                            value={getRadioValue()}
+                                            onValueChange={handleDeliveryModeChange} 
+                                            className="space-y-2"
+                                        >
+                                            {user.addresses?.map(addr => (
+                                                <Label key={addr.id} htmlFor={addr.id} className="flex items-start gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:border-primary">
+                                                    <RadioGroupItem value={addr.id} id={addr.id} className="mt-1" />
+                                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center mt-1">
+                                                        {addr.name.toLowerCase() === 'home' ? <Home className="h-5 w-5 text-muted-foreground" /> : <Building className="h-5 w-5 text-muted-foreground"/>}
+                                                        </div>
+                                                        <div className="text-sm flex-grow">
+                                                        <p className="font-bold">{addr.name}</p>
+                                                        <p className="text-muted-foreground">{addr.address}</p>
+                                                        <p className="text-muted-foreground">{addr.phone}</p>
+                                                        </div>
                                                 </Label>
-                                             </RadioGroup>
-                                        ) : (
-                                            <Alert>
+                                            ))}
+                                            <Label htmlFor="current" className="flex items-start gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:border-primary">
+                                                <RadioGroupItem value="current" id="current" className="mt-1" />
+                                                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center mt-1">
+                                                    <Crosshair className="h-5 w-5 text-muted-foreground"/>
+                                                </div>
+                                                <div className="text-sm flex-grow">
+                                                    <p className="font-bold">Use Current Location</p>
+                                                    {deliveryMode === 'current' && isLocating && <p className="text-muted-foreground">Getting your location...</p>}
+                                                    {deliveryMode === 'current' && locationError && <p className="text-destructive text-xs">{locationError}</p>}
+                                                    {deliveryMode === 'current' && location && <p className="text-muted-foreground text-xs">Lat: {location.latitude.toFixed(4)}, Lon: {location.longitude.toFixed(4)}</p>}
+                                                </div>
+                                            </Label>
+                                            <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
+                                                <DialogTrigger asChild>
+                                                    <Label htmlFor="map" className="flex items-start gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:border-primary">
+                                                        <RadioGroupItem value="map" id="map" className="mt-1" />
+                                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center mt-1">
+                                                            <Map className="h-5 w-5 text-muted-foreground"/>
+                                                        </div>
+                                                        <div className="text-sm flex-grow">
+                                                            <p className="font-bold">Set Location on Map</p>
+                                                            {deliveryMode === 'map' && mapSelectedLocation && <p className="text-muted-foreground text-xs">{mapSelectedLocation.address}</p>}
+                                                        </div>
+                                                    </Label>
+                                                </DialogTrigger>
+                                                <DialogContent className="sm:max-w-2xl h-4/5 flex flex-col">
+                                                    <DialogHeader>
+                                                        <DialogTitle>Pin Your Delivery Location</DialogTitle>
+                                                        <DialogDescription>Drag the marker to your exact location and click confirm.</DialogDescription>
+                                                    </DialogHeader>
+                                                    <LocationPickerMap onLocationSelect={handleMapLocationSelect} />
+                                                </DialogContent>
+                                            </Dialog>
+                                        </RadioGroup>
+                                        
+                                        {(user.addresses?.length || 0) === 0 && (
+                                             <Alert>
                                                 <AlertTriangle className="h-4 w-4" />
                                                 <AlertTitle>No Saved Addresses</AlertTitle>
                                                 <AlertDescription>
-                                                    You don't have any saved addresses. Please add one to your profile to continue.
+                                                    You don't have any saved addresses. You can add one in your profile for faster checkout next time.
                                                     <Button asChild variant="link" className="p-0 h-auto ml-1">
                                                         <Link href="/profile">Go to Profile</Link>
                                                     </Button>
@@ -377,7 +442,7 @@ export default function CheckoutPage() {
 
                                 </CardContent>
                                 <CardFooter>
-                                     <Button type="submit" className="w-full" disabled={isSubmitting || (!selectedAddress && !isUsingCurrentLocation)}>
+                                     <Button type="submit" className="w-full" disabled={isSubmitting || !getFinalAddress()}>
                                         {isSubmitting ? (isLocating ? 'Getting Location...' : 'Placing Order...') : `Place Order - $${finalTotal.toFixed(2)}`}
                                      </Button>
                                 </CardFooter>
