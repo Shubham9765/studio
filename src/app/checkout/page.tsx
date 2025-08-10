@@ -141,7 +141,7 @@ export default function CheckoutPage() {
                     return {
                         id: 'current-location',
                         name: 'Current Location',
-                        address: `Lat: ${location.latitude.toFixed(4)}, Lon: ${location.longitude.toFixed(4)}`,
+                        address: location.city ? `Current Location in ${location.city}` : `Lat: ${location.latitude.toFixed(4)}, Lon: ${location.longitude.toFixed(4)}`,
                         phone: user?.phone || '',
                         ...location,
                     };
@@ -180,12 +180,13 @@ export default function CheckoutPage() {
         setIsSubmitting(true);
         try {
             // Geocode address if it doesn't have coordinates already
-            if (!finalAddress.latitude || !finalAddress.longitude) {
+            // Current location and map location already have coordinates, so we skip geocoding for them.
+            if ((!finalAddress.latitude || !finalAddress.longitude) && deliveryMode === 'saved') {
                 const coords = await getCoordinatesForAddress(finalAddress.address);
                 if (coords) {
                     finalAddress = { ...finalAddress, ...coords };
                 } else {
-                    toast({ variant: 'destructive', title: 'Address Not Found', description: "Could not find coordinates for the address. Please try a different address." });
+                    toast({ variant: 'destructive', title: 'Address Not Found', description: "Could not find coordinates for the address. Please try a different address or set it on the map." });
                     setIsSubmitting(false);
                     return;
                 }
