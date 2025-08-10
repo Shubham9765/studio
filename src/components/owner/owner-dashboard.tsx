@@ -169,11 +169,11 @@ export default function OwnerDashboard() {
                     <CardDescription>Quick links to manage your restaurant's presence on Village Eats.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col sm:flex-row gap-4">
-                    <Button asChild><Link href="/owner/menu"><MenuSquare />Manage Menu</Link></Button>
-                    <Button asChild><Link href="/owner/orders"><BookOpen />View Active Orders</Link></Button>
-                    <Button asChild><Link href="/owner/orders/history"><History />View Order History</Link></Button>
-                    <Button asChild><Link href="/owner/delivery"><Bike />Manage Delivery</Link></Button>
-                    <Button onClick={() => setIsEditFormOpen(true)}><Edit />Edit Restaurant Profile</Button>
+                    <Button asChild><Link href="/owner/menu"><MenuSquare className="mr-2 h-4 w-4" />Manage Menu</Link></Button>
+                    <Button asChild><Link href="/owner/orders"><BookOpen className="mr-2 h-4 w-4" />View Active Orders</Link></Button>
+                    <Button asChild><Link href="/owner/orders/history"><History className="mr-2 h-4 w-4" />View Order History</Link></Button>
+                    <Button asChild><Link href="/owner/delivery"><Bike className="mr-2 h-4 w-4" />Manage Delivery</Link></Button>
+                    <Button onClick={() => setIsEditFormOpen(true)}><Edit className="mr-2 h-4 w-4" />Edit Restaurant Profile</Button>
                 </CardContent>
             </Card>
         </div>

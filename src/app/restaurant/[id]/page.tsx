@@ -8,7 +8,7 @@ import type { Restaurant, MenuItem } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Star, Clock, Utensils, Search, CheckBadge } from 'lucide-react';
+import { AlertTriangle, Star, Clock, Utensils, Search, BadgeCheck } from 'lucide-react';
 import { MenuItemCard } from '@/components/customer/menu-item-card';
 import { Cart } from '@/components/customer/cart';
 import { Input } from '@/components/ui/input';
@@ -133,7 +133,7 @@ export default function RestaurantPage() {
             </div>
             {restaurant.fssaiLicense && (
               <div className="flex items-center gap-2 mt-2 text-xs text-gray-300">
-                <CheckBadge className="w-4 h-4" />
+                <BadgeCheck className="w-4 h-4" />
                 <span>License No: {restaurant.fssaiLicense}</span>
               </div>
             )}
