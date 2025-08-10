@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from './firebase';
-import { collection, getDocs, query, where, collectionGroup, doc, updateDoc, Timestamp, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, getDocs, query, where, collectionGroup, doc, updateDoc, Timestamp, setDoc, arrayUnion, arrayRemove, getDoc as getFirestoreDoc } from 'firebase/firestore';
 import type { Restaurant, Order, BannerConfig, Cuisine } from '@/lib/types';
 import type { AppUser } from '@/hooks/use-auth';
 
@@ -34,7 +34,7 @@ export async function getOrdersByDateRange(startDate: Date, endDate: Date): Prom
 const locationsRef = doc(db, 'app_config', 'service_locations');
 
 export async function getServiceableCities(): Promise<string[]> {
-    const docSnap = await getDoc(locationsRef);
+    const docSnap = await getFirestoreDoc(locationsRef);
     if (docSnap.exists()) {
         return docSnap.data().cities || [];
     }
@@ -62,23 +62,33 @@ const cuisinesConfigRef = doc(db, 'app_config', 'cuisines');
 export async function getCuisineTypes(): Promise<Cuisine[]> {
     const restaurantSnapshot = await getDocs(collection(db, 'restaurants'));
     const uniqueCuisines = new Set<string>();
+    
     restaurantSnapshot.forEach(doc => {
-        const data = doc.data() as Restaurant;
-        if (data.cuisine) {
+        const data = doc.data() as Partial<Restaurant>;
+        // Safely access cuisine and add to set only if it exists and is a non-empty string
+        if (data.cuisine && typeof data.cuisine === 'string') {
             uniqueCuisines.add(data.cuisine);
         }
     });
 
-    const cuisineConfigDoc = await getDoc(cuisinesConfigRef);
+    if (uniqueCuisines.size === 0) {
+        return []; // Return early if no cuisines are found
+    }
+
+    const cuisineConfigDoc = await getFirestoreDoc(cuisinesConfigRef);
     const cuisineConfigData = cuisineConfigDoc.exists() ? cuisineConfigDoc.data() : {};
 
-    return Array.from(uniqueCuisines).map(name => {
+    const cuisinesArray = Array.from(uniqueCuisines).map(name => {
+        const imageUrl = cuisineConfigData[name]?.imageUrl || '';
         return {
             name,
-            imageUrl: cuisineConfigData[name]?.imageUrl || '',
+            imageUrl,
         };
     });
+
+    return cuisinesArray;
 }
+
 
 export async function updateCuisineImageUrl(cuisineName: string, imageUrl: string): Promise<void> {
     const updateData = {

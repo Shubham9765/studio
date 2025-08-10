@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Save } from 'lucide-react';
+import { AlertTriangle, Save, Palette } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,10 +28,12 @@ export default function ManageCuisinesPage() {
 
     const fetchCuisines = async () => {
         setLoading(true);
+        setError(null);
         try {
             const cuisineData = await getCuisineTypes();
             setCuisines(cuisineData);
         } catch (e: any) {
+            console.error(e);
             setError('Failed to fetch cuisine data.');
         } finally {
             setLoading(false);
@@ -68,14 +70,29 @@ export default function ManageCuisinesPage() {
             <div className="min-h-screen bg-background">
                 <Header />
                 <main className="container py-8">
-                    <Skeleton className="h-8 w-1/3 mb-8" />
+                    <h1 className="text-3xl font-bold mb-8">Manage Cuisine Images</h1>
                     <Card>
                         <CardHeader>
-                            <Skeleton className="h-6 w-1/4" />
+                            <Skeleton className="h-6 w-1/4 mb-2" />
+                            <Skeleton className="h-4 w-1/2" />
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <Skeleton className="h-20 w-full" />
-                            <Skeleton className="h-20 w-full" />
+                        <CardContent className="space-y-6 pt-6">
+                            <div className="flex items-center gap-4">
+                                <Skeleton className="h-20 w-20 rounded-full" />
+                                <div className="space-y-2 flex-grow">
+                                     <Skeleton className="h-5 w-1/4" />
+                                     <Skeleton className="h-10 w-full" />
+                                </div>
+                                <Skeleton className="h-10 w-24" />
+                            </div>
+                             <div className="flex items-center gap-4">
+                                <Skeleton className="h-20 w-20 rounded-full" />
+                                <div className="space-y-2 flex-grow">
+                                     <Skeleton className="h-5 w-1/4" />
+                                     <Skeleton className="h-10 w-full" />
+                                </div>
+                                <Skeleton className="h-10 w-24" />
+                            </div>
                         </CardContent>
                     </Card>
                 </main>
@@ -106,7 +123,7 @@ export default function ManageCuisinesPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Cuisine Categories</CardTitle>
-                        <CardDescription>Set the image that appears for each cuisine type on the homepage.</CardDescription>
+                        <CardDescription>Set the image that appears for each cuisine type on the homepage. Cuisines are automatically detected from your approved restaurants.</CardDescription>
                     </CardHeader>
                     <CardContent>
                          {cuisines.length > 0 ? (
@@ -141,7 +158,13 @@ export default function ManageCuisinesPage() {
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-center text-muted-foreground py-8">No cuisines found. Restaurants must be added first.</p>
+                            <div className="text-center py-16">
+                                <Palette className="mx-auto h-12 w-12 text-muted-foreground" />
+                                <h3 className="mt-4 text-xl font-medium">No Cuisines Found</h3>
+                                <p className="mt-1 text-muted-foreground">
+                                    There are no cuisines to display. This can happen if there are no approved restaurants with a cuisine type set.
+                                </p>
+                            </div>
                         )}
                     </CardContent>
                 </Card>
