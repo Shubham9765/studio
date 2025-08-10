@@ -8,7 +8,7 @@ import { listenToOrdersForCustomer } from '@/services/restaurantClientService';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, PackageSearch, Package, ChefHat, Bike, PartyPopper, Copy, History } from 'lucide-react';
+import { AlertTriangle, PackageSearch, Package, ChefHat, Bike, PartyPopper, Copy, History, KeyRound } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Accordion,
@@ -231,6 +231,22 @@ export default function MyOrdersPage() {
                                     </div>
                                     <AccordionContent className="p-6 pt-0">
                                         <OrderStatusTracker status={order.status} />
+
+                                        {order.status === 'out-for-delivery' && order.deliveryOtp && (
+                                            <Card className="mt-4 bg-primary/10 border-primary/20">
+                                                <CardHeader className="pb-2">
+                                                    <CardTitle className="flex items-center gap-2 text-lg">
+                                                        <KeyRound className="h-5 w-5" />
+                                                        <span>Delivery OTP</span>
+                                                    </CardTitle>
+                                                     <CardDescription>Provide this code to your delivery person to confirm receipt of your order.</CardDescription>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <p className="text-4xl font-extrabold tracking-widest text-center py-2 bg-background rounded-md">{order.deliveryOtp}</p>
+                                                </CardContent>
+                                            </Card>
+                                        )}
+
                                         {['out-for-delivery', 'delivered'].includes(order.status) && (
                                             <DeliveryBoyTracker order={order} />
                                         )}

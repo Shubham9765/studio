@@ -76,6 +76,7 @@ export interface Order {
         latitude?: number;
         longitude?: number;
     };
+    deliveryOtp?: string;
 }
 
 export interface BannerConfig {

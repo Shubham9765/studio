@@ -3,7 +3,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { updateOrderStatus } from '@/services/ownerService';
+import { verifyDeliveryOtpAndDeliver } from '@/services/ownerService';
 import { updateDeliveryBoyLocation } from '@/services/userService';
 import { listenToOrdersForDeliveryBoy } from '@/services/restaurantClientService';
 import type { Order } from '@/lib/types';
@@ -11,7 +11,7 @@ import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Bike, Check, User, Phone, MapPin, History, Expand } from 'lucide-react';
+import { AlertTriangle, Bike, Check, User, Phone, MapPin, History, Expand, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -19,7 +19,8 @@ import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '../ui/dialog';
+import { Input } from '../ui/input';
 import dynamic from 'next/dynamic';
 
 const LiveMap = dynamic(() => import('@/components/live-map').then(mod => mod.LiveMap), {
@@ -63,6 +64,63 @@ function MapDialog({ order, deliveryBoyLocation }: { order: Order; deliveryBoyLo
     );
 }
 
+function VerifyDeliveryDialog({ orderId, onVerified }: { orderId: string; onVerified: () => void }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [otp, setOtp] = useState('');
+    const [isVerifying, setIsVerifying] = useState(false);
+    const { toast } = useToast();
+
+    const handleVerify = async () => {
+        if (otp.length !== 4) {
+            toast({ variant: 'destructive', title: 'Invalid OTP', description: 'Please enter a 4-digit OTP.' });
+            return;
+        }
+        setIsVerifying(true);
+        try {
+            await verifyDeliveryOtpAndDeliver(orderId, otp);
+            toast({ title: 'Order Delivered!', description: 'The order has been marked as complete.' });
+            onVerified();
+            setIsOpen(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Verification Failed', description: error.message });
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button className="w-full">
+                    <Check className="mr-2 h-4 w-4" /> Mark as Delivered
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Verify Delivery</DialogTitle>
+                    <DialogDescription>
+                        Please enter the 4-digit OTP from the customer to confirm delivery.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Input
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, '').substring(0, 4))}
+                        maxLength={4}
+                        placeholder="_ _ _ _"
+                        className="text-center text-2xl font-bold tracking-[1em] h-14"
+                    />
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleVerify} disabled={isVerifying}>
+                        {isVerifying ? 'Verifying...' : 'Confirm Delivery'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export default function DeliveryDashboard() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -70,7 +128,6 @@ export default function DeliveryDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [deliveryBoyLocation, setDeliveryBoyLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   useEffect(() => {
@@ -165,17 +222,9 @@ export default function DeliveryDashboard() {
     };
   }, [user, authLoading, router]);
 
-  const handleMarkAsDelivered = async (orderId: string) => {
-    setUpdatingOrderId(orderId);
-    try {
-      await updateOrderStatus(orderId, 'delivered');
-      toast({ title: 'Order Delivered!', description: 'The order has been marked as complete.' });
-      // The real-time listener will automatically remove the order from the active list.
-    } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Update Failed', description: e.message });
-    } finally {
-      setUpdatingOrderId(null);
-    }
+  const handleOrderDelivered = () => {
+    // The real-time listener will automatically remove the order from the active list.
+    // We could manually filter here for a faster UI update, but the listener is usually quick enough.
   };
 
   if (authLoading || loading) {
@@ -292,13 +341,7 @@ export default function DeliveryDashboard() {
                 </CardContent>
                 <div className="p-6 pt-0">
                     {order.status === 'out-for-delivery' && (
-                         <Button 
-                            className="w-full"
-                            onClick={() => handleMarkAsDelivered(order.id)}
-                            disabled={updatingOrderId === order.id}
-                        >
-                            {updatingOrderId === order.id ? 'Updating...' : <><Check className="mr-2 h-4 w-4"/> Mark as Delivered</>}
-                        </Button>
+                         <VerifyDeliveryDialog orderId={order.id} onVerified={handleOrderDelivered} />
                     )}
                 </div>
               </Card>

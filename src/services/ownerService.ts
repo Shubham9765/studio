@@ -177,9 +177,12 @@ export async function removeDeliveryBoyFromRestaurant(restaurantId: string, deli
 
 export async function assignDeliveryBoy(orderId: string, deliveryBoy: {id: string, name: string}): Promise<void> {
     const orderRef = doc(db, 'orders', orderId);
+    const deliveryOtp = Math.floor(1000 + Math.random() * 9000).toString();
+
     await updateDoc(orderRef, { 
         deliveryBoy,
-        status: 'out-for-delivery'
+        status: 'out-for-delivery',
+        deliveryOtp
     });
     
     try {
@@ -194,10 +197,36 @@ export async function assignDeliveryBoy(orderId: string, deliveryBoy: {id: strin
     }
 }
 
+export async function verifyDeliveryOtpAndDeliver(orderId: string, otp: string): Promise<void> {
+    const orderRef = doc(db, 'orders', orderId);
+    const orderSnap = await getDoc(orderRef);
+
+    if (!orderSnap.exists()) {
+        throw new Error("Order not found.");
+    }
+
+    const order = orderSnap.data() as Order;
+
+    if (order.deliveryOtp !== otp) {
+        throw new Error("Invalid OTP. Please try again.");
+    }
+
+    // OTP is correct, mark as delivered
+    await updateOrderStatus(orderId, 'delivered');
+}
+
+
 export async function updateDeliveryBoyLocation(deliveryBoyId: string, location: { latitude: number; longitude: number }): Promise<void> {
+  if (!deliveryBoyId) return;
   const userRef = doc(db, 'users', deliveryBoyId);
-  await updateDoc(userRef, {
-    latitude: location.latitude,
-    longitude: location.longitude,
-  });
+  try {
+    await updateDoc(userRef, {
+      latitude: location.latitude,
+      longitude: location.longitude,
+    });
+  } catch (error) {
+    // It's often okay to silently fail here, as this can be called very frequently.
+    // Logging is fine, but we don't want to show an error to the user for every failed update.
+    console.error("Failed to update delivery boy location:", error);
+  }
 }
