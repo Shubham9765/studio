@@ -60,19 +60,18 @@ export async function updateBannerConfig(config: BannerConfig): Promise<void> {
 const cuisinesConfigRef = doc(db, 'app_config', 'cuisines');
 
 export async function getCuisineTypes(): Promise<Cuisine[]> {
-    const restaurantSnapshot = await getDocs(collection(db, 'restaurants'));
+    const restaurantSnapshot = await getDocs(query(collection(db, 'restaurants'), where('status', '==', 'approved')));
     const uniqueCuisines = new Set<string>();
     
     restaurantSnapshot.forEach(doc => {
         const data = doc.data() as Partial<Restaurant>;
-        // Safely access cuisine and add to set only if it exists and is a non-empty string
-        if (data.cuisine && typeof data.cuisine === 'string') {
+        if (data.cuisine && typeof data.cuisine === 'string' && data.cuisine.trim() !== '') {
             uniqueCuisines.add(data.cuisine);
         }
     });
 
     if (uniqueCuisines.size === 0) {
-        return []; // Return early if no cuisines are found
+        return [];
     }
 
     const cuisineConfigDoc = await getFirestoreDoc(cuisinesConfigRef);
@@ -91,8 +90,17 @@ export async function getCuisineTypes(): Promise<Cuisine[]> {
 
 
 export async function updateCuisineImageUrl(cuisineName: string, imageUrl: string): Promise<void> {
+    const docSnap = await getFirestoreDoc(cuisinesConfigRef);
+    if (!docSnap.exists()) {
+        // If the document doesn't exist, create it.
+        await setDoc(cuisinesConfigRef, {});
+    }
+    
     const updateData = {
-        [`${cuisineName}.imageUrl`]: imageUrl
+        [`${cuisineName}.imageUrl`]: imageUrl,
+        [`${cuisineName}.name`]: cuisineName,
     };
-    await setDoc(cuisinesConfigRef, updateData, { merge: true });
+    
+    // Use updateDoc which works correctly with dot notation for nested fields.
+    await updateDoc(cuisinesConfigRef, updateData);
 }
