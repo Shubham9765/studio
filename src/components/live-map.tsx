@@ -57,9 +57,12 @@ function Routing({ from, to }: { from: [number, number], to: [number, number] })
     useEffect(() => {
         if (!map) return;
 
-        // Create the routing control instance
+        if (routingControlRef.current) {
+            map.removeControl(routingControlRef.current);
+        }
+
         // @ts-ignore - L.Routing is from the leaflet-routing-machine plugin
-        const routingControl = L.Routing.control({
+        routingControlRef.current = L.Routing.control({
             waypoints: [
                 L.latLng(from[0], from[1]),
                 L.latLng(to[0], to[1])
@@ -74,15 +77,12 @@ function Routing({ from, to }: { from: [number, number], to: [number, number] })
                 styles: [{ color: '#FF6B6B', opacity: 0.8, weight: 6 }]
             }
         }).addTo(map);
-
-        routingControlRef.current = routingControl;
-
+        
         return () => {
-            if (map && routingControlRef.current) {
+             if (routingControlRef.current) {
                 map.removeControl(routingControlRef.current);
-                routingControlRef.current = null;
             }
-        };
+        }
     }, [map, from, to]);
 
     return null;
