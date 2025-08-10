@@ -3,24 +3,40 @@
 
 import { db } from './firebase';
 import { collection, getDocs, doc, setDoc, query, where, getDoc, collectionGroup, limit, onSnapshot, orderBy } from 'firebase/firestore';
-import type { Restaurant, MenuItem, Order, BannerConfig } from '@/lib/types';
+import type { Restaurant, MenuItem, Order, BannerConfig, Cuisine } from '@/lib/types';
 import { MOCK_RESTAURANTS } from '@/lib/seed';
 
 export async function getRestaurants(): Promise<Restaurant[]> {
   const q = query(collection(db, 'restaurants'), where('status', '==', 'approved'));
+  
+  const cuisinesConfigDoc = await getDoc(doc(db, 'app_config', 'cuisines'));
+  const cuisinesConfig = cuisinesConfigDoc.exists() ? cuisinesConfigDoc.data() : {};
+
+  const processRestaurants = (snapshot: any): Restaurant[] => {
+    return snapshot.docs.map((doc: any) => {
+        const restaurantData = doc.data() as Restaurant;
+        const cuisineImage = cuisinesConfig[restaurantData.cuisine]?.imageUrl || undefined;
+        return { 
+            ...restaurantData, 
+            id: doc.id,
+            categoryImageUrl: cuisineImage,
+        } as Restaurant
+    });
+  }
+
   const querySnapshot = await getDocs(q);
 
   if (querySnapshot.empty) {
-    // Check if there are any restaurants at all, to avoid reseeding
     const allRestaurantsSnapshot = await getDocs(collection(db, 'restaurants'));
     if (allRestaurantsSnapshot.empty) {
         await seedRestaurants();
         const seededQuerySnapshot = await getDocs(q);
-        return seededQuerySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Restaurant));
+        return processRestaurants(seededQuerySnapshot);
     }
     return [];
   }
-  return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Restaurant));
+  
+  return processRestaurants(querySnapshot);
 }
 
 export async function getRestaurantById(id: string): Promise<Restaurant | null> {
