@@ -57,34 +57,29 @@ function Routing({ from, to }: { from: [number, number], to: [number, number] })
     useEffect(() => {
         if (!map) return;
         
+        // Remove the old routing control if it exists
+        if (routingControlRef.current) {
+            map.removeControl(routingControlRef.current);
+            routingControlRef.current = null;
+        }
+
         // @ts-ignore - L.Routing is from the leaflet-routing-machine plugin
-        if (!routingControlRef.current) {
-            // @ts-ignore
-            routingControlRef.current = L.Routing.control({
-                waypoints: [
-                    L.latLng(from[0], from[1]),
-                    L.latLng(to[0], to[1])
-                ],
-                routeWhileDragging: false,
-                show: false,
-                addWaypoints: false,
-                draggableWaypoints: false,
-                fitSelectedRoutes: true,
-                createMarker: () => null, // Use our own markers outside this control
-                 lineOptions: {
-                    styles: [{ color: '#FF6B6B', opacity: 0.8, weight: 6 }]
-                }
-            }).addTo(map);
-        } else {
-             // @ts-ignore
-            routingControlRef.current.setWaypoints([
+        routingControlRef.current = L.Routing.control({
+            waypoints: [
                 L.latLng(from[0], from[1]),
                 L.latLng(to[0], to[1])
-            ]);
-        }
-    }, [map, from, to]);
-    
-    useEffect(() => {
+            ],
+            routeWhileDragging: false,
+            show: false,
+            addWaypoints: false,
+            draggableWaypoints: false,
+            fitSelectedRoutes: true,
+            createMarker: () => null, // Use our own markers outside this control
+             lineOptions: {
+                styles: [{ color: '#FF6B6B', opacity: 0.8, weight: 6 }]
+            }
+        }).addTo(map);
+
         const control = routingControlRef.current;
         return () => {
              if (control) {
@@ -92,7 +87,8 @@ function Routing({ from, to }: { from: [number, number], to: [number, number] })
                 map.removeControl(control);
              }
         }
-    }, [map])
+    }, [map, from, to]);
+    
 
     return null;
 }
