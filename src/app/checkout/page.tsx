@@ -85,7 +85,16 @@ export default function CheckoutPage() {
     }, [location, locationError, isUsingCurrentLocation, toast]);
     
     const deliveryFee = restaurant?.deliveryCharge || 0;
-    const finalTotal = totalPrice + deliveryFee;
+    const subtotal = totalPrice;
+    
+    // GST Calculation
+    const gstRate = 0.05; // 5% total (2.5% CGST + 2.5% SGST)
+    const gstEnabled = restaurant?.gstEnabled || false;
+    const gstAmount = gstEnabled ? subtotal * gstRate : 0;
+    const cgst = gstAmount / 2;
+    const sgst = gstAmount / 2;
+    
+    const finalTotal = subtotal + deliveryFee + gstAmount;
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -383,12 +392,24 @@ export default function CheckoutPage() {
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between">
                                         <span>Subtotal</span>
-                                        <span>${totalPrice.toFixed(2)}</span>
+                                        <span>${subtotal.toFixed(2)}</span>
                                     </div>
                                      <div className="flex justify-between">
                                         <span>Delivery Fee</span>
                                         <span>${deliveryFee.toFixed(2)}</span>
                                     </div>
+                                    {gstEnabled && (
+                                        <>
+                                            <div className="flex justify-between text-muted-foreground">
+                                                <span>CGST (2.5%)</span>
+                                                <span>${cgst.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between text-muted-foreground">
+                                                <span>SGST (2.5%)</span>
+                                                <span>${sgst.toFixed(2)}</span>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                                 <Separator />
                                 <div className="flex justify-between font-bold text-lg">
@@ -403,5 +424,3 @@ export default function CheckoutPage() {
         </div>
     );
 }
-
-    

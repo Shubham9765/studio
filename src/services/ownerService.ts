@@ -54,6 +54,7 @@ export async function createRestaurant(ownerId: string, data: z.infer<typeof Res
         },
         deliveryBoys: [],
         reviewCount: 0,
+        gstEnabled: false,
     };
 
     const docRef = await addDoc(collection(db, "restaurants"), {
@@ -189,7 +190,7 @@ export async function assignDeliveryBoy(orderId: string, deliveryBoy: {id: strin
         const orderSnap = await getDoc(orderRef);
         if (orderSnap.exists()) {
             const orderData = orderSnap.data() as Order;
-            const message = `Your order #${orderId.substring(0, 6)} is out for delivery with ${deliveryBoy.name}!`;
+            const message = `Your order #${orderId.substring(0, 6)} is out for delivery with ${deliveryBoy.name}! Your OTP is ${deliveryOtp}.`;
             console.log(`(Notification Stub) To: ${orderData.customerId}, Message: ${message}`);
         }
     } catch (error) {

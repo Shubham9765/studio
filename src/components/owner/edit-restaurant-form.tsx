@@ -35,6 +35,9 @@ export const EditRestaurantSchema = z.object({
   upiId: z.string().optional(),
   upiQrCodeUrl: z.string().url({ message: "Please enter a valid URL for the QR code." }).optional().or(z.literal('')),
   address: z.string().min(10, "Please enter a full address.").optional().or(z.literal('')),
+  fssaiLicense: z.string().optional(),
+  gstEnabled: z.boolean().default(false),
+  gstin: z.string().optional(),
 });
 
 interface EditRestaurantFormProps {
@@ -68,10 +71,14 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
       upiId: restaurant?.paymentMethods?.upiId || '',
       upiQrCodeUrl: restaurant?.paymentMethods?.upiQrCodeUrl || '',
       address: restaurant?.address || '',
+      fssaiLicense: restaurant?.fssaiLicense || '',
+      gstEnabled: restaurant?.gstEnabled || false,
+      gstin: restaurant?.gstin || '',
     },
   });
 
   const paymentMethodOption = form.watch('paymentMethodOption');
+  const gstEnabled = form.watch('gstEnabled');
   
   useEffect(() => {
     if (restaurant && isOpen) {
@@ -86,6 +93,9 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
         upiId: restaurant.paymentMethods?.upiId || '',
         upiQrCodeUrl: restaurant.paymentMethods?.upiQrCodeUrl || '',
         address: restaurant.address || '',
+        fssaiLicense: restaurant.fssaiLicense || '',
+        gstEnabled: restaurant.gstEnabled || false,
+        gstin: restaurant.gstin || '',
       });
     }
   }, [restaurant, isOpen, form]);
@@ -275,6 +285,57 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
                   </div>
               )}
 
+              <FormField
+                control={form.control}
+                name="fssaiLicense"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>FSSAI License Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="14-digit FSSAI license number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="space-y-4 rounded-md border p-4">
+                <FormField
+                  control={form.control}
+                  name="gstEnabled"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between">
+                      <div className="space-y-0.5">
+                        <FormLabel>Enable GST</FormLabel>
+                        <FormDescription>
+                          Apply 2.5% CGST and 2.5% SGST to orders.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                {gstEnabled && (
+                  <FormField
+                    control={form.control}
+                    name="gstin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>GSTIN</FormLabel>
+                        <FormControl>
+                          <Input placeholder="15-digit GST Identification Number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
 
               <FormField
                 control={form.control}

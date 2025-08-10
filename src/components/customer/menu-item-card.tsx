@@ -15,6 +15,15 @@ interface MenuItemCardProps {
     restaurantId: string;
 }
 
+function VegNonVegIcon({ type }: { type: 'veg' | 'non-veg' }) {
+    const isVeg = type === 'veg';
+    return (
+        <div className={cn("w-4 h-4 rounded-sm border flex items-center justify-center", isVeg ? "border-green-600" : "border-red-600")}>
+            <div className={cn("w-2 h-2 rounded-full", isVeg ? "bg-green-600" : "bg-red-600")}></div>
+        </div>
+    )
+}
+
 export function MenuItemCard({ item, restaurantId }: MenuItemCardProps) {
     const { addItem } = useCart();
     const { toast } = useToast();
@@ -62,7 +71,10 @@ export function MenuItemCard({ item, restaurantId }: MenuItemCardProps) {
                 </div>
             )}
             <div className="p-3 flex-grow flex flex-col">
-                <h3 className="font-semibold text-sm leading-tight flex-grow">{item.name}</h3>
+                 <div className="flex items-center gap-2">
+                    <VegNonVegIcon type={item.type} />
+                    <h3 className="font-semibold text-sm leading-tight flex-grow">{item.name}</h3>
+                </div>
                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2 h-8">{item.description}</p>
             </div>
              <div className="flex justify-between items-center px-3 pb-3 mt-auto">

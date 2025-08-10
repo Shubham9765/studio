@@ -21,6 +21,7 @@ import { Textarea } from '../ui/textarea';
 import type { MenuItem } from '@/lib/types';
 import { addMenuItem, updateMenuItem } from '@/services/ownerService';
 import { Switch } from '../ui/switch';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 export const MenuItemSchema = z.object({
   name: z.string().min(3, { message: 'Item name must be at least 3 characters.' }),
@@ -29,6 +30,7 @@ export const MenuItemSchema = z.object({
   category: z.string().min(3, { message: 'Category must be at least 3 characters.' }),
   imageUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
   isAvailable: z.boolean().default(true),
+  type: z.enum(['veg', 'non-veg']).default('veg'),
 });
 
 interface MenuItemFormProps {
@@ -53,6 +55,7 @@ export function MenuItemForm({ isOpen, onOpenChange, restaurantId, menuItem, onF
       category: '',
       imageUrl: '',
       isAvailable: true,
+      type: 'veg',
     },
   });
 
@@ -66,6 +69,7 @@ export function MenuItemForm({ isOpen, onOpenChange, restaurantId, menuItem, onF
                 category: menuItem.category,
                 imageUrl: menuItem.imageUrl || '',
                 isAvailable: menuItem.isAvailable,
+                type: menuItem.type || 'veg',
             });
         } else {
             form.reset({
@@ -75,6 +79,7 @@ export function MenuItemForm({ isOpen, onOpenChange, restaurantId, menuItem, onF
                 category: '',
                 imageUrl: '',
                 isAvailable: true,
+                type: 'veg',
             });
         }
     }
@@ -182,6 +187,46 @@ export function MenuItemForm({ isOpen, onOpenChange, restaurantId, menuItem, onF
                   <FormMessage />
                 </FormItem>
               )}
+            />
+             <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                    <FormItem className="space-y-3 pt-2">
+                    <FormLabel>Dietary Type</FormLabel>
+                    <FormControl>
+                        <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex items-center space-x-4"
+                        >
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                            <RadioGroupItem value="veg" />
+                            </FormControl>
+                            <FormLabel className="font-normal flex items-center gap-2">
+                                <span className="w-4 h-4 rounded-sm border border-green-600 bg-white flex items-center justify-center">
+                                    <span className="w-2 h-2 rounded-full bg-green-600"></span>
+                                </span>
+                                Veg
+                            </FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                            <RadioGroupItem value="non-veg" />
+                            </FormControl>
+                            <FormLabel className="font-normal flex items-center gap-2">
+                                 <span className="w-4 h-4 rounded-sm border border-red-600 bg-white flex items-center justify-center">
+                                    <span className="w-2 h-2 rounded-full bg-red-600"></span>
+                                </span>
+                                Non-Veg
+                            </FormLabel>
+                        </FormItem>
+                        </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
             />
             <FormField
               control={form.control}

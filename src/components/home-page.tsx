@@ -30,7 +30,7 @@ function LoadingSkeleton() {
     <div className="space-y-12">
       <div>
         <Skeleton className="h-8 w-1/4 mb-6" />
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {Array.from({ length: 4 }).map((_, i) => (
              <div key={i} className="flex flex-col space-y-3">
                 <Skeleton className="h-[220px] w-full rounded-xl" />
@@ -62,11 +62,11 @@ function LoadingSkeleton() {
 
 function CategoryItem({ name, imageUrl }: { name: string, imageUrl?: string }) {
   return (
-    <Link href={`/search?q=${name}`} className="flex flex-col items-center gap-2 group">
+    <Link href={`/search?q=${name}`} className="flex flex-col items-center gap-2 group flex-shrink-0 w-24">
       <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-primary transition-all">
         <Image src={imageUrl || 'https://placehold.co/100x100.png'} alt={name} width={80} height={80} className="object-cover w-full h-full" />
       </div>
-      <span className="font-semibold text-sm">{name}</span>
+      <span className="font-semibold text-sm text-center truncate w-full">{name}</span>
     </Link>
   )
 }
@@ -222,8 +222,8 @@ export function HomePage() {
             <div className="space-y-12">
               {categories.length > 0 && (
                   <section>
-                      <h2 className="text-3xl font-bold font-headline mb-6">Categories</h2>
-                      <div className="flex gap-6 overflow-x-auto pb-4">
+                      <h2 className="text-3xl font-bold font-headline mb-6 text-center">What's on your mind?</h2>
+                      <div className="flex gap-6 justify-center flex-wrap">
                           {categories.map(cat => <CategoryItem key={cat.name} name={cat.name} imageUrl={cat.imageUrl} />)}
                       </div>
                   </section>
@@ -233,9 +233,9 @@ export function HomePage() {
                   <section>
                       <h2 className="text-3xl font-bold font-headline mb-6">Top Rated Dishes</h2>
                       <Carousel opts={{ align: "start", loop: true, }} className="w-full">
-                          <CarouselContent>
+                          <CarouselContent className="-ml-2">
                               {topMenuItems.map((item) => (
-                              <CarouselItem key={item.id} className="md:basis-1/2 lg:basis-1/3">
+                              <CarouselItem key={item.id} className="pl-2 basis-full md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                                   <MenuItemSearchCard item={item} />
                               </CarouselItem>
                               ))}

@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,31 +12,11 @@ interface RestaurantCardProps {
 }
 
 export function RestaurantCard({ restaurant }: RestaurantCardProps) {
-  const renderStars = () => {
-    const stars = [];
-    const fullStars = Math.floor(restaurant.rating);
-    const hasHalfStar = restaurant.rating % 1 !== 0;
-
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(<Star key={`full-${i}`} className="w-4 h-4 fill-amber-400 text-amber-400" />);
-    }
-
-    if (hasHalfStar) {
-        stars.push(<Star key="half" className="w-4 h-4 fill-amber-200 text-amber-400" />);
-    }
-
-    const emptyStars = 5 - Math.ceil(restaurant.rating);
-    for (let i = 0; i < emptyStars; i++) {
-        stars.push(<Star key={`empty-${i}`} className="w-4 h-4 text-gray-300 fill-gray-200" />);
-    }
-
-    return stars;
-  };
-
+  
   const cardContent = (
      <Card className={cn(
-        "overflow-hidden transition-all duration-300 ease-in-out group border-0 shadow-sm w-full h-full flex flex-col",
-        restaurant.isOpen ? "hover:shadow-xl hover:-translate-y-1" : "cursor-not-allowed"
+        "overflow-hidden transition-all duration-300 ease-in-out group border shadow-sm w-full h-full flex flex-col rounded-xl",
+        restaurant.isOpen ? "hover:shadow-lg hover:-translate-y-1" : "cursor-not-allowed"
     )}>
       <div className="relative">
         <Image
@@ -43,33 +24,34 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
           alt={restaurant.name}
           width={600}
           height={400}
-          className={cn("object-cover w-full h-56", !restaurant.isOpen && "grayscale")}
+          className={cn("object-cover w-full h-40", !restaurant.isOpen && "grayscale")}
           data-ai-hint={restaurant.dataAiHint}
         />
          <div className={cn(
-             "absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent",
-             restaurant.isOpen && "group-hover:from-black/60 transition-all duration-300"
+             "absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent",
+             restaurant.isOpen && "group-hover:from-black/70 transition-all duration-300"
          )} />
          {!restaurant.isOpen && (
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                <span className="text-white font-bold text-xl tracking-wider">CLOSED</span>
+                <span className="text-white font-bold text-lg tracking-wider">CLOSED</span>
             </div>
          )}
-         <Badge variant="destructive" className="absolute top-3 right-3">{restaurant.deliveryTime}</Badge>
       </div>
-      <CardHeader className="p-4">
-        <CardTitle className="font-headline text-xl font-bold truncate">{restaurant.name}</CardTitle>
-        <p className="text-sm text-muted-foreground">{restaurant.cuisine}</p>
-      </CardHeader>
-      <CardContent className="p-4 pt-0 flex-grow flex flex-col justify-end">
-        <div className="flex justify-between items-center text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            {renderStars()}
-            <span className="font-semibold text-foreground ml-1">{restaurant.rating.toFixed(1)}</span>
-          </div>
-           <div className="text-sm font-medium">
-             {restaurant.deliveryCharge > 0 ? `$${restaurant.deliveryCharge.toFixed(2)}` : 'Free'} Delivery
-           </div>
+      <CardContent className="p-3 flex-grow flex flex-col">
+        <div className="flex justify-between items-start">
+            <h3 className="font-bold text-lg leading-tight truncate flex-grow pr-2">{restaurant.name}</h3>
+            <div className="flex-shrink-0 flex items-center gap-1 bg-green-600 text-white rounded-md px-2 py-0.5 text-sm font-bold">
+                 <span>{restaurant.rating.toFixed(1)}</span>
+                 <Star className="w-3 h-3 fill-white" />
+            </div>
+        </div>
+        <p className="text-sm text-muted-foreground truncate">{restaurant.cuisine}</p>
+        <div className="flex justify-between items-center text-xs text-muted-foreground mt-auto pt-2">
+            <div className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                <span>{restaurant.deliveryTime}</span>
+            </div>
+            <span>{restaurant.deliveryCharge > 0 ? `$${restaurant.deliveryCharge.toFixed(2)} delivery` : 'Free Delivery'}</span>
         </div>
       </CardContent>
     </Card>
@@ -80,7 +62,7 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
   }
 
   return (
-     <Link href={`/restaurant/${restaurant.id}`} className="h-full">
+     <Link href={`/restaurant/${restaurant.id}`} className="h-full block">
         {cardContent}
     </Link>
   );

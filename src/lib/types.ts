@@ -32,6 +32,9 @@ export interface Restaurant {
   address?: string;
   latitude?: number;
   longitude?: number;
+  fssaiLicense?: string;
+  gstEnabled?: boolean;
+  gstin?: string;
 }
 
 export interface MenuItem {
@@ -44,6 +47,7 @@ export interface MenuItem {
   imageUrl?: string;
   isAvailable: boolean;
   rating?: number;
+  type: 'veg' | 'non-veg';
 }
 
 export interface Order {
