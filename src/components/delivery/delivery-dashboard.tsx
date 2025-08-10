@@ -245,6 +245,18 @@ export default function DeliveryDashboard() {
                             <p className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" /> {order.customerName}</p>
                             <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {order.customerPhone}</p>
                             <p className="flex items-start gap-2"><MapPin className="h-4 w-4 text-muted-foreground mt-1" /> {order.deliveryAddress}</p>
+                            {order.customerAddress?.latitude && order.customerAddress?.longitude && (
+                                <Button asChild variant="outline" size="sm" className="w-full mt-2">
+                                <a 
+                                    href={`https://www.google.com/maps/dir/?api=1&destination=${order.customerAddress.latitude},${order.customerAddress.longitude}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                >
+                                    <MapPin className="mr-2 h-4 w-4" />
+                                    Get Directions
+                                </a>
+                                </Button>
+                            )}
                         </div>
                     </div>
                     <Separator/>
