@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, ChefHat, Utensils, Search as SearchIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useLocation } from '@/hooks/use-location';
 
 function SearchResults() {
     const router = useRouter();
@@ -19,6 +20,7 @@ function SearchResults() {
     const searchParams = useSearchParams();
     const query = searchParams.get('q') || '';
     
+    const { location: userLocation } = useLocation();
     const [searchTerm, setSearchTerm] = useState(query);
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
     const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -41,7 +43,7 @@ function SearchResults() {
             setLoading(true);
             setError(null);
             try {
-                const { restaurants, menuItems } = await searchRestaurantsAndMenuItems(query);
+                const { restaurants, menuItems } = await searchRestaurantsAndMenuItems(query, userLocation || undefined);
                 setRestaurants(restaurants);
                 setMenuItems(menuItems);
             } catch (err: any) {
@@ -52,7 +54,7 @@ function SearchResults() {
         };
 
         performSearch();
-    }, [query]);
+    }, [query, userLocation]);
 
     useEffect(() => {
         // Debounce search term changes to update URL
@@ -125,7 +127,7 @@ function SearchResults() {
             ) : (!restaurants.length && !uniqueMenuItems.length && query) ? (
                  <div className="text-center py-16">
                     <h2 className="text-2xl font-bold">No results found for "{query}"</h2>
-                    <p className="text-muted-foreground mt-2">Try searching for something else.</p>
+                    <p className="text-muted-foreground mt-2">Try searching for something else in your area.</p>
                 </div>
             ) : (
                 <>

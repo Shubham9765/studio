@@ -39,6 +39,11 @@ export async function createRestaurant(ownerId: string, data: z.infer<typeof Res
         throw new Error('This owner already has a restaurant and cannot create another.');
     }
 
+    let coords = null;
+    if (data.address) {
+        coords = await getCoordinatesForAddress(data.address);
+    }
+
     const newRestaurant: Omit<Restaurant, 'id'> = {
         ...data,
         ownerId,
@@ -55,6 +60,7 @@ export async function createRestaurant(ownerId: string, data: z.infer<typeof Res
         deliveryBoys: [],
         reviewCount: 0,
         gstEnabled: false,
+        ...(coords && { latitude: coords.latitude, longitude: coords.longitude }),
     };
 
     const docRef = await addDoc(collection(db, "restaurants"), {

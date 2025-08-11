@@ -13,11 +13,13 @@ import { useAuth } from '@/hooks/use-auth';
 import { createRestaurant } from '@/services/ownerService';
 import { useState } from 'react';
 import { Utensils } from 'lucide-react';
+import { Textarea } from '../ui/textarea';
 
 export const RestaurantSchema = z.object({
   name: z.string().min(3, { message: 'Restaurant name must be at least 3 characters.' }),
   cuisine: z.string().min(3, { message: 'Cuisine type must be at least 3 characters.' }),
   deliveryTime: z.string().min(1, { message: 'Please provide an estimated delivery time (e.g., 30-45 min).' }),
+  address: z.string().min(10, "Please enter a full address for geocoding."),
 });
 
 interface RestaurantRegistrationFormProps {
@@ -35,6 +37,7 @@ export function RestaurantRegistrationForm({ onRestaurantCreated }: RestaurantRe
       name: '',
       cuisine: '',
       deliveryTime: '',
+      address: '',
     },
   });
 
@@ -115,6 +118,19 @@ export function RestaurantRegistrationForm({ onRestaurantCreated }: RestaurantRe
                 </FormItem>
               )}
             />
+             <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Address</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="123 Main St, Anytown, USA. This will be used to show your location to nearby customers." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Submitting...' : 'Submit for Approval'}
             </Button>

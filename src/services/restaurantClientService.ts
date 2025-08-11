@@ -6,6 +6,26 @@ import { collection, getDocs, doc, setDoc, query, where, getDoc, collectionGroup
 import type { Restaurant, MenuItem, Order, BannerConfig, Cuisine } from '@/lib/types';
 import { MOCK_RESTAURANTS } from '@/lib/seed';
 
+// Helper function to calculate distance between two lat/lng points in kilometers
+function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2-lat1);
+  const dLon = deg2rad(lon2-lon1); 
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+    ; 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  const d = R * c; // Distance in km
+  return d;
+}
+
+function deg2rad(deg: number) {
+  return deg * (Math.PI/180)
+}
+
+
 export async function getRestaurants(): Promise<Restaurant[]> {
   const q = query(collection(db, 'restaurants'), where('status', '==', 'approved'));
   
@@ -114,21 +134,41 @@ export async function getOrdersByCustomerId(customerId: string): Promise<Order[]
     return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
 }
 
-export async function searchRestaurantsAndMenuItems(searchTerm: string): Promise<{ restaurants: Restaurant[], menuItems: MenuItem[] }> {
+export async function searchRestaurantsAndMenuItems(
+    searchTerm: string, 
+    userLocation?: { latitude: number; longitude: number }
+): Promise<{ restaurants: Restaurant[], menuItems: MenuItem[] }> {
     if (!searchTerm) {
         return { restaurants: [], menuItems: [] };
     }
     const lowercasedTerm = searchTerm.toLowerCase();
+    const searchRadiusKm = 15; // 15km search radius
 
     // Fetch all approved restaurants
-    const allRestaurants = await getRestaurants();
+    let allRestaurants = await getRestaurants();
+
+    // Filter restaurants by distance if user location is available
+    if (userLocation) {
+        allRestaurants = allRestaurants.filter(restaurant => {
+            if (restaurant.latitude && restaurant.longitude) {
+                const distance = getDistanceFromLatLonInKm(
+                    userLocation.latitude,
+                    userLocation.longitude,
+                    restaurant.latitude,
+                    restaurant.longitude
+                );
+                return distance <= searchRadiusKm;
+            }
+            return false; // Exclude restaurants without location data if user location is provided
+        });
+    }
 
     const matchingRestaurants = allRestaurants.filter(restaurant =>
         restaurant.name.toLowerCase().includes(lowercasedTerm) ||
         restaurant.cuisine.toLowerCase().includes(lowercasedTerm)
     );
     
-    // Fetch all menu items from all restaurants
+    // Fetch all menu items from the now location-filtered restaurants
     const allMenuItems = (await Promise.all(
         allRestaurants.map(r => getMenuItemsForRestaurant(r.id))
     )).flat();
