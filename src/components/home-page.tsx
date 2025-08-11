@@ -268,7 +268,7 @@ export function HomePage() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container py-6 sm:py-8">
-        <div className={cn("grid lg:grid-cols-4 gap-8", isCartVisible ? "lg:grid-cols-4" : "lg:grid-cols-1")}>
+        <div className={cn("grid lg:gap-8", isCartVisible ? "lg:grid-cols-4" : "lg:grid-cols-1")}>
           <div className={cn(isCartVisible ? "lg:col-span-3" : "lg:col-span-4")}>
             {mainContent}
           </div>
