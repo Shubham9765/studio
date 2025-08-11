@@ -4,14 +4,17 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Header } from '@/components/header';
-import { RestaurantCard } from '@/components/restaurant-card';
-import { MenuItemSearchCard } from '@/components/customer/menu-item-search-card';
+import { SearchResultItem } from '@/components/search-result-item';
 import { searchRestaurantsAndMenuItems } from '@/services/restaurantClientService';
 import type { Restaurant, MenuItem } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, ChefHat, Utensils, Search as SearchIcon } from 'lucide-react';
+import { AlertTriangle, Search as SearchIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+
+type SearchResult = 
+    | { type: 'restaurant'; data: Restaurant }
+    | { type: 'menuItem'; data: MenuItem };
 
 function SearchResults() {
     const router = useRouter();
@@ -20,13 +23,11 @@ function SearchResults() {
     const query = searchParams.get('q') || '';
     
     const [searchTerm, setSearchTerm] = useState(query);
-    const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-    const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [results, setResults] = useState<SearchResult[]>([]);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Update search term from URL query on initial load or navigation
         setSearchTerm(query);
     }, [query]);
 
@@ -34,16 +35,23 @@ function SearchResults() {
         const performSearch = async () => {
             if (!query) {
                 setLoading(false);
-                setRestaurants([]);
-                setMenuItems([]);
+                setResults([]);
                 return;
             }
             setLoading(true);
             setError(null);
             try {
                 const { restaurants, menuItems } = await searchRestaurantsAndMenuItems(query);
-                setRestaurants(restaurants);
-                setMenuItems(menuItems);
+                
+                const restaurantResults: SearchResult[] = restaurants.map(r => ({ type: 'restaurant', data: r }));
+                
+                // Filter out menu items whose restaurant is already in the search results
+                const displayedRestaurantIds = new Set(restaurants.map(r => r.id));
+                const uniqueMenuItems = menuItems.filter(item => !displayedRestaurantIds.has(item.restaurantId));
+                const menuItemResults: SearchResult[] = uniqueMenuItems.map(m => ({ type: 'menuItem', data: m }));
+
+                setResults([...restaurantResults, ...menuItemResults]);
+
             } catch (err: any) {
                 setError('Failed to perform search. Please try again.');
             } finally {
@@ -66,7 +74,7 @@ function SearchResults() {
                 }
                 router.replace(`${pathname}?${newParams.toString()}`);
             }
-        }, 300); // 300ms debounce delay
+        }, 300); // 300ms debounce
 
         return () => {
             clearTimeout(handler);
@@ -82,13 +90,9 @@ function SearchResults() {
             </Alert>
         );
     }
-    
-    // Filter out menu items whose restaurant is already in the search results
-    const displayedRestaurantIds = new Set(restaurants.map(r => r.id));
-    const uniqueMenuItems = menuItems.filter(item => !displayedRestaurantIds.has(item.restaurantId));
 
     return (
-        <div className="space-y-12">
+        <div className="space-y-6">
             <div className="relative">
                 <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input 
@@ -96,66 +100,33 @@ function SearchResults() {
                     className="pl-12 text-base h-12 rounded-full w-full"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    autoFocus
                 />
             </div>
             
              {loading ? (
-                <div className="space-y-12">
-                    <div>
-                        <Skeleton className="h-8 w-1/4 mb-6" />
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {Array.from({ length: 3 }).map((_, i) => (
-                                <div key={i} className="flex flex-col space-y-3">
-                                    <Skeleton className="h-[220px] w-full rounded-xl" />
-                                    <div className="space-y-2 p-2">
-                                        <Skeleton className="h-6 w-3/4" />
-                                        <Skeleton className="h-4 w-1/2" />
-                                    </div>
-                                </div>
-                            ))}
+                <div className="space-y-4">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="flex items-center space-x-4">
+                            <Skeleton className="h-16 w-16 rounded-lg" />
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-48" />
+                                <Skeleton className="h-4 w-32" />
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <Skeleton className="h-8 w-1/4 mb-6" />
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
-                        </div>
-                    </div>
+                    ))}
                 </div>
-            ) : (!restaurants.length && !uniqueMenuItems.length) ? (
+            ) : (!results.length && query) ? (
                  <div className="text-center py-16">
                     <h2 className="text-2xl font-bold">No results found for "{query}"</h2>
                     <p className="text-muted-foreground mt-2">Try searching for something else.</p>
                 </div>
             ) : (
-                <>
-                    {restaurants.length > 0 && (
-                        <section>
-                            <div className="flex items-center gap-3 mb-6">
-                                <ChefHat className="h-8 w-8 text-primary" />
-                                <h2 className="text-3xl font-bold font-headline">Restaurants</h2>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                                {restaurants.map(restaurant => (
-                                    <RestaurantCard key={restaurant.id} restaurant={restaurant} />
-                                ))}
-                            </div>
-                        </section>
-                    )}
-                    {uniqueMenuItems.length > 0 && (
-                        <section>
-                            <div className="flex items-center gap-3 mb-6">
-                                <Utensils className="h-8 w-8 text-primary" />
-                                <h2 className="text-3xl font-bold font-headline">Dishes</h2>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {uniqueMenuItems.map(item => (
-                                    <MenuItemSearchCard key={item.id} item={item} />
-                                ))}
-                            </div>
-                        </section>
-                    )}
-                </>
+                <div className="space-y-2">
+                    {results.map((result) => (
+                       <SearchResultItem key={`${result.type}-${result.data.id}`} result={result} />
+                    ))}
+                </div>
             )}
         </div>
     );
@@ -165,7 +136,7 @@ export default function SearchPage() {
     return (
         <div className="min-h-screen bg-background">
             <Header />
-            <main className="container py-8">
+            <main className="container py-8 max-w-2xl mx-auto">
                  <Suspense fallback={<Skeleton className="h-screen w-full" />}>
                     <SearchResults />
                 </Suspense>
