@@ -2,7 +2,7 @@
 'use client';
 
 import type { Order, Restaurant } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
@@ -17,13 +17,14 @@ import {
   Bike,
   ChefHat,
   Package,
-  MessageSquareQuote,
-  X,
-  ChevronDown
+  ChevronDown,
+  CheckCircle2,
+  PhoneCall
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 interface OrderCardProps {
   order: Order;
@@ -35,15 +36,21 @@ interface OrderCardProps {
   onPrintKOT: (order: Order) => void;
 }
 
-const statusActions: {
-  status: Order['status'];
-  label: string;
-  nextStatus: Order['status'];
-  icon: React.ElementType;
-}[] = [
-  { status: 'pending', label: 'Accept', nextStatus: 'accepted', icon: Package },
-  { status: 'accepted', label: 'Mark as Preparing', nextStatus: 'preparing', icon: ChefHat },
-  { status: 'preparing', label: 'Assign for Delivery', nextStatus: 'out-for-delivery', icon: Bike },
+function VegNonVegIcon({ type }: { type: 'veg' | 'non-veg' }) {
+    const isVeg = type === 'veg';
+    return (
+        <div className={cn("w-4 h-4 rounded-sm border flex items-center justify-center mr-2", isVeg ? "border-green-600" : "border-red-600")}>
+            <div className={cn("w-2 h-2 rounded-full", isVeg ? "bg-green-600" : "bg-red-600")}></div>
+        </div>
+    )
+}
+
+const statusTimeline: { status: Order['status']; label: string }[] = [
+  { status: 'pending', label: 'Placed' },
+  { status: 'accepted', label: 'Accepted' },
+  { status: 'preparing', label: 'Preparing' },
+  { status: 'out-for-delivery', label: 'Out for Delivery' },
+  { status: 'delivered', label: 'Delivered' },
 ];
 
 export function OrderCard({
@@ -55,131 +62,140 @@ export function OrderCard({
   onMarkAsPaid,
   onPrintKOT,
 }: OrderCardProps) {
-
-  const handleNextAction = () => {
-    const currentAction = statusActions.find(a => a.status === order.status);
-    if (currentAction && currentAction.nextStatus !== 'out-for-delivery') {
-      onStatusChange(order.id, currentAction.nextStatus);
+  
+  const getNextAction = () => {
+    switch (order.status) {
+        case 'pending':
+            return {
+                label: `Accept Order (${'10:00'})`,
+                action: () => onStatusChange(order.id, 'accepted'),
+                disabled: isUpdating,
+                icon: Package
+            }
+        case 'accepted':
+        case 'preparing':
+             return {
+                label: `Food is Ready (${'12:24'})`,
+                action: () => onStatusChange(order.id, 'out-for-delivery'),
+                disabled: isUpdating || !restaurant.deliveryBoys || restaurant.deliveryBoys.length === 0,
+                icon: ChefHat
+            }
+        default:
+            return null;
     }
-  };
+  }
 
-  const renderPaymentInfo = () => (
-    <div className="text-xs">
-      <div className="flex items-center gap-2 capitalize mb-1">
-        {order.paymentMethod === 'cash' ? <CircleDollarSign className="h-4 w-4" /> : <BadgeCent className="h-4 w-4" />}
-        <span>{order.paymentMethod}</span>
-        <Badge variant={order.paymentStatus === 'completed' ? 'default' : 'secondary'} className="h-5">{order.paymentStatus}</Badge>
-      </div>
-      {order.paymentMethod === 'upi' && order.paymentStatus === 'pending' && (
-        <Button size="xs" variant="outline" className="h-6 mt-1" onClick={() => onMarkAsPaid(order.id)} disabled={isUpdating}>
-          <Check className="mr-1 h-3 w-3" /> Mark as Paid
-        </Button>
-      )}
-    </div>
-  );
+  const PrimaryAction = () => {
+      const action = getNextAction();
+      if(!action) return null;
 
-  const renderPrimaryAction = () => {
-    const currentAction = statusActions.find(a => a.status === order.status);
-    if (!currentAction) return null;
-
-    if (currentAction.nextStatus === 'out-for-delivery') {
+      if (order.status === 'preparing' || order.status === 'accepted') {
         if (!restaurant.deliveryBoys || restaurant.deliveryBoys.length === 0) {
             return <p className="text-xs text-destructive text-center p-2 bg-destructive/10 rounded-md">Add delivery staff to assign orders.</p>
         }
-      return (
-        <Select onValueChange={(val) => onAssignDelivery(order.id, val)} disabled={isUpdating}>
-          <SelectTrigger className="h-9">
-            <SelectValue placeholder="Assign Delivery" />
-          </SelectTrigger>
-          <SelectContent>
-            {restaurant.deliveryBoys?.map(boy => (
-              <SelectItem key={boy.id} value={boy.id}>{boy.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      );
-    }
-
-    return (
-      <Button className="w-full h-9" onClick={handleNextAction} disabled={isUpdating}>
-        <currentAction.icon className="mr-2 h-4 w-4" /> {currentAction.label}
-      </Button>
-    );
-  };
-  
-  const popoverContent = (
-    <div className="space-y-3">
-        <div>
-            <h4 className="font-semibold text-xs mb-1">Customer Details</h4>
-            <div className="text-xs text-muted-foreground space-y-1">
-                <p className="flex items-center gap-2"><User className="h-3 w-3" /> {order.customerName}</p>
-                <p className="flex items-center gap-2"><Phone className="h-3 w-3" /> {order.customerPhone}</p>
-            </div>
-        </div>
-        <Separator />
-         <div>
-            <h4 className="font-semibold text-xs mb-1">Order Summary</h4>
-            <ul className="list-disc pl-4 text-xs text-muted-foreground">
-                {order.items.map(item => (
-                    <li key={item.id}>{item.name} x {item.quantity}</li>
+        return (
+            <Select onValueChange={(val) => onAssignDelivery(order.id, val)} disabled={isUpdating}>
+              <SelectTrigger>
+                <SelectValue placeholder="Assign Delivery Person" />
+              </SelectTrigger>
+              <SelectContent>
+                {restaurant.deliveryBoys?.map(boy => (
+                  <SelectItem key={boy.id} value={boy.id}>{boy.name}</SelectItem>
                 ))}
-            </ul>
-        </div>
-        {order.notes && (
-             <>
-                <Separator />
-                <div>
-                    <h4 className="font-semibold text-xs mb-1">Special Instructions</h4>
-                    <p className="text-xs text-muted-foreground bg-background p-2 rounded-md">{order.notes}</p>
-                </div>
-            </>
-        )}
-    </div>
-  );
+              </SelectContent>
+            </Select>
+        )
+      }
+
+      const ActionIcon = action.icon;
+      return (
+        <Button onClick={action.action} disabled={action.disabled} className="w-full h-12 text-base">
+            <ActionIcon className="mr-2 h-5 w-5" />
+            {action.label}
+        </Button>
+      )
+  }
+
+  const currentStatusIndex = statusTimeline.findIndex(s => s.status === order.status);
 
   return (
-    <Card className="bg-card shadow-md flex flex-col">
-      <CardHeader className="p-3">
-        <div className="flex justify-between items-start">
-            <CardTitle className="text-base">#{order.id.substring(0, 6)}</CardTitle>
-            <div className="text-right">
-                <p className="font-bold text-base">${order.total.toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground">{format(order.createdAt.toDate(), 'h:mm a')}</p>
+    <Card className="bg-card shadow-sm flex flex-col">
+      <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+        {/* Left Column: Order Details */}
+        <div className="space-y-3">
+            <Badge variant="outline" className="text-primary border-primary">SELF DELIVERY</Badge>
+            <h3 className="font-bold text-lg">{restaurant.name}</h3>
+            <p className="text-sm text-muted-foreground">{restaurant.address}</p>
+            <Separator />
+            <div>
+                <p className="font-bold">ID: {order.id.substring(0, 12).replace(/(.{6})/, "$1 ")}</p>
+                <p className="text-sm text-muted-foreground flex justify-between items-center">
+                    <span>{order.customerName}</span>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-primary"><PhoneCall/></Button>
+                </p>
+            </div>
+            <div className="space-y-2">
+                {statusTimeline.map((s, index) => {
+                    const isActive = index <= currentStatusIndex;
+                    if (!isActive && index > currentStatusIndex + 1) return null; // only show current and next
+                    
+                    return (
+                        <div key={s.status} className={cn("flex items-center gap-3 text-sm", isActive ? "text-foreground" : "text-muted-foreground opacity-60")}>
+                            <CheckCircle2 className={cn("h-5 w-5", isActive ? "text-green-500" : "text-muted-foreground")}/>
+                            <span className="font-medium flex-grow">{s.label}</span>
+                            <span className="text-xs">{format(order.createdAt.toDate(), 'p')}</span>
+                        </div>
+                    )
+                })}
             </div>
         </div>
-         <CardDescription className="text-sm font-semibold pt-1">{order.customerName}</CardDescription>
-      </CardHeader>
-      <CardContent className="p-3 pt-0 flex-grow">
-          <div className="flex items-center justify-between text-xs">
-            {renderPaymentInfo()}
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onPrintKOT(order)}>
-                <Printer className="h-4 w-4" />
-            </Button>
-          </div>
+
+        {/* Middle Column: Item List & Bill */}
+        <div className="space-y-4">
+            {order.items.map(item => (
+                <div key={item.id} className="flex justify-between items-center text-sm">
+                    <div className="flex items-center">
+                        <VegNonVegIcon type={item.type} />
+                        <span>{item.quantity} x {item.name}</span>
+                    </div>
+                    <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                </div>
+            ))}
+            <Separator />
+            <div className="flex justify-between items-center font-bold">
+                 <Popover>
+                    <PopoverTrigger asChild>
+                         <Button variant="ghost" className="p-0 h-auto">
+                            Total Bill
+                            <Badge variant={order.paymentStatus === 'completed' ? 'default' : 'destructive'} className="ml-2 uppercase">{order.paymentStatus}</Badge>
+                            <span className="mx-2">${order.total.toFixed(2)}</span>
+                            <ChevronDown className="h-4 w-4" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 text-sm space-y-2">
+                        <div className="flex justify-between"><span>Subtotal</span> <span>${(order.total - (restaurant.deliveryCharge || 0)).toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>Delivery</span> <span>${(restaurant.deliveryCharge || 0).toFixed(2)}</span></div>
+                    </PopoverContent>
+                </Popover>
+                 <Button variant="ghost" onClick={() => onPrintKOT(order)}>
+                    <Printer className="mr-2 h-4 w-4" /> Print Bill
+                </Button>
+            </div>
+             <PrimaryAction />
+        </div>
+
+        {/* Right Column: Delivery Details */}
+        <div className="space-y-3">
+             <h4 className="font-semibold">Delivery address</h4>
+             <p className="text-sm text-muted-foreground">{order.deliveryAddress}</p>
+             <div className="flex gap-2">
+                 <Button variant="outline" size="icon"><PhoneCall/></Button>
+                 <Button variant="outline" size="icon"><MapPin/></Button>
+             </div>
+             <Separator/>
+             <Button variant="ghost" className="text-muted-foreground">Support</Button>
+        </div>
       </CardContent>
-      <CardFooter className={cn("p-3 flex gap-2", order.status === 'pending' ? 'flex-col' : 'flex-row')}>
-            {order.status === 'pending' && (
-                 <Button className="w-full h-9" onClick={handleNextAction} disabled={isUpdating}>
-                    <Package className="mr-2 h-4 w-4" /> Accept Order
-                </Button>
-            )}
-            {order.status !== 'pending' && renderPrimaryAction()}
-             <Popover>
-                <PopoverTrigger asChild>
-                    <Button variant="secondary" size={order.status === 'pending' ? 'sm' : 'icon'} className={cn(order.status === 'pending' ? 'w-full h-8 text-xs' : 'h-9 w-9 flex-shrink-0')}>
-                        {order.status !== 'pending' ? <ChevronDown className="h-4 w-4" /> : 'More Info'}
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 p-2" side="bottom" align="end">
-                   {popoverContent}
-                </PopoverContent>
-            </Popover>
-            {order.status !== 'out-for-delivery' && (
-                <Button variant="destructive-outline" size="icon" className="h-9 w-9 flex-shrink-0" onClick={() => onStatusChange(order.id, 'cancelled')} disabled={isUpdating}>
-                    <X className="h-4 w-4" />
-                </Button>
-            )}
-      </CardFooter>
     </Card>
   );
 }

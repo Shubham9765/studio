@@ -6,19 +6,21 @@ import { useAuth } from '@/hooks/use-auth';
 import type { Order, Restaurant } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { assignDeliveryBoy, updateOrderPaymentStatus, updateOrderStatus } from '@/services/ownerService';
 import { listenToOrdersForRestaurant, getRestaurantByOwnerId } from '@/services/ownerClientService';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, BookOpen, History, Loader2, Workflow } from 'lucide-react';
+import { AlertTriangle, BookOpen, History } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { usePrint } from '@/hooks/use-print';
 import { KOT } from '@/components/owner/kot';
 import { OrderCard } from '@/components/owner/order-card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from '@/components/ui/badge';
 
-const orderStatusColumns: Order['status'][] = ['pending', 'accepted', 'preparing', 'out-for-delivery'];
+type OrderStatusTab = 'pending' | 'preparing' | 'out-for-delivery';
 
 export default function ManageOrdersPage() {
     const { user, loading: authLoading } = useAuth();
@@ -103,15 +105,13 @@ export default function ManageOrdersPage() {
         });
     }
 
-    const getColumnTitle = (status: Order['status']) => {
-        switch(status) {
-            case 'pending': return 'New';
-            case 'accepted': return 'Confirmed';
-            case 'preparing': return 'Preparing';
-            case 'out-for-delivery': return 'Out for Delivery';
-            default: return 'Order';
-        }
+    const getOrdersByStatus = (statuses: Order['status'][]) => {
+        return orders.filter(o => statuses.includes(o.status));
     }
+    
+    const pendingOrders = getOrdersByStatus(['pending']);
+    const preparingOrders = getOrdersByStatus(['accepted', 'preparing']);
+    const deliveryOrders = getOrdersByStatus(['out-for-delivery']);
 
 
     if (authLoading || loading) {
@@ -124,9 +124,7 @@ export default function ManageOrdersPage() {
                         <Skeleton className="h-10 w-32" />
                     </div>
                      <div className="flex gap-4 p-4">
-                        <Skeleton className="h-[60vh] w-1/3" />
-                        <Skeleton className="h-[60vh] w-1/3" />
-                        <Skeleton className="h-[60vh] w-1/3" />
+                        <Skeleton className="h-[60vh] w-full" />
                     </div>
                 </main>
             </div>
@@ -165,12 +163,43 @@ export default function ManageOrdersPage() {
     
     const activeOrders = orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
 
+    const renderOrderList = (list: Order[]) => {
+        if (list.length === 0) {
+            return (
+                <div className="text-center py-20">
+                    <BookOpen className="mx-auto h-16 w-16 text-muted-foreground" />
+                    <h3 className="mt-4 text-xl font-bold">No orders in this stage</h3>
+                    <p className="mt-2 text-muted-foreground">
+                        Orders will appear here as they move through the workflow.
+                    </p>
+                </div>
+            )
+        }
+        return (
+            <div className="space-y-4">
+                {list.map(order => (
+                     <OrderCard
+                        key={order.id}
+                        order={order}
+                        restaurant={restaurant}
+                        isUpdating={updatingOrderId === order.id}
+                        onStatusChange={handleStatusChange}
+                        onAssignDelivery={handleAssignDelivery}
+                        onMarkAsPaid={handleMarkAsPaid}
+                        onPrintKOT={handlePrintKOT}
+                    />
+                ))}
+            </div>
+        )
+    }
+
+
     return (
         <div className="min-h-screen bg-background flex flex-col">
             <Header />
             <main className="container py-8 flex-grow flex flex-col">
                 <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold">Order Workflow</h1>
+                    <h1 className="text-3xl font-bold">Order Management</h1>
                     <Button asChild variant="outline">
                         <Link href="/owner/orders/history">
                             <History className="mr-2 h-4 w-4" />
@@ -178,51 +207,30 @@ export default function ManageOrdersPage() {
                         </Link>
                     </Button>
                 </div>
+                
+                <Tabs defaultValue="pending" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="pending">
+                            Pending <Badge variant={pendingOrders.length > 0 ? "default" : "secondary"} className="ml-2">{pendingOrders.length}</Badge>
+                        </TabsTrigger>
+                        <TabsTrigger value="preparing">
+                            Preparing <Badge variant={preparingOrders.length > 0 ? "default" : "secondary"} className="ml-2">{preparingOrders.length}</Badge>
+                        </TabsTrigger>
+                        <TabsTrigger value="delivery">
+                            Out for Delivery <Badge variant={deliveryOrders.length > 0 ? "default" : "secondary"} className="ml-2">{deliveryOrders.length}</Badge>
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="pending" className="mt-6">
+                        {renderOrderList(pendingOrders)}
+                    </TabsContent>
+                    <TabsContent value="preparing" className="mt-6">
+                        {renderOrderList(preparingOrders)}
+                    </TabsContent>
+                    <TabsContent value="delivery" className="mt-6">
+                         {renderOrderList(deliveryOrders)}
+                    </TabsContent>
+                </Tabs>
 
-                {activeOrders.length > 0 ? (
-                    <div className="flex-grow grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
-                        {orderStatusColumns.map(status => {
-                            const columnOrders = activeOrders.filter(o => {
-                                // Group "accepted" and "preparing" into the "Preparing" column visually
-                                if (status === 'accepted' && o.status === 'preparing') return false;
-                                if (status === 'preparing' && o.status === 'accepted') return true;
-                                return o.status === status;
-                            });
-
-                            if (status === 'accepted') return null; // Hide the separate 'accepted' column
-
-                            const title = getColumnTitle(status);
-
-                            return (
-                                <div key={status} className="h-full bg-muted/50 rounded-lg p-4 flex flex-col">
-                                    <h2 className="text-lg font-semibold mb-4 text-center">{title} ({columnOrders.length})</h2>
-                                    <div className="space-y-4 overflow-y-auto flex-grow pr-2">
-                                        {columnOrders.map(order => (
-                                            <OrderCard
-                                                key={order.id}
-                                                order={order}
-                                                restaurant={restaurant}
-                                                isUpdating={updatingOrderId === order.id}
-                                                onStatusChange={handleStatusChange}
-                                                onAssignDelivery={handleAssignDelivery}
-                                                onMarkAsPaid={handleMarkAsPaid}
-                                                onPrintKOT={handlePrintKOT}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
-                ) : (
-                    <Card className="flex flex-col items-center justify-center py-20 text-center flex-grow">
-                        <BookOpen className="mx-auto h-16 w-16 text-muted-foreground" />
-                        <h3 className="mt-4 text-2xl font-bold">No Active Orders</h3>
-                        <p className="mt-2 text-muted-foreground">
-                            When customers place new orders, they will appear here.
-                        </p>
-                    </Card>
-                )}
             </main>
         </div>
     );
