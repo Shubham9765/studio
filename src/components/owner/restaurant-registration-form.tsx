@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,14 +12,19 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { createRestaurant } from '@/services/ownerService';
 import { useState } from 'react';
-import { Utensils } from 'lucide-react';
+import { Utensils, MapPin } from 'lucide-react';
 import { Textarea } from '../ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { LocationPickerMap } from '../location-picker-map';
+
 
 export const RestaurantSchema = z.object({
   name: z.string().min(3, { message: 'Restaurant name must be at least 3 characters.' }),
   cuisine: z.string().min(3, { message: 'Cuisine type must be at least 3 characters.' }),
   deliveryTime: z.string().min(1, { message: 'Please provide an estimated delivery time (e.g., 30-45 min).' }),
   address: z.string().min(10, "Please enter a full address for geocoding."),
+  latitude: z.number({ required_error: "Please pin your location on the map." }),
+  longitude: z.number({ required_error: "Please pin your location on the map." }),
 });
 
 interface RestaurantRegistrationFormProps {
@@ -40,6 +45,13 @@ export function RestaurantRegistrationForm({ onRestaurantCreated }: RestaurantRe
       address: '',
     },
   });
+
+  const handleMapLocationSelect = (loc: { latitude: number; longitude: number; address: string }) => {
+    form.setValue('address', loc.address);
+    form.setValue('latitude', loc.latitude);
+    form.setValue('longitude', loc.longitude);
+    toast({ title: 'Location Pinned!', description: 'Restaurant address has been set.' });
+  };
 
   const onSubmit = async (values: z.infer<typeof RestaurantSchema>) => {
     if (!user) {
@@ -125,12 +137,25 @@ export function RestaurantRegistrationForm({ onRestaurantCreated }: RestaurantRe
                   <FormItem>
                     <FormLabel>Full Address</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="123 Main St, Anytown, USA. This will be used to show your location to nearby customers." {...field} />
+                      <Textarea placeholder="Pin your location on the map to set the address." {...field} readOnly/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" type="button" className="w-full"><MapPin className="mr-2 h-4 w-4" /> Pin Location on Map</Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-2xl h-4/5 flex flex-col">
+                        <DialogHeader>
+                            <DialogTitle>Pin Your Restaurant's Location</DialogTitle>
+                            <DialogDescription>Drag the marker to your exact location and click confirm.</DialogDescription>
+                        </DialogHeader>
+                        <LocationPickerMap onLocationSelect={handleMapLocationSelect} />
+                    </DialogContent>
+                </Dialog>
+                <Controller control={form.control} name="latitude" render={() => <FormMessage />} />
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Submitting...' : 'Submit for Approval'}
             </Button>

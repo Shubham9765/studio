@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -9,8 +9,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
-  DialogFooter
+  DialogFooter,
+  DialogTrigger
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -23,6 +23,8 @@ import { updateRestaurant } from '@/services/ownerService';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { ScrollArea } from '../ui/scroll-area';
 import { Textarea } from '../ui/textarea';
+import { LocationPickerMap } from '../location-picker-map';
+import { MapPin } from 'lucide-react';
 
 export const EditRestaurantSchema = z.object({
   name: z.string().min(3, { message: 'Restaurant name must be at least 3 characters.' }),
@@ -34,7 +36,9 @@ export const EditRestaurantSchema = z.object({
   paymentMethodOption: z.enum(['cash', 'upi', 'both']).default('cash'),
   upiId: z.string().optional(),
   upiQrCodeUrl: z.string().url({ message: "Please enter a valid URL for the QR code." }).optional().or(z.literal('')),
-  address: z.string().min(10, "Please enter a full address.").optional().or(z.literal('')),
+  address: z.string().min(10, "Please enter a full address."),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
   fssaiLicense: z.string().optional(),
   gstEnabled: z.boolean().default(false),
   gstin: z.string().optional(),
@@ -71,6 +75,8 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
       upiId: restaurant?.paymentMethods?.upiId || '',
       upiQrCodeUrl: restaurant?.paymentMethods?.upiQrCodeUrl || '',
       address: restaurant?.address || '',
+      latitude: restaurant?.latitude,
+      longitude: restaurant?.longitude,
       fssaiLicense: restaurant?.fssaiLicense || '',
       gstEnabled: restaurant?.gstEnabled || false,
       gstin: restaurant?.gstin || '',
@@ -93,12 +99,21 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
         upiId: restaurant.paymentMethods?.upiId || '',
         upiQrCodeUrl: restaurant.paymentMethods?.upiQrCodeUrl || '',
         address: restaurant.address || '',
+        latitude: restaurant.latitude,
+        longitude: restaurant.longitude,
         fssaiLicense: restaurant.fssaiLicense || '',
         gstEnabled: restaurant.gstEnabled || false,
         gstin: restaurant.gstin || '',
       });
     }
   }, [restaurant, isOpen, form]);
+
+  const handleMapLocationSelect = (loc: { latitude: number; longitude: number; address: string }) => {
+    form.setValue('address', loc.address);
+    form.setValue('latitude', loc.latitude);
+    form.setValue('longitude', loc.longitude);
+    toast({ title: 'Location Pinned!', description: 'Restaurant address has been updated.' });
+  };
 
   const onSubmit = async (values: z.infer<typeof EditRestaurantSchema>) => {
     setIsSubmitting(true);
@@ -169,15 +184,24 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
                   <FormItem>
                     <FormLabel>Full Address</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="123 Main St, Anytown, USA" {...field} />
+                      <Textarea placeholder="123 Main St, Anytown, USA" {...field} readOnly/>
                     </FormControl>
-                     <FormDescription>
-                      Used to calculate delivery distance and show your location.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              <Dialog>
+                  <DialogTrigger asChild>
+                      <Button variant="outline" type="button" className="w-full"><MapPin className="mr-2 h-4 w-4" /> Pin Location on Map</Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-2xl h-4/5 flex flex-col">
+                      <DialogHeader>
+                          <DialogTitle>Pin Your Restaurant's Location</DialogTitle>
+                          <DialogDescription>Drag the marker to your exact location and click confirm.</DialogDescription>
+                      </DialogHeader>
+                      <LocationPickerMap onLocationSelect={handleMapLocationSelect} />
+                  </DialogContent>
+              </Dialog>
               <FormField
                 control={form.control}
                 name="cuisine"

@@ -15,7 +15,7 @@ import { useState, useEffect } from 'react';
 import { updateUserProfile } from '@/services/userService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, PlusCircle, Home, Building, Trash, Edit, User, MapPin, Phone } from 'lucide-react';
+import { AlertTriangle, PlusCircle, Home, Building, Trash, Edit, User, MapPin, Phone, Map } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   Dialog,
@@ -26,6 +26,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { LocationPickerMap } from '@/components/location-picker-map';
+
 
 const profileSchema = z.object({
   displayName: z.string().min(3, 'Name must be at least 3 characters.'),
@@ -117,12 +119,17 @@ export default function ProfilePage() {
       if (!user) return;
       setIsSubmitting(true);
       
-      const coords = await getCoordinatesForAddress(data.address);
-      if (!coords) {
-          toast({ variant: 'destructive', title: 'Address Not Found', description: 'Could not find coordinates for this address. Please try a more specific address.' });
-          setIsSubmitting(false);
-          return;
+      let coords = { latitude: data.latitude, longitude: data.longitude };
+      if (!coords.latitude || !coords.longitude) {
+          const fetchedCoords = await getCoordinatesForAddress(data.address);
+           if (!fetchedCoords) {
+              toast({ variant: 'destructive', title: 'Address Not Found', description: 'Could not find coordinates for this address. Please try a more specific address.' });
+              setIsSubmitting(false);
+              return;
+          }
+          coords = fetchedCoords;
       }
+      
 
       const currentAddresses = user.addresses || [];
       let updatedAddresses: Address[];
@@ -146,6 +153,13 @@ export default function ProfilePage() {
           setIsSubmitting(false);
       }
   }
+
+   const handleMapLocationSelect = (loc: { latitude: number; longitude: number; address: string }) => {
+        addressForm.setValue('address', loc.address);
+        addressForm.setValue('latitude', loc.latitude);
+        addressForm.setValue('longitude', loc.longitude);
+        toast({ title: 'Location Pinned!', description: 'Address has been updated.' });
+    };
   
   const handleDeleteAddress = async (addressId: string) => {
       if (!user || !confirm('Are you sure you want to delete this address?')) return;
@@ -283,8 +297,20 @@ export default function ProfilePage() {
                                         <FormItem><FormLabel>Label</FormLabel><FormControl><Input placeholder="e.g., Home, Work" {...field} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                     <FormField control={addressForm.control} name="address" render={({ field }) => (
-                                        <FormItem><FormLabel>Full Address</FormLabel><FormControl><Input placeholder="123 Main St, Anytown, USA" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>Full Address</FormLabel><FormControl><Input placeholder="123 Main St, Anytown, USA" {...field} readOnly /></FormControl><FormMessage /></FormItem>
                                     )}/>
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <Button variant="outline" type="button"><MapPin className="mr-2 h-4 w-4" /> Pin Location on Map</Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="sm:max-w-2xl h-4/5 flex flex-col">
+                                            <DialogHeader>
+                                                <DialogTitle>Pin Your Address</DialogTitle>
+                                                <DialogDescription>Drag the marker to your exact location and click confirm.</DialogDescription>
+                                            </DialogHeader>
+                                            <LocationPickerMap onLocationSelect={handleMapLocationSelect} />
+                                        </DialogContent>
+                                    </Dialog>
                                     <FormField control={addressForm.control} name="phone" render={({ field }) => (
                                         <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="Your contact number" {...field} /></FormControl><FormMessage /></FormItem>
                                     )}/>

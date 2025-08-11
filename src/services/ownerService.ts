@@ -39,11 +39,6 @@ export async function createRestaurant(ownerId: string, data: z.infer<typeof Res
         throw new Error('This owner already has a restaurant and cannot create another.');
     }
 
-    let coords = null;
-    if (data.address) {
-        coords = await getCoordinatesForAddress(data.address);
-    }
-
     const newRestaurant: Omit<Restaurant, 'id'> = {
         ...data,
         ownerId,
@@ -60,7 +55,6 @@ export async function createRestaurant(ownerId: string, data: z.infer<typeof Res
         deliveryBoys: [],
         reviewCount: 0,
         gstEnabled: false,
-        ...(coords && { latitude: coords.latitude, longitude: coords.longitude }),
     };
 
     const docRef = await addDoc(collection(db, "restaurants"), {
@@ -79,11 +73,6 @@ export async function updateRestaurant(restaurantId: string, data: z.infer<typeo
     
     const { paymentMethodOption, upiId, upiQrCodeUrl, ...restData } = data;
     
-    let coords = null;
-    if (restData.address) {
-        coords = await getCoordinatesForAddress(restData.address);
-    }
-
     const paymentMethods = {
         cash: paymentMethodOption === 'cash' || paymentMethodOption === 'both',
         upi: paymentMethodOption === 'upi' || paymentMethodOption === 'both',
@@ -93,7 +82,6 @@ export async function updateRestaurant(restaurantId: string, data: z.infer<typeo
 
     await updateDoc(restaurantRef, {
         ...restData,
-        ...(coords && { latitude: coords.latitude, longitude: coords.longitude }),
         paymentMethods
     });
 }
