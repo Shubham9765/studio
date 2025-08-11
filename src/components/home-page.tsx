@@ -23,6 +23,9 @@ import {
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Input } from './ui/input';
 import { useRouter } from 'next/navigation';
+import { useCart } from '@/hooks/use-cart';
+import { Cart } from './customer/cart';
+import { cn } from '@/lib/utils';
 
 
 function LoadingSkeleton() {
@@ -149,6 +152,8 @@ export function HomePage() {
   const [bannerConfig, setBannerConfig] = useState<BannerConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const { location, error: locationError } = useLocation();
+  const { cart, restaurant: cartRestaurant } = useCart();
+  const isCartVisible = cart.length > 0 && cartRestaurant;
 
   const isServiceAvailable = useMemo(() => {
     if (!location || serviceableCities.length === 0) return true; // Default to true if location or cities aren't loaded yet
@@ -188,12 +193,10 @@ export function HomePage() {
       });
       return Array.from(cuisineMap.entries()).map(([name, imageUrl]) => ({ name, imageUrl }));
   }, [allRestaurants, loading]);
-
-  return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container py-6 sm:py-8">
-        <div className="flex items-center gap-2 text-xl font-semibold mb-6">
+  
+  const mainContent = (
+    <>
+      <div className="flex items-center gap-2 text-xl font-semibold mb-6">
             <MapPin className="h-6 w-6 text-primary" />
             <div className="flex items-center gap-2">
               <span>Delivering to:</span>
@@ -257,8 +260,27 @@ export function HomePage() {
             </div>
           )
         )}
+    </>
+  );
 
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main className="container py-6 sm:py-8">
+        <div className={cn("grid lg:grid-cols-4 gap-8", isCartVisible ? "lg:grid-cols-4" : "lg:grid-cols-1")}>
+          <div className={cn(isCartVisible ? "lg:col-span-3" : "lg:col-span-4")}>
+            {mainContent}
+          </div>
+          {isCartVisible && (
+            <aside className="hidden lg:block lg:col-span-1">
+              <div className="sticky top-24">
+                <Cart restaurant={cartRestaurant!} />
+              </div>
+            </aside>
+          )}
+        </div>
       </main>
     </div>
   );
 }
+
