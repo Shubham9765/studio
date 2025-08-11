@@ -94,7 +94,8 @@ export async function getOrdersForRestaurant(restaurantId: string): Promise<Orde
 
 export async function getAllOrdersForRestaurant(restaurantId: string): Promise<Order[]> {
     const ordersCollection = collection(db, 'orders');
-    const q = query(ordersCollection, where('restaurantId', '==', restaurantId), orderBy('createdAt', 'desc'));
+    const q = query(ordersCollection, where('restaurantId', '==', restaurantId));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+    const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+    return orders.sort((a,b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
 }
