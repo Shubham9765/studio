@@ -26,6 +26,7 @@ import { useRouter } from 'next/navigation';
 import { useCart } from '@/hooks/use-cart';
 import { Cart } from './customer/cart';
 import { cn } from '@/lib/utils';
+import { FloatingCartBar } from './customer/floating-cart-bar';
 
 
 function LoadingSkeleton() {
@@ -280,7 +281,7 @@ export function HomePage() {
           )}
         </div>
       </main>
+      <FloatingCartBar />
     </div>
   );
 }
-
