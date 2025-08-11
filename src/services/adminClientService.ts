@@ -3,7 +3,7 @@
 
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
-import type { Restaurant, BannerConfig } from '@/lib/types';
+import type { Restaurant, BannerConfig, Order } from '@/lib/types';
 import type { AppUser } from '@/hooks/use-auth';
 
 export interface AdminDashboardData {
@@ -14,6 +14,8 @@ export interface AdminDashboardData {
   restaurants: Restaurant[];
   serviceableCities: string[];
   bannerConfig: BannerConfig | null;
+  commissionRate: number;
+  allOrders: Order[];
 }
 
 export async function getAdminDashboardData(): Promise<AdminDashboardData> {
@@ -24,6 +26,10 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   // Fetch all restaurants
   const restaurantsSnapshot = await getDocs(collection(db, 'restaurants'));
   const allRestaurants = restaurantsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Restaurant));
+  
+  // Fetch all orders
+  const ordersSnapshot = await getDocs(collection(db, 'orders'));
+  const allOrders = ordersSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
 
   // Fetch app_config
   const locationsDoc = await getDoc(doc(db, 'app_config', 'service_locations'));
@@ -31,6 +37,9 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   
   const bannerConfigDoc = await getDoc(doc(db, 'app_config', 'banner'));
   const bannerConfig = bannerConfigDoc.exists() ? bannerConfigDoc.data() as BannerConfig : null;
+
+  const commissionConfigDoc = await getDoc(doc(db, 'app_config', 'commission'));
+  const commissionRate = commissionConfigDoc.exists() ? commissionConfigDoc.data().rate : 0;
 
   // Calculate stats
   const customerCount = allUsers.filter(u => u.role === 'customer').length;
@@ -45,5 +54,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     restaurants: allRestaurants,
     serviceableCities,
     bannerConfig,
+    commissionRate,
+    allOrders,
   };
 }

@@ -104,3 +104,13 @@ export async function updateCuisineImageUrl(cuisineName: string, imageUrl: strin
     // Use updateDoc which works correctly with dot notation for nested fields.
     await updateDoc(cuisinesConfigRef, updateData);
 }
+
+// Commission Rate Functions
+const commissionConfigRef = doc(db, 'app_config', 'commission');
+
+export async function updateCommissionRate(rate: number): Promise<void> {
+    if (rate < 0 || rate > 100) {
+        throw new Error('Commission rate must be between 0 and 100.');
+    }
+    await setDoc(commissionConfigRef, { rate });
+}

@@ -3,7 +3,7 @@
 
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff, FileText, MapPin, PlusCircle, Trash2, Megaphone, Palette } from 'lucide-react';
+import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff, FileText, MapPin, PlusCircle, Trash2, Megaphone, Palette, Percent } from 'lucide-react';
 import { useAdminDashboardData } from '@/hooks/use-admin-dashboard-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,10 +17,10 @@ import { format } from 'date-fns';
 import { useState, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
-import { updateUserStatus, updateRestaurantStatus, addServiceableCity, removeServiceableCity, updateBannerConfig } from '@/services/adminService';
+import { updateUserStatus, updateRestaurantStatus, addServiceableCity, removeServiceableCity, updateBannerConfig, updateCommissionRate } from '@/services/adminService';
 import { useToast } from '@/hooks/use-toast';
 import { generateSalesReport, type GenerateSalesReportOutput } from '@/ai/flows/generate-sales-report';
-import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Input } from '../ui/input';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -528,6 +528,61 @@ function BannerManager({ initialConfig, onUpdate }: { initialConfig: BannerConfi
     )
 }
 
+function CommissionManager({ initialRate, onUpdate }: { initialRate: number; onUpdate: () => void }) {
+    const { toast } = useToast();
+    const [rate, setRate] = useState(initialRate);
+    const [isSaving, setIsSaving] = useState(false);
+    
+    useEffect(() => {
+        setRate(initialRate);
+    }, [initialRate]);
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            await updateCommissionRate(rate);
+            toast({ title: 'Success', description: 'Commission rate updated.' });
+            onUpdate();
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
+    return (
+         <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <Button variant="outline"><Percent className="mr-2 h-4 w-4" /> Set Commission Rate</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Set Global Commission Rate</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This rate will be used to calculate commission from all restaurants. Enter a value between 0 and 100.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="flex items-center gap-2 py-4">
+                    <Input 
+                        type="number"
+                        value={rate}
+                        onChange={(e) => setRate(Number(e.target.value))}
+                        min="0"
+                        max="100"
+                        className="w-24"
+                    />
+                    <Percent className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleSave} disabled={isSaving}>
+                        {isSaving ? 'Saving...' : 'Save Rate'}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
 
 export default function AdminDashboard() {
   const { data, loading, refreshData } = useAdminDashboardData();
@@ -559,6 +614,10 @@ export default function AdminDashboard() {
                         <Button asChild variant="outline">
                             <Link href="/admin/cuisines"><Palette className="mr-2 h-4 w-4"/> Manage Cuisines</Link>
                         </Button>
+                         <Button asChild variant="outline">
+                            <Link href="/admin/reports"><FileDown className="mr-2 h-4 w-4"/> Commission Reports</Link>
+                        </Button>
+                         <CommissionManager initialRate={data.commissionRate ?? 0} onUpdate={refreshData} />
                     </CardContent>
                 </Card>
                 <BannerManager initialConfig={data.bannerConfig} onUpdate={refreshData} />
