@@ -25,8 +25,7 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
 import { KOT } from '@/components/owner/kot';
-import { useReactToPrint } from 'react-to-print';
-import { useRef } from 'react';
+import { usePrint } from '@/hooks/use-print';
 
 
 const statusSteps: { status: Order['status'], icon: React.ElementType, label: string }[] = [
@@ -117,37 +116,17 @@ function DeliveryAssigner({ order, deliveryBoys, onAssign, isAssigning }: { orde
     )
 }
 
-function OrderToPrint({ order, restaurant }: { order: Order, restaurant: Restaurant }) {
-    const componentRef = useRef<HTMLDivElement>(null);
-    
-    const handlePrint = useReactToPrint({
-      content: () => componentRef.current,
-    });
-    
-    useEffect(() => {
-        handlePrint();
-    }, [handlePrint]);
-    
-    return (
-        <div className="hidden">
-            <div ref={componentRef}>
-                <KOT order={order} restaurant={restaurant} />
-            </div>
-        </div>
-    );
-}
-
 
 export default function ManageOrdersPage() {
     const { user, loading: authLoading } = useAuth();
     const { toast } = useToast();
+    const { print } = usePrint();
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
-    const [orderToPrint, setOrderToPrint] = useState<Order | null>(null);
-
+    
     const fetchRestaurantAndOrders = async () => {
         if (user?.uid) {
             setLoading(true);
@@ -176,7 +155,8 @@ export default function ManageOrdersPage() {
     }, [user, authLoading]);
 
     const handlePrintKOT = (order: Order) => {
-        setOrderToPrint(order);
+        if (!restaurant) return;
+        print(<KOT order={order} restaurant={restaurant} />);
     };
 
 
@@ -280,7 +260,6 @@ export default function ManageOrdersPage() {
 
 
     return (
-        <>
         <div className="min-h-screen bg-background">
             <Header />
             <main className="container py-8">
@@ -423,9 +402,5 @@ export default function ManageOrdersPage() {
                 </Card>
             </main>
         </div>
-        {orderToPrint && restaurant && (
-            <OrderToPrint order={orderToPrint} restaurant={restaurant} />
-        )}
-        </>
     );
 }
