@@ -19,7 +19,8 @@ import {
   Package,
   ChevronDown,
   CheckCircle2,
-  PhoneCall
+  PhoneCall,
+  MapPin
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
