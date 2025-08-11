@@ -11,17 +11,12 @@ import {
   User,
   Phone,
   Printer,
-  CircleDollarSign,
-  BadgeCent,
-  Check,
-  Bike,
-  ChefHat,
-  Package,
   ChevronDown,
   CheckCircle2,
-  PhoneCall,
-  MapPin,
   XCircle,
+  Package,
+  ChefHat,
+  Bike
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -32,11 +27,11 @@ interface OrderCardProps {
   order: Order;
   restaurant: Restaurant;
   isUpdating: boolean;
-  onStatusChange: (status: Order['status']) => void;
-  onCancelOrder: () => void;
-  onAssignDelivery: (deliveryBoyId: string) => void;
-  onMarkAsPaid: () => void;
-  onPrintKOT: () => void;
+  onStatusChange: (orderId: string, status: Order['status']) => void;
+  onCancelOrder: (orderId: string) => void;
+  onAssignDelivery: (orderId: string, deliveryBoyId: string) => void;
+  onMarkAsPaid: (orderId: string) => void;
+  onPrintKOT: (order: Order) => void;
 }
 
 function VegNonVegIcon({ type }: { type: 'veg' | 'non-veg' }) {
@@ -72,7 +67,7 @@ export function OrderCard({
         case 'pending':
             return {
                 label: `Accept Order`,
-                action: () => onStatusChange('accepted'),
+                action: () => onStatusChange(order.id, 'accepted'),
                 disabled: isUpdating,
                 icon: Package
             }
@@ -80,7 +75,7 @@ export function OrderCard({
         case 'preparing':
              return {
                 label: `Food is Ready`,
-                action: () => onStatusChange('out-for-delivery'),
+                action: () => onStatusChange(order.id, 'out-for-delivery'),
                 disabled: isUpdating || !restaurant.deliveryBoys || restaurant.deliveryBoys.length === 0,
                 icon: ChefHat
             }
@@ -98,7 +93,7 @@ export function OrderCard({
             return <p className="text-xs text-destructive text-center p-2 bg-destructive/10 rounded-md">Add delivery staff to assign orders.</p>
         }
         return (
-            <Select onValueChange={onAssignDelivery} disabled={isUpdating}>
+            <Select onValueChange={(deliveryBoyId) => onAssignDelivery(order.id, deliveryBoyId)} disabled={isUpdating}>
               <SelectTrigger>
                 <SelectValue placeholder="Assign Delivery Person" />
               </SelectTrigger>
@@ -119,7 +114,7 @@ export function OrderCard({
                 {action.label}
             </Button>
             {order.status === 'pending' && (
-                <Button variant="destructive-outline" onClick={onCancelOrder} disabled={isUpdating} className="w-full h-12 text-base">
+                <Button variant="destructive-outline" onClick={() => onCancelOrder(order.id)} disabled={isUpdating} className="w-full h-12 text-base">
                     <XCircle className="mr-2 h-5 w-5" />
                     Cancel
                 </Button>
@@ -142,8 +137,8 @@ export function OrderCard({
             <div>
                 <p className="font-bold">ID: {order.id.substring(0, 12).replace(/(.{6})/, "$1 ")}</p>
                 <p className="text-sm text-muted-foreground flex justify-between items-center">
-                    <span>{order.customerName}</span>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-primary"><PhoneCall/></Button>
+                    <span>Order Time</span>
+                    <span>{format(order.createdAt.toDate(), 'p')}</span>
                 </p>
             </div>
             <div className="space-y-2">
@@ -174,22 +169,26 @@ export function OrderCard({
                 </div>
             ))}
             <Separator />
-            <div className="flex justify-between items-center font-bold">
+            <div className="flex justify-between items-center">
                  <Popover>
                     <PopoverTrigger asChild>
-                         <Button variant="ghost" className="p-0 h-auto">
-                            Total Bill
-                            <Badge variant={order.paymentStatus === 'completed' ? 'default' : 'destructive'} className="ml-2 uppercase">{order.paymentStatus}</Badge>
-                            <span className="mx-2">Rs.{order.total.toFixed(2)}</span>
-                            <ChevronDown className="h-4 w-4" />
-                        </Button>
+                         <div className="cursor-pointer">
+                            <div className="flex items-center text-sm font-normal text-muted-foreground">
+                                Total Bill
+                                <ChevronDown className="h-4 w-4 ml-1" />
+                            </div>
+                            <div className="flex items-center">
+                                <span className="font-extrabold text-lg mr-2">Rs.{order.total.toFixed(2)}</span>
+                                <Badge variant={order.paymentStatus === 'completed' ? 'default' : 'destructive'} className="uppercase">{order.paymentStatus}</Badge>
+                            </div>
+                        </div>
                     </PopoverTrigger>
                     <PopoverContent className="w-56 text-sm space-y-2">
                         <div className="flex justify-between"><span>Subtotal</span> <span>Rs.{(order.total - (restaurant.deliveryCharge || 0)).toFixed(2)}</span></div>
                         <div className="flex justify-between"><span>Delivery</span> <span>Rs.{(restaurant.deliveryCharge || 0).toFixed(2)}</span></div>
                     </PopoverContent>
                 </Popover>
-                 <Button variant="ghost" onClick={onPrintKOT}>
+                 <Button variant="ghost" onClick={() => onPrintKOT(order)}>
                     <Printer className="mr-2 h-4 w-4" /> Print Bill
                 </Button>
             </div>
@@ -198,10 +197,14 @@ export function OrderCard({
 
         {/* Right Column: Delivery Details */}
         <div className="space-y-3">
-             <h4 className="font-semibold">Delivery address</h4>
-             <p className="text-sm text-muted-foreground">{order.deliveryAddress}</p>
+             <h4 className="font-semibold">Delivery to</h4>
+              <div className="space-y-1 text-sm">
+                  <p className="flex items-center gap-2 font-bold"><User className="h-4 w-4 text-muted-foreground" /> {order.customerName}</p>
+                  <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {order.customerPhone}</p>
+                  <p className="flex items-start gap-2"><MapPin className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" /> {order.deliveryAddress}</p>
+              </div>
              <div className="flex gap-2">
-                 <Button variant="outline" size="icon"><PhoneCall/></Button>
+                 <Button variant="outline" size="icon"><Phone/></Button>
                  <Button variant="outline" size="icon"><MapPin/></Button>
              </div>
              <Separator/>
