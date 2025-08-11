@@ -21,10 +21,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { KOT } from '@/components/owner/kot';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
+import { KOT } from '@/components/owner/kot';
+import { useReactToPrint } from 'react-to-print';
+import { useRef } from 'react';
 
 
 const statusSteps: { status: Order['status'], icon: React.ElementType, label: string }[] = [
@@ -115,6 +117,27 @@ function DeliveryAssigner({ order, deliveryBoys, onAssign, isAssigning }: { orde
     )
 }
 
+function OrderToPrint({ order, restaurant }: { order: Order, restaurant: Restaurant }) {
+    const componentRef = useRef<HTMLDivElement>(null);
+    
+    const handlePrint = useReactToPrint({
+      content: () => componentRef.current,
+    });
+    
+    useEffect(() => {
+        handlePrint();
+    }, [handlePrint]);
+    
+    return (
+        <div className="hidden">
+            <div ref={componentRef}>
+                <KOT order={order} restaurant={restaurant} />
+            </div>
+        </div>
+    );
+}
+
+
 export default function ManageOrdersPage() {
     const { user, loading: authLoading } = useAuth();
     const { toast } = useToast();
@@ -151,20 +174,6 @@ export default function ManageOrdersPage() {
     useEffect(() => {
         fetchRestaurantAndOrders();
     }, [user, authLoading]);
-    
-    useEffect(() => {
-        if (orderToPrint) {
-            const handleAfterPrint = () => {
-                setOrderToPrint(null);
-                document.body.classList.remove('print:bg-white');
-            };
-
-            document.body.classList.add('print:bg-white');
-            window.addEventListener('afterprint', handleAfterPrint, { once: true });
-            
-            window.print();
-        }
-    }, [orderToPrint]);
 
     const handlePrintKOT = (order: Order) => {
         setOrderToPrint(order);
@@ -272,7 +281,7 @@ export default function ManageOrdersPage() {
 
     return (
         <>
-        <div className="min-h-screen bg-background print:hidden">
+        <div className="min-h-screen bg-background">
             <Header />
             <main className="container py-8">
                 <div className="flex justify-between items-center mb-8">
@@ -415,9 +424,7 @@ export default function ManageOrdersPage() {
             </main>
         </div>
         {orderToPrint && restaurant && (
-            <div className="hidden print:block">
-                <KOT order={orderToPrint} restaurant={restaurant} />
-            </div>
+            <OrderToPrint order={orderToPrint} restaurant={restaurant} />
         )}
         </>
     );

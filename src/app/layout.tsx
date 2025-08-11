@@ -7,6 +7,7 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { CartProvider } from '@/hooks/use-cart';
 import { NotificationProvider } from '@/hooks/use-notifications';
 import { LocationProvider } from '@/hooks/use-location';
+import { PrintProvider } from '@/hooks/use-print';
 
 export const metadata: Metadata = {
   title: 'Village Eats',
@@ -29,16 +30,18 @@ export default function RootLayout({
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossOrigin=""/>
       </head>
       <body className="font-body antialiased">
-        <AuthProvider>
-            <NotificationProvider>
-              <LocationProvider>
-                <CartProvider>
-                  {children}
-                  <Toaster />
-                </CartProvider>
-              </LocationProvider>
-            </NotificationProvider>
-        </AuthProvider>
+        <PrintProvider>
+          <AuthProvider>
+              <NotificationProvider>
+                <LocationProvider>
+                  <CartProvider>
+                    {children}
+                    <Toaster />
+                  </CartProvider>
+                </LocationProvider>
+              </NotificationProvider>
+          </AuthProvider>
+        </PrintProvider>
       </body>
     </html>
   );
