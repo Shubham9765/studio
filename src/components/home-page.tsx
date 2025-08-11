@@ -85,13 +85,17 @@ function PromotionalBanner({ config }: { config: BannerConfig | null }) {
         className="mb-12 relative group"
     >
       {config.imageUrl ? (
-        <Image 
-          src={config.imageUrl}
-          alt={config.heading || 'Promotional banner'}
-          width={1200}
-          height={400}
-          className="w-full h-auto object-contain rounded-xl shadow-lg group-hover:shadow-2xl transition-all duration-300"
-        />
+        <div className="relative w-full h-auto">
+          <Image 
+            src={config.imageUrl}
+            alt={config.heading || 'Promotional banner'}
+            layout="responsive"
+            width={1200}
+            height={400}
+            sizes="100vw"
+            className="w-full h-auto object-contain rounded-xl shadow-lg group-hover:shadow-2xl transition-all duration-300"
+          />
+        </div>
       ) : (
         <div className="h-48 bg-muted rounded-xl"></div>
       )}
