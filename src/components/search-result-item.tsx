@@ -7,7 +7,7 @@ import type { Restaurant, MenuItem } from '@/lib/types';
 import { ChefHat, Utensils } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/hooks/use-cart';
-import { useToast } from './ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { getRestaurantById } from '@/services/restaurantClientService';
 
 type SearchResult = 

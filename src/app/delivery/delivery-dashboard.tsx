@@ -15,8 +15,8 @@ import { AlertTriangle, Bike, Check, PackageCheck, User, Phone, MapPin, History 
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { Badge } from '../ui/badge';
-import { Separator } from '../ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
