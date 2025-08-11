@@ -40,7 +40,6 @@ export default function RestaurantPage() {
         const restaurantData = await getRestaurantById(id);
 
         if (!restaurantData) {
-          // If no restaurant is found, we can set an error or handle appropriately.
           setError('Restaurant not found.');
           setLoading(false);
           return;
@@ -128,7 +127,7 @@ export default function RestaurantPage() {
   }
 
   if (!restaurant) {
-      return null; // Or a more specific "not found" component
+      return null;
   }
   
   const isRestaurantUnavailable = restaurant.status !== 'approved' || !restaurant.isOpen;
@@ -149,27 +148,28 @@ export default function RestaurantPage() {
           <div className="absolute bottom-0 left-0 p-8 text-white">
             <h1 className="text-4xl md:text-5xl font-extrabold font-headline">{restaurant.name}</h1>
             <p className="text-lg text-gray-200 mt-1">{restaurant.cuisine}</p>
-             <div className="flex items-center gap-4 mt-4 text-sm">
+             <div className="flex items-end gap-6 mt-4 text-sm">
                 <div className="flex items-center gap-1.5">
                     <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
                     <span className="font-bold text-lg">{restaurant.rating.toFixed(1)}</span>
                 </div>
-                 <div className="flex items-center gap-1.5">
-                    <Clock className="w-5 h-5" />
-                    <span className="font-medium">{restaurant.deliveryTime}</span>
+                <div className="text-center leading-tight">
+                    <p className="font-bold">{restaurant.deliveryTime}</p>
+                    <p className="text-xs text-gray-300">Delivery</p>
                 </div>
-                 <div className="flex items-center gap-1.5">
-                    <span className="font-medium">{restaurant.deliveryCharge > 0 ? `Rs.${restaurant.deliveryCharge.toFixed(2)} Delivery` : 'Free Delivery'}</span>
+                <div className="text-center leading-tight">
+                    <p className="font-bold">{restaurant.deliveryCharge > 0 ? `Rs.${restaurant.deliveryCharge.toFixed(2)}` : 'Free'}</p>
+                    <p className="text-xs text-gray-300">Delivery</p>
                 </div>
                 {distance !== null && (
-                    <div className="flex items-center gap-1.5">
-                        <MapPin className="w-5 h-5" />
-                        <span className="font-medium">{distance.toFixed(1)} km away</span>
+                     <div className="text-center leading-tight">
+                        <p className="font-bold">{distance.toFixed(1)} km</p>
+                        <p className="text-xs text-gray-300">away</p>
                     </div>
                 )}
             </div>
             {restaurant.fssaiLicense && (
-              <div className="flex items-center gap-2 mt-2 text-xs text-gray-300">
+              <div className="flex items-center gap-2 mt-3 text-xs text-gray-300">
                 <BadgeCheck className="w-4 h-4" />
                 <span>License No: {restaurant.fssaiLicense}</span>
               </div>
