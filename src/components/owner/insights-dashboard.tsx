@@ -8,7 +8,10 @@ import type { Restaurant, Order } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, BarChart, Users, Utensils, DollarSign, Package } from 'lucide-react';
+import { AlertTriangle, BarChart, Users, Utensils, DollarSign, Package, Calendar as CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Bar,
   BarChart as RechartsBarChart,
@@ -22,7 +25,9 @@ import {
   Cell,
   LabelList
 } from 'recharts';
-import { format, subDays } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+import type { DateRange } from "react-day-picker"
+import { cn } from '@/lib/utils';
 
 function StatCard({ title, value, icon, loading }: { title: string; value: string | number; icon: React.ReactNode; loading: boolean }) {
   return (
@@ -45,9 +50,14 @@ function StatCard({ title, value, icon, loading }: { title: string; value: strin
 export function InsightsDashboard() {
   const { user } = useAuth();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [date, setDate] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 29),
+    to: new Date(),
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,8 +67,8 @@ export function InsightsDashboard() {
         const rest = await getRestaurantByOwnerId(user.uid);
         if (rest) {
           setRestaurant(rest);
-          const allOrders = await getAllOrdersForRestaurant(rest.id);
-          setOrders(allOrders.filter(o => o.status === 'delivered')); // Only analyze completed orders
+          const orders = await getAllOrdersForRestaurant(rest.id);
+          setAllOrders(orders.filter(o => o.status === 'delivered')); // Only analyze completed orders
         } else {
           setError('No restaurant found. Please register one first.');
         }
@@ -71,6 +81,19 @@ export function InsightsDashboard() {
     fetchData();
   }, [user]);
 
+  const filteredOrders = useMemo(() => {
+    if (!date?.from) return allOrders;
+    
+    const startDate = startOfDay(date.from);
+    const endDate = date.to ? endOfDay(date.to) : endOfDay(date.from);
+
+    return allOrders.filter(order => {
+        const orderDate = order.createdAt.toDate();
+        return orderDate >= startDate && orderDate <= endDate;
+    });
+
+  }, [allOrders, date])
+
   const {
     totalRevenue,
     totalOrders,
@@ -79,7 +102,7 @@ export function InsightsDashboard() {
     topSellingItems,
     topCategories,
   } = useMemo(() => {
-    if (orders.length === 0) {
+    if (filteredOrders.length === 0) {
       return {
         totalRevenue: 0,
         totalOrders: 0,
@@ -90,27 +113,32 @@ export function InsightsDashboard() {
       };
     }
 
-    const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
-    const totalOrders = orders.length;
-    const uniqueCustomers = new Set(orders.map(o => o.customerId)).size;
+    const totalRevenue = filteredOrders.reduce((sum, order) => sum + order.total, 0);
+    const totalOrders = filteredOrders.length;
+    const uniqueCustomers = new Set(filteredOrders.map(o => o.customerId)).size;
 
-    // Sales by day for the last 30 days
+    // Sales by day for the selected range
     const salesByDayMap = new Map<string, number>();
-    for (let i = 0; i < 30; i++) {
-        const date = format(subDays(new Date(), i), 'MMM dd');
-        salesByDayMap.set(date, 0);
+    
+    if (date?.from && date?.to) {
+        for (let d = startOfDay(date.from); d <= endOfDay(date.to); d.setDate(d.getDate() + 1)) {
+            salesByDayMap.set(format(d, 'MMM dd'), 0);
+        }
+    } else if (date?.from) {
+        salesByDayMap.set(format(date.from, 'MMM dd'), 0);
     }
-    orders.forEach(order => {
-        const date = format(order.createdAt.toDate(), 'MMM dd');
-        if (salesByDayMap.has(date)) {
-            salesByDayMap.set(date, (salesByDayMap.get(date) || 0) + order.total);
+
+    filteredOrders.forEach(order => {
+        const dateKey = format(order.createdAt.toDate(), 'MMM dd');
+        if (salesByDayMap.has(dateKey)) {
+            salesByDayMap.set(dateKey, (salesByDayMap.get(dateKey) || 0) + order.total);
         }
     });
-    const salesByDay = Array.from(salesByDayMap.entries()).map(([name, sales]) => ({ name, sales })).reverse();
+    const salesByDay = Array.from(salesByDayMap.entries()).map(([name, sales]) => ({ name, sales }));
     
     // Top selling items
     const itemSales = new Map<string, number>();
-    orders.forEach(order => {
+    filteredOrders.forEach(order => {
       order.items.forEach(item => {
         itemSales.set(item.name, (itemSales.get(item.name) || 0) + item.quantity);
       });
@@ -122,7 +150,7 @@ export function InsightsDashboard() {
       
     // Top categories
     const categorySales = new Map<string, number>();
-    orders.forEach(order => {
+    filteredOrders.forEach(order => {
         order.items.forEach(item => {
             categorySales.set(item.category, (categorySales.get(item.category) || 0) + 1);
         });
@@ -134,7 +162,7 @@ export function InsightsDashboard() {
 
 
     return { totalRevenue, totalOrders, uniqueCustomers, salesByDay, topSellingItems, topCategories };
-  }, [orders]);
+  }, [filteredOrders, date]);
 
   if (loading) {
      return (
@@ -170,7 +198,47 @@ export function InsightsDashboard() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold">Insights for {restaurant?.name}</h1>
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+        <h1 className="text-3xl font-bold">Insights for {restaurant?.name}</h1>
+         <div className="grid gap-2">
+            <Popover>
+                <PopoverTrigger asChild>
+                <Button
+                    id="date"
+                    variant={"outline"}
+                    className={cn(
+                    "w-[300px] justify-start text-left font-normal",
+                    !date && "text-muted-foreground"
+                    )}
+                >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date?.from ? (
+                    date.to ? (
+                        <>
+                        {format(date.from, "LLL dd, y")} -{" "}
+                        {format(date.to, "LLL dd, y")}
+                        </>
+                    ) : (
+                        format(date.from, "LLL dd, y")
+                    )
+                    ) : (
+                    <span>Pick a date</span>
+                    )}
+                </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={date?.from}
+                    selected={date}
+                    onSelect={setDate}
+                    numberOfMonths={2}
+                />
+                </PopoverContent>
+            </Popover>
+        </div>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Revenue" value={`$${totalRevenue.toFixed(2)}`} icon={<DollarSign className="text-muted-foreground h-4 w-4" />} loading={loading} />
@@ -181,7 +249,7 @@ export function InsightsDashboard() {
 
        <Card>
         <CardHeader>
-          <CardTitle>Sales in Last 30 Days</CardTitle>
+          <CardTitle>Sales Overview</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={350}>
