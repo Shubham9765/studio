@@ -81,17 +81,6 @@ export async function getRestaurantByOwnerId(ownerId: string): Promise<Restauran
     return { ...restaurantDoc.data(), id: restaurantDoc.id } as Restaurant;
 }
 
-export async function getOrdersForRestaurant(restaurantId: string): Promise<Order[]> {
-    const ordersRef = collection(db, 'orders');
-    const q = query(ordersRef, where('restaurantId', '==', restaurantId));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-        return [];
-    }
-    const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
-    return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
-}
-
 export async function getAllOrdersForRestaurant(restaurantId: string): Promise<Order[]> {
     const ordersCollection = collection(db, 'orders');
     const q = query(ordersCollection, where('restaurantId', '==', restaurantId));

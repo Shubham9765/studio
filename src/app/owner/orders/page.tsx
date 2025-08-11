@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { assignDeliveryBoy, updateOrderPaymentStatus, updateOrderStatus } from '@/services/ownerService';
-import { getOrdersForRestaurant, getRestaurantByOwnerId } from '@/services/ownerClientService';
+import { getRestaurantByOwnerId, listenToOrdersForRestaurant } from '@/services/ownerClientService';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, BookOpen, History } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -30,16 +30,14 @@ export default function ManageOrdersPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
-    const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
-
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            setAudio(new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_942323b2f9.mp3'));
-        }
-    }, []);
-
+    
     useEffect(() => {
         if (!user || authLoading) return;
+
+        let audio: HTMLAudioElement | null = null;
+        if (typeof window !== 'undefined') {
+            audio = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_942323b2f9.mp3');
+        }
 
         const fetchInitialData = async () => {
             setLoading(true);
@@ -50,8 +48,8 @@ export default function ManageOrdersPage() {
                     const unsubscribe = listenToOrdersForRestaurant(rest.id, (fetchedOrders) => {
                         
                         setOrders(prevOrders => {
-                            if (fetchedOrders.length > prevOrders.length && prevOrders.length > 0) {
-                                audio?.play().catch(e => console.error("Error playing sound:", e));
+                            if (audio && fetchedOrders.length > prevOrders.length && prevOrders.length > 0) {
+                                audio.play().catch(e => console.error("Error playing sound:", e));
                             }
                             return fetchedOrders;
                         });
@@ -75,7 +73,7 @@ export default function ManageOrdersPage() {
         return () => {
             unsubscribePromise.then(unsub => unsub && unsub());
         };
-    }, [user, authLoading, toast, audio]);
+    }, [user, authLoading, toast]);
 
 
     const handlePrintKOT = (order: Order) => {
@@ -203,11 +201,11 @@ export default function ManageOrdersPage() {
                         order={order}
                         restaurant={restaurant}
                         isUpdating={updatingOrderId === order.id}
-                        onStatusChange={(status) => handleStatusChange(order.id, status)}
-                        onCancelOrder={() => handleCancelOrder(order.id)}
-                        onAssignDelivery={(deliveryBoyId) => handleAssignDelivery(order.id, deliveryBoyId)}
-                        onMarkAsPaid={() => handleMarkAsPaid(order.id)}
-                        onPrintKOT={() => handlePrintKOT(order)}
+                        onStatusChange={handleStatusChange}
+                        onCancelOrder={handleCancelOrder}
+                        onAssignDelivery={handleAssignDelivery}
+                        onMarkAsPaid={handleMarkAsPaid}
+                        onPrintKOT={handlePrintKOT}
                     />
                 ))}
             </div>

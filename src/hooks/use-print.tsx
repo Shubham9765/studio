@@ -46,8 +46,10 @@ export function PrintProvider({ children }: { children: ReactNode }) {
 
     // Clean up after printing
     const handleAfterPrint = () => {
-        ReactDOM.unmountComponentAtNode(printRoot);
-        printRoot.remove();
+        if (printRoot) {
+            ReactDOM.unmountComponentAtNode(printRoot);
+            printRoot.remove();
+        }
     }
     iframe.contentWindow?.addEventListener('afterprint', handleAfterPrint, { once: true });
 
