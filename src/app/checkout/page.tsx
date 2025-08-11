@@ -23,7 +23,7 @@ import type { Address } from '@/hooks/use-auth';
 import { useLocation } from '@/hooks/use-location';
 import Link from 'next/link';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LocationPickerMap } from '@/components/location-picker-map';
 
 
