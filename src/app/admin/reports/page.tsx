@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { DollarSign, Hash, Percent, FileText, AlertTriangle } from 'lucide-react';
+import { DollarSign, Hash, Percent, FileText, AlertTriangle, BarChart } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Select,
@@ -58,9 +58,16 @@ function CommissionReportsPage() {
   }, [data.restaurants, data.allOrders, commissionRate]);
   
   const selectedRestaurantReport = useMemo(() => {
-    if (!selectedRestaurantId) return null;
+    if (!selectedRestaurantId) return restaurantReports[0] || null; // Default to first restaurant
     return restaurantReports.find(r => r.id === selectedRestaurantId);
   }, [selectedRestaurantId, restaurantReports]);
+  
+  const grandTotals = useMemo(() => {
+    const totalVolume = restaurantReports.reduce((sum, r) => sum + r.totalVolume, 0);
+    const totalCommission = restaurantReports.reduce((sum, r) => sum + r.commission, 0);
+    return { totalVolume, totalCommission };
+  }, [restaurantReports]);
+
 
   if (loading) {
     return (
@@ -68,6 +75,10 @@ function CommissionReportsPage() {
         <Header />
         <main className="container py-8">
             <Skeleton className="h-8 w-1/3 mb-8" />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+                <Skeleton className="h-28" />
+                <Skeleton className="h-28" />
+            </div>
             <Card>
                 <CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader>
                 <CardContent><Skeleton className="h-40 w-full" /></CardContent>
@@ -104,6 +115,30 @@ function CommissionReportsPage() {
             </div>
         </div>
         <p className="text-muted-foreground mb-8">View sales volume and calculated commission for each restaurant.</p>
+        
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Sales Volume</CardTitle>
+                    <BarChart className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">Rs.{grandTotals.totalVolume.toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground">Across all restaurants</p>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Commission</CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">Rs.{grandTotals.totalCommission.toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground">Calculated at {commissionRate}%</p>
+                </CardContent>
+            </Card>
+        </div>
+
 
         <div className="grid lg:grid-cols-3 gap-8 items-start">
             <Card className="lg:col-span-1">
@@ -115,16 +150,23 @@ function CommissionReportsPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Restaurant</TableHead>
+                                <TableHead className="text-right">Sales</TableHead>
                                 <TableHead className="text-right">Commission</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {restaurantReports.map(report => (
-                                <TableRow key={report.id} onClick={() => setSelectedRestaurantId(report.id)} className="cursor-pointer">
+                                <TableRow 
+                                    key={report.id} 
+                                    onClick={() => setSelectedRestaurantId(report.id)} 
+                                    className="cursor-pointer"
+                                    data-state={selectedRestaurantReport?.id === report.id ? 'selected' : ''}
+                                >
                                     <TableCell>
                                         <div className="font-medium">{report.name}</div>
                                         <div className="text-xs text-muted-foreground">{report.totalOrders} orders</div>
                                     </TableCell>
+                                     <TableCell className="text-right">Rs.{report.totalVolume.toFixed(2)}</TableCell>
                                     <TableCell className="text-right font-bold">Rs.{report.commission.toFixed(2)}</TableCell>
                                 </TableRow>
                             ))}
@@ -190,3 +232,5 @@ function CommissionReportsPage() {
 }
 
 export default CommissionReportsPage;
+
+    
