@@ -2,8 +2,8 @@
 'use client';
 
 import { db } from './firebase';
-import { collection, query, where, onSnapshot, getDocs, limit } from 'firebase/firestore';
-import type { Order, Restaurant } from '@/lib/types';
+import { collection, query, where, onSnapshot, getDocs, limit, doc } from 'firebase/firestore';
+import type { Order, Restaurant, MenuItem } from '@/lib/types';
 
 
 export interface OwnerDashboardData {
@@ -66,4 +66,28 @@ export function listenToOrdersForRestaurant(restaurantId: string, callback: (ord
     });
 
     return unsubscribe;
+}
+
+
+export async function getRestaurantByOwnerId(ownerId: string): Promise<Restaurant | null> {
+    const q = query(collection(db, 'restaurants'), where('ownerId', '==', ownerId), limit(1));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+        return null;
+    }
+
+    const restaurantDoc = snapshot.docs[0];
+    return { ...restaurantDoc.data(), id: restaurantDoc.id } as Restaurant;
+}
+
+export async function getOrdersForRestaurant(restaurantId: string): Promise<Order[]> {
+    const ordersRef = collection(db, 'orders');
+    const q = query(ordersRef, where('restaurantId', '==', restaurantId));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        return [];
+    }
+    const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+    return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
 }
