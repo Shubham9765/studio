@@ -78,7 +78,7 @@ export function MenuItemCard({ item, restaurantId }: MenuItemCardProps) {
                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2 h-8">{item.description}</p>
             </div>
              <div className="flex justify-between items-center px-3 pb-3 mt-auto">
-                <p className="font-bold text-primary text-base">${item.price.toFixed(2)}</p>
+                <p className="font-bold text-primary text-base">Rs.{item.price.toFixed(2)}</p>
                 <Button size="sm" className="h-8 text-xs" disabled={!item.isAvailable} onClick={handleAddToCart}>
                     <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
                     Add

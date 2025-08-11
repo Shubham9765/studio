@@ -146,7 +146,7 @@ export default function OrderHistoryPage() {
                                                     {order.status.replace('-', ' ')}
                                                 </Badge>
                                             </div>
-                                            <div className="font-bold text-lg">${order.total.toFixed(2)}</div>
+                                            <div className="font-bold text-lg">Rs.{order.total.toFixed(2)}</div>
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="p-4 pt-0">
@@ -156,7 +156,7 @@ export default function OrderHistoryPage() {
                                                 {order.items.map(item => (
                                                     <li key={item.id} className="flex justify-between">
                                                         <span>{item.name} x {item.quantity}</span>
-                                                        <span>${(item.price * item.quantity).toFixed(2)}</span>
+                                                        <span>Rs.{(item.price * item.quantity).toFixed(2)}</span>
                                                     </li>
                                                 ))}
                                             </ul>

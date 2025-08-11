@@ -180,7 +180,7 @@ export default function OrderHistoryPage() {
                                                 </div>
                                                 <div className="hidden sm:block text-sm">{format(order.createdAt.toDate(), 'PP')}</div>
                                                 <div><Badge variant={order.status === 'delivered' ? 'default' : 'destructive'} className="capitalize">{order.status.replace('-', ' ')}</Badge></div>
-                                                <div className="font-bold text-lg">${order.total.toFixed(2)}</div>
+                                                <div className="font-bold text-lg">Rs.{order.total.toFixed(2)}</div>
                                             </div>
                                         </AccordionTrigger>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 ml-2 flex-shrink-0" onClick={(e) => { e.stopPropagation(); handleCopyId(order.id); }}>
@@ -203,7 +203,7 @@ export default function OrderHistoryPage() {
                                                 {order.items.map(item => (
                                                     <li key={item.id} className="flex justify-between">
                                                         <span>{item.name} x {item.quantity}</span>
-                                                        <span>${(item.price * item.quantity).toFixed(2)}</span>
+                                                        <span>Rs.{(item.price * item.quantity).toFixed(2)}</span>
                                                     </li>
                                                 ))}
                                             </ul>

@@ -69,7 +69,7 @@ export async function createOrder(
   
   if(restaurant.ownerId) {
     const title = 'New Order Received!';
-    const body = `You have a new order from ${customerName} for a total of $${total.toFixed(2)}`;
+    const body = `You have a new order from ${customerName} for a total of Rs.${total.toFixed(2)}`;
     console.log(`(Notification Stub) To: ${restaurant.ownerId}, Title: ${title}, Body: ${body}`);
   }
 

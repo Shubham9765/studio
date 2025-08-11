@@ -593,7 +593,7 @@ export default function AdminDashboard() {
       <main className="container py-8">
         <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 mb-12">
-            <StatCard loading={loading} title="Total Revenue" value="$45,231" icon={<BarChart className="h-4 w-4 text-muted-foreground" />} description="+20.1% from last month" />
+            <StatCard loading={loading} title="Total Revenue" value="Rs.45,231" icon={<BarChart className="h-4 w-4 text-muted-foreground" />} description="+20.1% from last month" />
             <StatCard loading={loading} title="Total Customers" value={data.customerCount} icon={<Users className="h-4 w-4 text-muted-foreground" />} description="All-time customer count" />
             <StatCard loading={loading} title="Total Restaurants" value={data.restaurantCount} icon={<Utensils className="h-4 w-4 text-muted-foreground" />} description="All-time restaurant count" />
             <StatCard loading={loading} title="Pending Approvals" value={data.pendingApprovalCount} icon={<ShieldCheck className="h-4 w-4 text-muted-foreground" />} description="Restaurants needing review" />

@@ -150,9 +150,9 @@ export function MenuItemForm({ isOpen, onOpenChange, restaurantId, menuItem, onF
                 name="price"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Price ($)</FormLabel>
+                    <FormLabel>Price (Rs.)</FormLabel>
                     <FormControl>
-                        <Input type="number" step="0.01" placeholder="e.g., 9.99" {...field} />
+                        <Input type="number" step="0.01" placeholder="e.g., 99.00" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>

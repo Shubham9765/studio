@@ -21,7 +21,7 @@ export function FloatingCartBar() {
                  <SheetTrigger asChild>
                     <Button className="h-16 w-16 rounded-full shadow-lg text-lg flex flex-col items-center justify-center gap-0.5">
                         <ShoppingCart className="h-6 w-6"/>
-                        <span className="font-bold text-sm">${totalPrice.toFixed(2)}</span>
+                        <span className="font-bold text-sm">Rs.{totalPrice.toFixed(2)}</span>
                          <Badge variant="secondary" className="absolute -top-1 -right-1 h-6 w-6 flex items-center justify-center rounded-full text-sm">
                             {cartCount}
                         </Badge>

@@ -238,7 +238,7 @@ export default function ManageMenuPage() {
                                                 <div className="font-medium">{item.name}</div>
                                                 <div className="text-xs">{item.category}</div>
                                             </TableCell>
-                                            <TableCell>${item.price.toFixed(2)}</TableCell>
+                                            <TableCell>Rs.{item.price.toFixed(2)}</TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
                                                      <Switch

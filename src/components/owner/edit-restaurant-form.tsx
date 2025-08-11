@@ -209,9 +209,9 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
                 name="deliveryCharge"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Delivery Charge ($)</FormLabel>
+                    <FormLabel>Delivery Charge (Rs.)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder="e.g., 2.50" {...field} />
+                      <Input type="number" step="0.01" placeholder="e.g., 50.00" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

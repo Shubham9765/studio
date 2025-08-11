@@ -51,7 +51,7 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
                 <Clock className="w-3 h-3" />
                 <span>{restaurant.deliveryTime}</span>
             </div>
-            <span>{restaurant.deliveryCharge > 0 ? `$${restaurant.deliveryCharge.toFixed(2)} delivery` : 'Free Delivery'}</span>
+            <span>{restaurant.deliveryCharge > 0 ? `Rs.${restaurant.deliveryCharge.toFixed(2)} delivery` : 'Free Delivery'}</span>
         </div>
       </CardContent>
     </Card>

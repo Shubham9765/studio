@@ -110,9 +110,8 @@ export default function RestaurantPage() {
           <Image
             src={restaurant.image || 'https://placehold.co/1200x400.png'}
             alt={restaurant.name}
-            layout="fill"
-            objectFit="cover"
-            className="w-full h-full"
+            fill
+            className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
           <div className="absolute bottom-0 left-0 p-8 text-white">
@@ -128,7 +127,7 @@ export default function RestaurantPage() {
                     <span className="font-medium">{restaurant.deliveryTime}</span>
                 </div>
                  <div className="flex items-center gap-1.5">
-                    <span className="font-medium">{restaurant.deliveryCharge > 0 ? `$${restaurant.deliveryCharge.toFixed(2)} Delivery` : 'Free Delivery'}</span>
+                    <span className="font-medium">{restaurant.deliveryCharge > 0 ? `Rs.${restaurant.deliveryCharge.toFixed(2)} Delivery` : 'Free Delivery'}</span>
                 </div>
             </div>
             {restaurant.fssaiLicense && (

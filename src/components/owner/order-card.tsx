@@ -159,7 +159,7 @@ export function OrderCard({
                         <VegNonVegIcon type={item.type} />
                         <span>{item.quantity} x {item.name}</span>
                     </div>
-                    <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="font-medium">Rs.{(item.price * item.quantity).toFixed(2)}</span>
                 </div>
             ))}
             <Separator />
@@ -169,13 +169,13 @@ export function OrderCard({
                          <Button variant="ghost" className="p-0 h-auto">
                             Total Bill
                             <Badge variant={order.paymentStatus === 'completed' ? 'default' : 'destructive'} className="ml-2 uppercase">{order.paymentStatus}</Badge>
-                            <span className="mx-2">${order.total.toFixed(2)}</span>
+                            <span className="mx-2">Rs.{order.total.toFixed(2)}</span>
                             <ChevronDown className="h-4 w-4" />
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-56 text-sm space-y-2">
-                        <div className="flex justify-between"><span>Subtotal</span> <span>${(order.total - (restaurant.deliveryCharge || 0)).toFixed(2)}</span></div>
-                        <div className="flex justify-between"><span>Delivery</span> <span>${(restaurant.deliveryCharge || 0).toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>Subtotal</span> <span>Rs.{(order.total - (restaurant.deliveryCharge || 0)).toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>Delivery</span> <span>Rs.{(restaurant.deliveryCharge || 0).toFixed(2)}</span></div>
                     </PopoverContent>
                 </Popover>
                  <Button variant="ghost" onClick={() => onPrintKOT(order)}>

@@ -66,7 +66,7 @@ export function KOT({ order, restaurant }: KOTProps) {
                 <td className="py-1">
                   <p className="font-semibold">{item.name}</p>
                 </td>
-                <td className="py-1 text-right">${(item.price * item.quantity).toFixed(2)}</td>
+                <td className="py-1 text-right">Rs.{(item.price * item.quantity).toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
@@ -76,27 +76,27 @@ export function KOT({ order, restaurant }: KOTProps) {
             <div className="w-1/2">
                   <div className="flex justify-between">
                       <span className="font-semibold">Subtotal:</span>
-                      <span>${subtotal.toFixed(2)}</span>
+                      <span>Rs.{subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                       <span className="font-semibold">Delivery:</span>
-                      <span>${deliveryCharge.toFixed(2)}</span>
+                      <span>Rs.{deliveryCharge.toFixed(2)}</span>
                   </div>
                   {gstEnabled && (
                     <>
                         <div className="flex justify-between">
                           <span className="font-semibold">CGST (2.5%):</span>
-                          <span>${(gstAmount / 2).toFixed(2)}</span>
+                          <span>Rs.{(gstAmount / 2).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="font-semibold">SGST (2.5%):</span>
-                          <span>${(gstAmount / 2).toFixed(2)}</span>
+                          <span>Rs.{(gstAmount / 2).toFixed(2)}</span>
                         </div>
                     </>
                   )}
                   <div className="flex justify-between font-bold border-t border-black mt-1 pt-1">
                       <span>Grand Total:</span>
-                      <span>${order.total.toFixed(2)}</span>
+                      <span>Rs.{order.total.toFixed(2)}</span>
                   </div>
             </div>
         </div>

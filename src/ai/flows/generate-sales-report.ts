@@ -93,7 +93,7 @@ const generateSalesReportFlow = ai.defineFlow(
     const topRestaurants = Object.entries(restaurantSales)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
-        .map(([name, total]) => ({ name, total: `$${total.toFixed(2)}` }));
+        .map(([name, total]) => ({ name, total: `Rs.${total.toFixed(2)}` }));
         
     const topItems = Object.entries(itemSales)
         .sort((a, b) => b[1] - a[1])
@@ -104,7 +104,7 @@ const generateSalesReportFlow = ai.defineFlow(
         startDate: format(startDate, 'PP'),
         endDate: format(endDate, 'PP'),
         totalOrders,
-        totalRevenue: `$${totalRevenue.toFixed(2)}`,
+        totalRevenue: `Rs.${totalRevenue.toFixed(2)}`,
         topRestaurants,
         topItems,
     });

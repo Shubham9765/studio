@@ -125,7 +125,7 @@ function CommissionReportsPage() {
                                         <div className="font-medium">{report.name}</div>
                                         <div className="text-xs text-muted-foreground">{report.totalOrders} orders</div>
                                     </TableCell>
-                                    <TableCell className="text-right font-bold">${report.commission.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right font-bold">Rs.{report.commission.toFixed(2)}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -143,8 +143,8 @@ function CommissionReportsPage() {
                             </CardDescription>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 text-sm">
                                 <div className="flex items-center gap-2"><Hash className="h-4 w-4 text-muted-foreground"/> <strong>Total Orders:</strong> {selectedRestaurantReport.totalOrders}</div>
-                                <div className="flex items-center gap-2"><DollarSign className="h-4 w-4 text-muted-foreground"/> <strong>Sales Volume:</strong> ${selectedRestaurantReport.totalVolume.toFixed(2)}</div>
-                                <div className="flex items-center gap-2"><Percent className="h-4 w-4 text-muted-foreground"/> <strong>Commission:</strong> ${selectedRestaurantReport.commission.toFixed(2)}</div>
+                                <div className="flex items-center gap-2"><DollarSign className="h-4 w-4 text-muted-foreground"/> <strong>Sales Volume:</strong> Rs.{selectedRestaurantReport.totalVolume.toFixed(2)}</div>
+                                <div className="flex items-center gap-2"><Percent className="h-4 w-4 text-muted-foreground"/> <strong>Commission:</strong> Rs.{selectedRestaurantReport.commission.toFixed(2)}</div>
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -165,7 +165,7 @@ function CommissionReportsPage() {
                                                 <TableCell className="font-mono text-xs">#{order.id.substring(0, 8)}</TableCell>
                                                 <TableCell>{format(order.createdAt.toDate(), 'PP')}</TableCell>
                                                 <TableCell>{order.customerName}</TableCell>
-                                                <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
+                                                <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>

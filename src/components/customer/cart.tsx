@@ -105,7 +105,7 @@ export function Cart({ restaurant, isSheet = false }: CartProps) {
                             />
                             <div className="flex-1">
                                 <p className="font-semibold">{item.name}</p>
-                                <p className="text-primary font-bold">${(item.price * item.quantity).toFixed(2)}</p>
+                                <p className="text-primary font-bold">Rs.{(item.price * item.quantity).toFixed(2)}</p>
                                 <div className="flex items-center gap-2 mt-1">
                                     <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateItemQuantity(item.id, item.quantity - 1)}>
                                         <Minus className="h-4 w-4" />
@@ -127,16 +127,16 @@ export function Cart({ restaurant, isSheet = false }: CartProps) {
                 <Separator />
                 <div className="flex justify-between text-sm">
                     <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>Rs.{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                     <span>Delivery Fee</span>
-                    <span>${deliveryFee.toFixed(2)}</span>
+                    <span>Rs.{deliveryFee.toFixed(2)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>Rs.{total.toFixed(2)}</span>
                 </div>
             </div>
         </>

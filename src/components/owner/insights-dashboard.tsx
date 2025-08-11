@@ -241,7 +241,7 @@ export function InsightsDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Revenue" value={`$${totalRevenue.toFixed(2)}`} icon={<DollarSign className="text-muted-foreground h-4 w-4" />} loading={loading} />
+        <StatCard title="Total Revenue" value={`Rs.${totalRevenue.toFixed(2)}`} icon={<DollarSign className="text-muted-foreground h-4 w-4" />} loading={loading} />
         <StatCard title="Total Orders" value={totalOrders} icon={<Package className="text-muted-foreground h-4 w-4" />} loading={loading} />
         <StatCard title="Unique Customers" value={uniqueCustomers} icon={<Users className="text-muted-foreground h-4 w-4" />} loading={loading} />
         <StatCard title="Top Item" value={topSellingItems[0]?.name || 'N/A'} icon={<Utensils className="text-muted-foreground h-4 w-4" />} loading={loading} />
@@ -255,7 +255,7 @@ export function InsightsDashboard() {
           <ResponsiveContainer width="100%" height={350}>
             <RechartsBarChart data={salesByDay}>
               <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+              <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `Rs.${value}`} />
               <Tooltip
                 contentStyle={{
                     backgroundColor: 'hsl(var(--background))',
