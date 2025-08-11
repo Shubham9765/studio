@@ -28,18 +28,12 @@ export default function ManageOrdersPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [isNewOrderPending, setIsNewOrderPending] = useState(false);
 
-     useEffect(() => {
-        // Initialize the Audio object only on the client side
-        if (typeof window !== 'undefined' && !audioRef.current) {
-            audioRef.current = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_942323b2f9.mp3');
-            audioRef.current.volume = 1.0;
-        }
-    }, []);
-    
     useEffect(() => {
         if (!user || authLoading) return;
+        
+        let audio: HTMLAudioElement | null = null;
         
         const fetchInitialData = async () => {
             setLoading(true);
@@ -48,25 +42,24 @@ export default function ManageOrdersPage() {
                 setRestaurant(rest);
                 if (rest) {
                     const unsubscribe = listenToOrdersForRestaurant(rest.id, (fetchedOrders) => {
+                        setOrders(fetchedOrders);
                         
-                        setOrders(prevOrders => {
-                            if (audioRef.current && fetchedOrders.length > prevOrders.length && prevOrders.length > 0) {
-                                // Check if there is a genuinely new order that wasn't there before
-                                const newOrder = fetchedOrders.find(o => !prevOrders.some(po => po.id === o.id));
-                                if (newOrder && newOrder.status === 'pending') {
-                                    audioRef.current!.currentTime = 0;
-                                    audioRef.current!.play().catch(e => console.error("Error playing sound:", e));
-                                    
-                                    setTimeout(() => {
-                                        if (audioRef.current) {
-                                            audioRef.current.pause();
-                                        }
-                                    }, 5000);
-                                }
-                            }
-                            return fetchedOrders;
-                        });
+                        const hasPendingOrders = fetchedOrders.some(o => o.status === 'pending');
+                        setIsNewOrderPending(hasPendingOrders);
 
+                        if (typeof window !== 'undefined') {
+                            if (hasPendingOrders) {
+                                if (!audio) {
+                                    audio = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_942323b2f9.mp3');
+                                    audio.loop = true;
+                                    audio.volume = 1.0;
+                                }
+                                audio.play().catch(e => console.error("Error playing sound:", e));
+                            } else {
+                                audio?.pause();
+                            }
+                        }
+                        
                         setLoading(false);
                     }, (err) => {
                         console.error(err);
@@ -89,6 +82,7 @@ export default function ManageOrdersPage() {
 
         return () => {
             unsubscribePromise.then(unsub => unsub && unsub());
+            audio?.pause();
         };
     }, [user, authLoading, toast]);
 
@@ -111,6 +105,14 @@ export default function ManageOrdersPage() {
     }
 
     const handleStatusChange = (orderId: string, status: Order['status']) => {
+        const order = orders.find(o => o.id === orderId);
+        if (order?.status === 'pending' && status === 'accepted') {
+             const pendingOrders = orders.filter(o => o.status === 'pending');
+             if (pendingOrders.length === 1) {
+                 setIsNewOrderPending(false);
+             }
+        }
+
         handleAction(orderId, updateOrderStatus(orderId, status), {
             title: 'Order Status Updated',
             description: 'Customer will be notified.',
@@ -229,7 +231,12 @@ export default function ManageOrdersPage() {
             <Header />
             <main className="container py-8 flex-grow flex flex-col">
                 <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold">Order Management</h1>
+                    <div className="flex items-center gap-4">
+                        <h1 className="text-3xl font-bold">Order Management</h1>
+                        {isNewOrderPending && (
+                            <Badge className="bg-green-500 text-lg animate-pulse">New Order!</Badge>
+                        )}
+                    </div>
                     <Button asChild variant="outline">
                         <Link href="/owner/orders/history">
                             <History className="mr-2 h-4 w-4" />

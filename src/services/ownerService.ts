@@ -123,17 +123,6 @@ export async function updateOrderPaymentStatus(orderId: string, paymentStatus: '
 export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
     const orderRef = doc(db, 'orders', orderId);
     await updateDoc(orderRef, { status });
-
-    try {
-        const orderSnap = await getDoc(orderRef);
-        if (orderSnap.exists()) {
-            const orderData = orderSnap.data() as Order;
-            const message = `Your order #${orderId.substring(0, 6)} is now ${status.replace('-', ' ')}.`;
-            console.log(`(Notification Stub) To: ${orderData.customerId}, Message: ${message}`);
-        }
-    } catch (error) {
-        console.error("Failed to send status update notification:", error);
-    }
 }
 
 // Delivery Boy Functions
@@ -185,7 +174,9 @@ export async function assignDeliveryBoy(orderId: string, deliveryBoy: {id: strin
         if (orderSnap.exists()) {
             const orderData = orderSnap.data() as Order;
             const message = `Your order #${orderId.substring(0, 6)} is out for delivery with ${deliveryBoy.name}! Your OTP is ${deliveryOtp}.`;
-            console.log(`(Notification Stub) To: ${orderData.customerId}, Message: ${message}`);
+            // This should be a proper notification service call, not console.log
+            // For now, we'll keep the stub but comment it out to prevent server-side issues.
+            // console.log(`(Notification Stub) To: ${orderData.customerId}, Message: ${message}`);
         }
     } catch (error) {
         console.error("Failed to send delivery notification:", error);
