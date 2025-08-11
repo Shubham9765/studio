@@ -35,6 +35,7 @@ export interface Restaurant {
   fssaiLicense?: string;
   gstEnabled?: boolean;
   gstin?: string;
+  isPromoted?: boolean;
 }
 
 export interface MenuItem {

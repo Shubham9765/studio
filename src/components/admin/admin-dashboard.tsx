@@ -3,7 +3,7 @@
 
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff, FileText, MapPin, PlusCircle, Trash2, Megaphone, Palette, Percent } from 'lucide-react';
+import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff, FileText, MapPin, PlusCircle, Trash2, Megaphone, Palette, Percent, Star } from 'lucide-react';
 import { useAdminDashboardData } from '@/hooks/use-admin-dashboard-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,7 +17,7 @@ import { format } from 'date-fns';
 import { useState, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
-import { updateUserStatus, updateRestaurantStatus, addServiceableCity, removeServiceableCity, updateBannerConfig, updateCommissionRate } from '@/services/adminService';
+import { updateUserStatus, updateRestaurantStatus, addServiceableCity, removeServiceableCity, updateBannerConfig, updateCommissionRate, updateRestaurantPromotionStatus } from '@/services/adminService';
 import { useToast } from '@/hooks/use-toast';
 import { generateSalesReport, type GenerateSalesReportOutput } from '@/ai/flows/generate-sales-report';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -153,6 +153,19 @@ function RestaurantTable({ restaurants, loading, onUpdate }: { restaurants: Rest
             setUpdatingRestaurantId(null);
         }
     };
+
+    const handlePromotionToggle = async (restaurantId: string, isPromoted: boolean) => {
+        setUpdatingRestaurantId(restaurantId);
+        try {
+            await updateRestaurantPromotionStatus(restaurantId, !isPromoted);
+            toast({ title: "Promotion status updated", description: `Restaurant has been ${!isPromoted ? 'promoted' : 'demoted'}.` });
+            onUpdate();
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: 'Update failed', description: error.message });
+        } finally {
+            setUpdatingRestaurantId(null);
+        }
+    }
     
     return (
         <Card>
@@ -182,8 +195,18 @@ function RestaurantTable({ restaurants, loading, onUpdate }: { restaurants: Rest
                              <TableRow key={restaurant.id}>
                                 <TableCell className="font-medium">{restaurant.name}</TableCell>
                                 <TableCell>{restaurant.cuisine}</TableCell>
-                                <TableCell><Badge variant={getStatusVariant(restaurant.status)} className="capitalize">{restaurant.status}</Badge></TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant={getStatusVariant(restaurant.status)} className="capitalize">{restaurant.status}</Badge>
+                                        {restaurant.isPromoted && <Badge variant="secondary"><Star className="h-3 w-3 mr-1" />Promoted</Badge>}
+                                    </div>
+                                </TableCell>
                                 <TableCell className="text-right space-x-2">
+                                     {restaurant.status === 'approved' && (
+                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handlePromotionToggle(restaurant.id, !!restaurant.isPromoted)} disabled={updatingRestaurantId === restaurant.id}>
+                                            <Star className={cn("h-4 w-4", restaurant.isPromoted && "fill-amber-400 text-amber-500")} />
+                                        </Button>
+                                    )}
                                     {restaurant.status === 'pending' && (
                                         <>
                                          <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(restaurant.id, 'approved')} disabled={updatingRestaurantId === restaurant.id}>

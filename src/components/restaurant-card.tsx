@@ -31,6 +31,11 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
              "absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent",
              restaurant.isOpen && "group-hover:from-black/70 transition-all duration-300"
          )} />
+         {restaurant.isPromoted && (
+             <Badge variant="default" className="absolute top-2 left-2 bg-amber-400 text-black hover:bg-amber-400">
+                <Star className="h-3 w-3 mr-1"/> Featured
+            </Badge>
+         )}
          {!restaurant.isOpen && (
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                 <span className="text-white font-bold text-lg tracking-wider">CLOSED</span>

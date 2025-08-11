@@ -11,6 +11,11 @@ export async function updateRestaurantStatus(restaurantId: string, status: Resta
   await updateDoc(restaurantRef, { status });
 }
 
+export async function updateRestaurantPromotionStatus(restaurantId: string, isPromoted: boolean): Promise<void> {
+  const restaurantRef = doc(db, 'restaurants', restaurantId);
+  await updateDoc(restaurantRef, { isPromoted });
+}
+
 export async function updateUserStatus(userId: string, status: AppUser['status']): Promise<void> {
   const userRef = doc(db, 'users', userId);
   await updateDoc(userRef, { status });

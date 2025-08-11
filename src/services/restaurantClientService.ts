@@ -13,7 +13,7 @@ export async function getRestaurants(): Promise<Restaurant[]> {
   const cuisinesConfig = cuisinesConfigDoc.exists() ? cuisinesConfigDoc.data() : {};
 
   const processRestaurants = (snapshot: any): Restaurant[] => {
-    return snapshot.docs.map((doc: any) => {
+    const restaurants = snapshot.docs.map((doc: any) => {
         const restaurantData = doc.data() as Restaurant;
         const cuisineImage = cuisinesConfig[restaurantData.cuisine]?.imageUrl || undefined;
         return { 
@@ -22,6 +22,12 @@ export async function getRestaurants(): Promise<Restaurant[]> {
             categoryImageUrl: cuisineImage,
         } as Restaurant
     });
+
+    // Separate promoted from non-promoted and sort them
+    const promoted = restaurants.filter((r: Restaurant) => r.isPromoted).sort((a,b) => b.rating - a.rating);
+    const notPromoted = restaurants.filter((r: Restaurant) => !r.isPromoted);
+
+    return [...promoted, ...notPromoted];
   }
 
   const querySnapshot = await getDocs(q);
