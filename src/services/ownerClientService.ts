@@ -2,7 +2,7 @@
 'use client';
 
 import { db } from './firebase';
-import { collection, query, where, onSnapshot, getDocs, limit, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs, limit, doc, orderBy } from 'firebase/firestore';
 import type { Order, Restaurant, MenuItem } from '@/lib/types';
 
 
@@ -90,4 +90,11 @@ export async function getOrdersForRestaurant(restaurantId: string): Promise<Orde
     }
     const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
     return orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+}
+
+export async function getAllOrdersForRestaurant(restaurantId: string): Promise<Order[]> {
+    const ordersCollection = collection(db, 'orders');
+    const q = query(ordersCollection, where('restaurantId', '==', restaurantId), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
 }

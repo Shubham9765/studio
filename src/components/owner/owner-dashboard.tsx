@@ -3,7 +3,7 @@
 
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Utensils, Truck, Star, ClipboardList, Edit, MenuSquare, BookOpen, ShieldAlert, BadgeCheck, Clock, ShieldX, Bike, History } from 'lucide-react';
+import { Utensils, Truck, Star, ClipboardList, Edit, MenuSquare, BookOpen, ShieldAlert, BadgeCheck, Clock, ShieldX, Bike, History, BarChart2 } from 'lucide-react';
 import { useOwnerDashboardData } from '@/hooks/use-owner-dashboard-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -168,11 +168,12 @@ export default function OwnerDashboard() {
                     <CardTitle>Manage Your Restaurant</CardTitle>
                     <CardDescription>Quick links to manage your restaurant's presence on Village Eats.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col sm:flex-row gap-4">
+                <CardContent className="flex flex-wrap gap-4">
                     <Button asChild><Link href="/owner/menu"><MenuSquare className="mr-2 h-4 w-4" />Manage Menu</Link></Button>
                     <Button asChild><Link href="/owner/orders"><BookOpen className="mr-2 h-4 w-4" />View Active Orders</Link></Button>
                     <Button asChild><Link href="/owner/orders/history"><History className="mr-2 h-4 w-4" />View Order History</Link></Button>
                     <Button asChild><Link href="/owner/delivery"><Bike className="mr-2 h-4 w-4" />Manage Delivery</Link></Button>
+                    <Button asChild><Link href="/owner/insights"><BarChart2 className="mr-2 h-4 w-4" />View Insights</Link></Button>
                     <Button onClick={() => setIsEditFormOpen(true)}><Edit className="mr-2 h-4 w-4" />Edit Restaurant Profile</Button>
                 </CardContent>
             </Card>
