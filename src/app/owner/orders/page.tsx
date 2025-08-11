@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import type { Order, Restaurant } from '@/lib/types';
 import { Header } from '@/components/header';
@@ -16,10 +16,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { usePrint } from '@/hooks/use-print';
 import { OrderCard } from '@/components/owner/order-card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
-
-type OrderStatusTab = 'pending' | 'preparing' | 'out-for-delivery';
+import { Separator } from '@/components/ui/separator';
 
 export default function ManageOrdersPage() {
     const { user, loading: authLoading } = useAuth();
@@ -33,10 +31,11 @@ export default function ManageOrdersPage() {
     
     useEffect(() => {
         if (!user || authLoading) return;
-
+        
         let audio: HTMLAudioElement | null = null;
         if (typeof window !== 'undefined') {
             audio = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_942323b2f9.mp3');
+            audio.volume = 1.0;
         }
 
         const fetchInitialData = async () => {
@@ -49,7 +48,17 @@ export default function ManageOrdersPage() {
                         
                         setOrders(prevOrders => {
                             if (audio && fetchedOrders.length > prevOrders.length && prevOrders.length > 0) {
-                                audio.play().catch(e => console.error("Error playing sound:", e));
+                                const newOrder = fetchedOrders.find(o => !prevOrders.some(po => po.id === o.id));
+                                if (newOrder && newOrder.status === 'pending') {
+                                    audio.currentTime = 0;
+                                    audio.play().catch(e => console.error("Error playing sound:", e));
+                                    
+                                    setTimeout(() => {
+                                        if (audio) {
+                                            audio.pause();
+                                        }
+                                    }, 5000);
+                                }
                             }
                             return fetchedOrders;
                         });
@@ -127,6 +136,7 @@ export default function ManageOrdersPage() {
         return orders.filter(o => statuses.includes(o.status));
     }
     
+    const activeOrders = orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
     const pendingOrders = getOrdersByStatus(['pending']);
     const preparingOrders = getOrdersByStatus(['accepted', 'preparing']);
     const deliveryOrders = getOrdersByStatus(['out-for-delivery']);
@@ -178,37 +188,30 @@ export default function ManageOrdersPage() {
             </div>
         )
     }
-    
-    const activeOrders = orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
 
-    const renderOrderList = (list: Order[]) => {
+    const renderOrderList = (list: Order[], title: string) => {
         if (list.length === 0) {
-            return (
-                <div className="text-center py-20">
-                    <BookOpen className="mx-auto h-16 w-16 text-muted-foreground" />
-                    <h3 className="mt-4 text-xl font-bold">No orders in this stage</h3>
-                    <p className="mt-2 text-muted-foreground">
-                        Orders will appear here as they move through the workflow.
-                    </p>
-                </div>
-            )
+            return null;
         }
         return (
-            <div className="space-y-4">
-                {list.map(order => (
-                     <OrderCard
-                        key={order.id}
-                        order={order}
-                        restaurant={restaurant}
-                        isUpdating={updatingOrderId === order.id}
-                        onStatusChange={handleStatusChange}
-                        onCancelOrder={handleCancelOrder}
-                        onAssignDelivery={handleAssignDelivery}
-                        onMarkAsPaid={handleMarkAsPaid}
-                        onPrintKOT={handlePrintKOT}
-                    />
-                ))}
-            </div>
+            <section className="mb-12">
+                <h2 className="text-2xl font-bold mb-4">{title} <Badge variant="secondary">{list.length}</Badge></h2>
+                <div className="space-y-4">
+                    {list.map(order => (
+                        <OrderCard
+                            key={order.id}
+                            order={order}
+                            restaurant={restaurant}
+                            isUpdating={updatingOrderId === order.id}
+                            onStatusChange={handleStatusChange}
+                            onCancelOrder={handleCancelOrder}
+                            onAssignDelivery={handleAssignDelivery}
+                            onMarkAsPaid={handleMarkAsPaid}
+                            onPrintKOT={handlePrintKOT}
+                        />
+                    ))}
+                </div>
+            </section>
         )
     }
 
@@ -227,29 +230,25 @@ export default function ManageOrdersPage() {
                     </Button>
                 </div>
                 
-                <Tabs defaultValue="pending" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="pending">
-                            Pending <Badge variant={pendingOrders.length > 0 ? "default" : "secondary"} className="ml-2">{pendingOrders.length}</Badge>
-                        </TabsTrigger>
-                        <TabsTrigger value="preparing">
-                            Preparing <Badge variant={preparingOrders.length > 0 ? "default" : "secondary"} className="ml-2">{preparingOrders.length}</Badge>
-                        </TabsTrigger>
-                        <TabsTrigger value="delivery">
-                            Out for Delivery <Badge variant={deliveryOrders.length > 0 ? "default" : "secondary"} className="ml-2">{deliveryOrders.length}</Badge>
-                        </TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="pending" className="mt-6">
-                        {renderOrderList(pendingOrders)}
-                    </TabsContent>
-                    <TabsContent value="preparing" className="mt-6">
-                        {renderOrderList(preparingOrders)}
-                    </TabsContent>
-                    <TabsContent value="delivery" className="mt-6">
-                         {renderOrderList(deliveryOrders)}
-                    </TabsContent>
-                </Tabs>
-
+                {activeOrders.length > 0 ? (
+                    <div>
+                        {renderOrderList(pendingOrders, 'New Orders')}
+                        {renderOrderList(preparingOrders, 'Preparing')}
+                        {renderOrderList(deliveryOrders, 'Out for Delivery')}
+                    </div>
+                ) : (
+                    <div className="flex-grow flex items-center justify-center">
+                        <Card className="w-full max-w-lg text-center">
+                            <CardHeader>
+                                <CardTitle>All Caught Up!</CardTitle>
+                                <CardDescription>There are no active orders right now.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <BookOpen className="mx-auto h-16 w-16 text-muted-foreground" />
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
             </main>
         </div>
     );
