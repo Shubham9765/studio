@@ -28,23 +28,21 @@ export async function createOrder(
   total: number,
   orderDetails: Partial<Order>
 ): Promise<string> {
-  // Serviceability Check
-  if (!orderDetails.customerAddress?.latitude || !orderDetails.customerAddress?.longitude) {
-      throw new Error("Delivery location is missing coordinates.");
-  }
-  
-  const deliveryCity = await getCityFromCoordinates(orderDetails.customerAddress.latitude, orderDetails.customerAddress.longitude);
-  if (!deliveryCity) {
-      throw new Error("Could not determine the city for the delivery address.");
-  }
+  // Serviceability Check (only if coordinates are present)
+  if (orderDetails.customerAddress?.latitude && orderDetails.customerAddress?.longitude) {
+      const deliveryCity = await getCityFromCoordinates(orderDetails.customerAddress.latitude, orderDetails.customerAddress.longitude);
+      if (!deliveryCity) {
+          // Don't block the order, but we can log this.
+          console.warn(`Could not determine city for coordinates: ${orderDetails.customerAddress.latitude}, ${orderDetails.customerAddress.longitude}`);
+      } else {
+          const serviceableCities = await getServiceableCities();
+          const isServiceable = serviceableCities.some(city => city.toLowerCase() === deliveryCity.toLowerCase());
 
-  const serviceableCities = await getServiceableCities();
-  const isServiceable = serviceableCities.some(city => city.toLowerCase() === deliveryCity.toLowerCase());
-
-  if (serviceableCities.length > 0 && !isServiceable) {
-      throw new Error(`We're sorry, but we do not currently deliver to ${deliveryCity}.`);
+          if (serviceableCities.length > 0 && !isServiceable) {
+              throw new Error(`We're sorry, but we do not currently deliver to ${deliveryCity}.`);
+          }
+      }
   }
-  
   // --- End Serviceability Check ---
 
   const ordersCollection = collection(db, 'orders');
