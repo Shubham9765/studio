@@ -20,7 +20,8 @@ import {
   ChevronDown,
   CheckCircle2,
   PhoneCall,
-  MapPin
+  MapPin,
+  XCircle,
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -31,10 +32,11 @@ interface OrderCardProps {
   order: Order;
   restaurant: Restaurant;
   isUpdating: boolean;
-  onStatusChange: (orderId: string, status: Order['status']) => void;
-  onAssignDelivery: (orderId: string, deliveryBoyId: string) => void;
-  onMarkAsPaid: (orderId: string) => void;
-  onPrintKOT: (order: Order) => void;
+  onStatusChange: (status: Order['status']) => void;
+  onCancelOrder: () => void;
+  onAssignDelivery: (deliveryBoyId: string) => void;
+  onMarkAsPaid: () => void;
+  onPrintKOT: () => void;
 }
 
 function VegNonVegIcon({ type }: { type: 'veg' | 'non-veg' }) {
@@ -59,6 +61,7 @@ export function OrderCard({
   restaurant,
   isUpdating,
   onStatusChange,
+  onCancelOrder,
   onAssignDelivery,
   onMarkAsPaid,
   onPrintKOT,
@@ -68,16 +71,16 @@ export function OrderCard({
     switch (order.status) {
         case 'pending':
             return {
-                label: `Accept Order (${'10:00'})`,
-                action: () => onStatusChange(order.id, 'accepted'),
+                label: `Accept Order`,
+                action: () => onStatusChange('accepted'),
                 disabled: isUpdating,
                 icon: Package
             }
         case 'accepted':
         case 'preparing':
              return {
-                label: `Food is Ready (${'12:24'})`,
-                action: () => onStatusChange(order.id, 'out-for-delivery'),
+                label: `Food is Ready`,
+                action: () => onStatusChange('out-for-delivery'),
                 disabled: isUpdating || !restaurant.deliveryBoys || restaurant.deliveryBoys.length === 0,
                 icon: ChefHat
             }
@@ -95,7 +98,7 @@ export function OrderCard({
             return <p className="text-xs text-destructive text-center p-2 bg-destructive/10 rounded-md">Add delivery staff to assign orders.</p>
         }
         return (
-            <Select onValueChange={(val) => onAssignDelivery(order.id, val)} disabled={isUpdating}>
+            <Select onValueChange={onAssignDelivery} disabled={isUpdating}>
               <SelectTrigger>
                 <SelectValue placeholder="Assign Delivery Person" />
               </SelectTrigger>
@@ -110,10 +113,18 @@ export function OrderCard({
 
       const ActionIcon = action.icon;
       return (
-        <Button onClick={action.action} disabled={action.disabled} className="w-full h-12 text-base">
-            <ActionIcon className="mr-2 h-5 w-5" />
-            {action.label}
-        </Button>
+        <div className="flex gap-2">
+            <Button onClick={action.action} disabled={action.disabled} className="w-full h-12 text-base">
+                <ActionIcon className="mr-2 h-5 w-5" />
+                {action.label}
+            </Button>
+            {order.status === 'pending' && (
+                <Button variant="destructive-outline" onClick={onCancelOrder} disabled={isUpdating} className="w-full h-12 text-base">
+                    <XCircle className="mr-2 h-5 w-5" />
+                    Cancel
+                </Button>
+            )}
+        </div>
       )
   }
 
@@ -178,7 +189,7 @@ export function OrderCard({
                         <div className="flex justify-between"><span>Delivery</span> <span>Rs.{(restaurant.deliveryCharge || 0).toFixed(2)}</span></div>
                     </PopoverContent>
                 </Popover>
-                 <Button variant="ghost" onClick={() => onPrintKOT(order)}>
+                 <Button variant="ghost" onClick={onPrintKOT}>
                     <Printer className="mr-2 h-4 w-4" /> Print Bill
                 </Button>
             </div>

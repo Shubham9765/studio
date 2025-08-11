@@ -15,7 +15,6 @@ import { AlertTriangle, BookOpen, History } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { usePrint } from '@/hooks/use-print';
-import { KOT } from '@/components/owner/kot';
 import { OrderCard } from '@/components/owner/order-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +30,13 @@ export default function ManageOrdersPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+    const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setAudio(new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_942323b2f9.mp3'));
+        }
+    }, []);
 
     useEffect(() => {
         if (!user || authLoading) return;
@@ -42,7 +48,14 @@ export default function ManageOrdersPage() {
                 setRestaurant(rest);
                 if (rest) {
                     const unsubscribe = listenToOrdersForRestaurant(rest.id, (fetchedOrders) => {
-                        setOrders(fetchedOrders);
+                        
+                        setOrders(prevOrders => {
+                            if (fetchedOrders.length > prevOrders.length && prevOrders.length > 0) {
+                                audio?.play().catch(e => console.error("Error playing sound:", e));
+                            }
+                            return fetchedOrders;
+                        });
+
                         setLoading(false);
                     });
                     return unsubscribe;
@@ -57,17 +70,17 @@ export default function ManageOrdersPage() {
             }
         };
 
-        const unsubscribe = fetchInitialData();
+        const unsubscribePromise = fetchInitialData();
 
         return () => {
-            unsubscribe.then(unsub => unsub && unsub());
+            unsubscribePromise.then(unsub => unsub && unsub());
         };
-    }, [user, authLoading, toast]);
+    }, [user, authLoading, toast, audio]);
 
 
     const handlePrintKOT = (order: Order) => {
         if (!restaurant) return;
-        print(<KOT order={order} restaurant={restaurant} />);
+        print(order, restaurant);
     };
 
     const handleAction = async (orderId: string, action: Promise<any>, successToast: { title: string, description: string }) => {
@@ -88,6 +101,13 @@ export default function ManageOrdersPage() {
             description: 'Customer will be notified.',
         });
     }
+
+    const handleCancelOrder = (orderId: string) => {
+        handleAction(orderId, updateOrderStatus(orderId, 'cancelled'), {
+            title: 'Order Cancelled',
+            description: 'The order has been successfully cancelled.',
+        });
+    };
 
     const handleAssignDelivery = (orderId: string, deliveryBoyId: string) => {
         const deliveryBoy = restaurant?.deliveryBoys?.find(db => db.id === deliveryBoyId);
@@ -183,10 +203,11 @@ export default function ManageOrdersPage() {
                         order={order}
                         restaurant={restaurant}
                         isUpdating={updatingOrderId === order.id}
-                        onStatusChange={handleStatusChange}
-                        onAssignDelivery={handleAssignDelivery}
-                        onMarkAsPaid={handleMarkAsPaid}
-                        onPrintKOT={handlePrintKOT}
+                        onStatusChange={(status) => handleStatusChange(order.id, status)}
+                        onCancelOrder={() => handleCancelOrder(order.id)}
+                        onAssignDelivery={(deliveryBoyId) => handleAssignDelivery(order.id, deliveryBoyId)}
+                        onMarkAsPaid={() => handleMarkAsPaid(order.id)}
+                        onPrintKOT={() => handlePrintKOT(order)}
                     />
                 ))}
             </div>

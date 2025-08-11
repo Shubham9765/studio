@@ -3,9 +3,12 @@
 
 import React, { createContext, useContext, useRef, useCallback, ReactNode } from 'react';
 import ReactDOM from 'react-dom';
+import type { Order, Restaurant } from '@/lib/types';
+import { KOT } from '@/components/owner/kot';
+
 
 interface PrintContextType {
-  print: (component: React.ReactElement) => void;
+  print: (order: Order, restaurant: Restaurant) => void;
 }
 
 const PrintContext = createContext<PrintContextType | undefined>(undefined);
@@ -13,7 +16,7 @@ const PrintContext = createContext<PrintContextType | undefined>(undefined);
 export function PrintProvider({ children }: { children: ReactNode }) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  const print = useCallback((component: React.ReactElement) => {
+  const print = useCallback((order: Order, restaurant: Restaurant) => {
     if (!iframeRef.current) {
       const iframe = document.createElement('iframe');
       iframe.style.position = 'absolute';
@@ -32,8 +35,10 @@ export function PrintProvider({ children }: { children: ReactNode }) {
     const printRoot = iframeDoc.createElement('div');
     iframeDoc.body.appendChild(printRoot);
 
+    const componentToPrint = <KOT order={order} restaurant={restaurant} />;
+
     // Render the component into the iframe
-    ReactDOM.render(component, printRoot, () => {
+    ReactDOM.render(componentToPrint, printRoot, () => {
       // Once rendered, call print
       iframe.contentWindow?.focus();
       iframe.contentWindow?.print();
