@@ -10,6 +10,8 @@ interface KOTProps {
 }
 
 export function KOT({ order, restaurant }: KOTProps) {
+  const subtotal = order.total - (order.restaurant?.deliveryCharge || 0);
+
   return (
     <div className="p-4 bg-white text-black font-sans text-xs">
       <div className="text-center mb-2">
@@ -57,11 +59,11 @@ export function KOT({ order, restaurant }: KOTProps) {
            <div className="w-1/2">
                 <div className="flex justify-between">
                     <span className="font-semibold">Subtotal:</span>
-                    <span>${(order.total - (restaurant.deliveryCharge || 0)).toFixed(2)}</span>
+                    <span>${subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                     <span className="font-semibold">Delivery:</span>
-                    <span>${(restaurant.deliveryCharge || 0).toFixed(2)}</span>
+                    <span>${(order.restaurant?.deliveryCharge || 0).toFixed(2)}</span>
                 </div>
                  <div className="flex justify-between font-bold border-t border-black mt-1 pt-1">
                     <span>Total:</span>
@@ -70,6 +72,13 @@ export function KOT({ order, restaurant }: KOTProps) {
            </div>
        </div>
       
+      {order.notes && (
+           <div className="mt-4 border-t border-dashed pt-2">
+                <h3 className="text-sm font-bold uppercase">Notes:</h3>
+                <p>{order.notes}</p>
+           </div>
+      )}
+
       <div className="text-center mt-4">
         <p className="font-bold text-md">*** Thank You! ***</p>
       </div>
