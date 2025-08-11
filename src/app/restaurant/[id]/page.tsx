@@ -106,7 +106,7 @@ export default function RestaurantPage() {
       <Header />
       <main className="container py-8">
         {/* Restaurant Header */}
-        <div className="relative h-64 rounded-xl overflow-hidden mb-8 -mx-4 sm:-mx-6 md:-mx-8">
+        <div className="relative h-64 rounded-xl overflow-hidden mb-8">
           <Image
             src={restaurant.image || 'https://placehold.co/1200x400.png'}
             alt={restaurant.name}
