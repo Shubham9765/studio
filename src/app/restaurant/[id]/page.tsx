@@ -3,17 +3,18 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { getRestaurantById, getMenuItemsForRestaurant } from '@/services/restaurantClientService';
+import { getRestaurantById, getMenuItemsForRestaurant, getDistanceFromLatLonInKm } from '@/services/restaurantClientService';
 import type { Restaurant, MenuItem } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Star, Clock, Utensils, Search, BadgeCheck } from 'lucide-react';
+import { AlertTriangle, Star, Clock, Utensils, Search, BadgeCheck, MapPin } from 'lucide-react';
 import { MenuItemCard } from '@/components/customer/menu-item-card';
 import { Cart } from '@/components/customer/cart';
 import { Input } from '@/components/ui/input';
-import { usePathname, notFound } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { FloatingCartBar } from '@/components/customer/floating-cart-bar';
+import { useLocation } from '@/hooks/use-location';
 
 interface GroupedMenuItems {
   [category: string]: MenuItem[];
@@ -27,6 +28,9 @@ export default function RestaurantPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const { location } = useLocation();
+  const [distance, setDistance] = useState<number | null>(null);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,7 +40,9 @@ export default function RestaurantPage() {
         const restaurantData = await getRestaurantById(id);
 
         if (!restaurantData) {
-          notFound();
+          // If no restaurant is found, we can set an error or handle appropriately.
+          setError('Restaurant not found.');
+          setLoading(false);
           return;
         }
 
@@ -51,6 +57,17 @@ export default function RestaurantPage() {
 
         setRestaurant(restaurantData);
         setMenuItems(menuItemsData);
+
+        if (location && restaurantData.latitude && restaurantData.longitude) {
+            const dist = getDistanceFromLatLonInKm(
+                location.latitude,
+                location.longitude,
+                restaurantData.latitude,
+                restaurantData.longitude
+            );
+            setDistance(dist);
+        }
+
       } catch (e: any) {
         setError('Failed to load restaurant details. Please try again later.');
       } finally {
@@ -59,7 +76,7 @@ export default function RestaurantPage() {
     };
 
     fetchData();
-  }, [id]);
+  }, [id, location]);
 
   const filteredMenuItems = menuItems.filter(item => 
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -95,8 +112,23 @@ export default function RestaurantPage() {
     );
   }
   
+  if (!restaurant && error) {
+      return (
+            <div className="min-h-screen bg-background">
+                <Header />
+                <main className="container py-8 flex items-center justify-center">
+                    <Alert variant="destructive" className="w-1/2">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>An Error Occurred</AlertTitle>
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                </main>
+            </div>
+        )
+  }
+
   if (!restaurant) {
-     return notFound();
+      return null; // Or a more specific "not found" component
   }
   
   const isRestaurantUnavailable = restaurant.status !== 'approved' || !restaurant.isOpen;
@@ -129,6 +161,12 @@ export default function RestaurantPage() {
                  <div className="flex items-center gap-1.5">
                     <span className="font-medium">{restaurant.deliveryCharge > 0 ? `Rs.${restaurant.deliveryCharge.toFixed(2)} Delivery` : 'Free Delivery'}</span>
                 </div>
+                {distance !== null && (
+                    <div className="flex items-center gap-1.5">
+                        <MapPin className="w-5 h-5" />
+                        <span className="font-medium">{distance.toFixed(1)} km away</span>
+                    </div>
+                )}
             </div>
             {restaurant.fssaiLicense && (
               <div className="flex items-center gap-2 mt-2 text-xs text-gray-300">

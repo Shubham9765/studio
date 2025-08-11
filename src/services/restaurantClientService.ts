@@ -7,7 +7,7 @@ import type { Restaurant, MenuItem, Order, BannerConfig, Cuisine } from '@/lib/t
 import { MOCK_RESTAURANTS } from '@/lib/seed';
 
 // Helper function to calculate distance between two lat/lng points in kilometers
-function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+export function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; // Radius of the earth in km
   const dLat = deg2rad(lat2-lat1);
   const dLon = deg2rad(lon2-lon1); 

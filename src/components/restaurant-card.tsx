@@ -1,17 +1,36 @@
 
+'use client';
+
 import Image from 'next/image';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Star, Clock } from 'lucide-react';
+import { Star, Clock, MapPin } from 'lucide-react';
 import type { Restaurant } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useLocation } from '@/hooks/use-location';
+import { getDistanceFromLatLonInKm } from '@/services/restaurantClientService';
+import { useState, useEffect } from 'react';
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
 }
 
 export function RestaurantCard({ restaurant }: RestaurantCardProps) {
+  const { location } = useLocation();
+  const [distance, setDistance] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (location && restaurant.latitude && restaurant.longitude) {
+      const dist = getDistanceFromLatLonInKm(
+        location.latitude,
+        location.longitude,
+        restaurant.latitude,
+        restaurant.longitude
+      );
+      setDistance(dist);
+    }
+  }, [location, restaurant.latitude, restaurant.longitude]);
   
   const cardContent = (
      <Card className={cn(
@@ -56,6 +75,14 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
                 <Clock className="w-3 h-3" />
                 <span>{restaurant.deliveryTime}</span>
             </div>
+             {distance !== null && (
+                <div className="flex items-center gap-1">
+                    <MapPin className="w-3 h-3" />
+                    <span>{distance.toFixed(1)} km</span>
+                </div>
+             )}
+        </div>
+        <div className="text-xs text-muted-foreground mt-1">
             <span>{restaurant.deliveryCharge > 0 ? `Rs.${restaurant.deliveryCharge.toFixed(2)} delivery` : 'Free Delivery'}</span>
         </div>
       </CardContent>

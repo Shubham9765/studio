@@ -13,8 +13,8 @@ export interface CartItem extends MenuItem {
 // Define the shape of the cart context
 interface CartContextType {
   cart: CartItem[];
-  restaurant: Partial<Restaurant> | null;
-  addItem: (item: CartItem, restaurant: Partial<Restaurant>) => void;
+  restaurant: Restaurant | null;
+  addItem: (item: CartItem, restaurant: Restaurant) => void;
   removeItem: (itemId: string) => void;
   updateItemQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
@@ -34,17 +34,15 @@ export function CartProvider({ children }: CartProviderProps) {
   const [cart, setCart] = useLocalStorageState<CartItem[]>('cart', {
     defaultValue: [],
   });
-  const [restaurant, setRestaurant] = useLocalStorageState<Partial<Restaurant> | null>('cartRestaurant', {
+  const [restaurant, setRestaurant] = useLocalStorageState<Restaurant | null>('cartRestaurant', {
     defaultValue: null,
   });
 
-  const addItem = (item: CartItem, restaurantData: Partial<Restaurant>) => {
-    // If the cart is from a different restaurant, ask for confirmation before clearing.
+  const addItem = (item: CartItem, restaurantData: Restaurant) => {
+    // If the cart is from a different restaurant, clear it first.
     if (restaurant && restaurant.id !== restaurantData.id) {
-        if (window.confirm('Your cart contains items from another restaurant. Would you like to clear it and add this item instead?')) {
-            setCart([{ ...item, quantity: 1 }]);
-            setRestaurant(restaurantData);
-        }
+        setCart([{ ...item, quantity: 1 }]);
+        setRestaurant(restaurantData);
         return;
     }
 
