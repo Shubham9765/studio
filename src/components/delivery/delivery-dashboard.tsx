@@ -183,8 +183,6 @@ export default function DeliveryDashboard() {
   }, [user?.uid, toast]);
   
   const fetchAssignedOrders = async () => {
-      // This function will be called once to refresh data manually if needed,
-      // but the real-time listener will handle most updates.
       if (user?.uid) {
           setLoading(true);
           const unsubscribe = listenToOrdersForDeliveryBoy(user.uid, (allOrders) => {
@@ -224,7 +222,6 @@ export default function DeliveryDashboard() {
 
   const handleOrderDelivered = () => {
     // The real-time listener will automatically remove the order from the active list.
-    // We could manually filter here for a faster UI update, but the listener is usually quick enough.
   };
 
   if (authLoading || loading) {

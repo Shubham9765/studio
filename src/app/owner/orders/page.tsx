@@ -28,16 +28,19 @@ export default function ManageOrdersPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+     useEffect(() => {
+        // Initialize the Audio object only on the client side
+        if (typeof window !== 'undefined' && !audioRef.current) {
+            audioRef.current = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_942323b2f9.mp3');
+            audioRef.current.volume = 1.0;
+        }
+    }, []);
     
     useEffect(() => {
         if (!user || authLoading) return;
         
-        let audio: HTMLAudioElement | null = null;
-        if (typeof window !== 'undefined') {
-            audio = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_942323b2f9.mp3');
-            audio.volume = 1.0;
-        }
-
         const fetchInitialData = async () => {
             setLoading(true);
             try {
@@ -47,15 +50,16 @@ export default function ManageOrdersPage() {
                     const unsubscribe = listenToOrdersForRestaurant(rest.id, (fetchedOrders) => {
                         
                         setOrders(prevOrders => {
-                            if (audio && fetchedOrders.length > prevOrders.length && prevOrders.length > 0) {
+                            if (audioRef.current && fetchedOrders.length > prevOrders.length && prevOrders.length > 0) {
+                                // Check if there is a genuinely new order that wasn't there before
                                 const newOrder = fetchedOrders.find(o => !prevOrders.some(po => po.id === o.id));
                                 if (newOrder && newOrder.status === 'pending') {
-                                    audio.currentTime = 0;
-                                    audio.play().catch(e => console.error("Error playing sound:", e));
+                                    audioRef.current!.currentTime = 0;
+                                    audioRef.current!.play().catch(e => console.error("Error playing sound:", e));
                                     
                                     setTimeout(() => {
-                                        if (audio) {
-                                            audio.pause();
+                                        if (audioRef.current) {
+                                            audioRef.current.pause();
                                         }
                                     }, 5000);
                                 }
@@ -63,6 +67,10 @@ export default function ManageOrdersPage() {
                             return fetchedOrders;
                         });
 
+                        setLoading(false);
+                    }, (err) => {
+                        console.error(err);
+                        setError('Failed to set up order listener.');
                         setLoading(false);
                     });
                     return unsubscribe;

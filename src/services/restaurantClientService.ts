@@ -33,6 +33,9 @@ export async function getRestaurants(): Promise<Restaurant[]> {
   const cuisinesConfig = cuisinesConfigDoc.exists() ? cuisinesConfigDoc.data() : {};
 
   const processRestaurants = (snapshot: any): Restaurant[] => {
+    if (snapshot.empty) {
+        return MOCK_RESTAURANTS.filter(r => r.status === 'approved');
+    }
     const restaurants = snapshot.docs.map((doc: any) => {
         const restaurantData = doc.data() as Restaurant;
         const cuisineImage = cuisinesConfig[restaurantData.cuisine]?.imageUrl || undefined;
@@ -51,16 +54,6 @@ export async function getRestaurants(): Promise<Restaurant[]> {
   }
 
   const querySnapshot = await getDocs(q);
-
-  if (querySnapshot.empty) {
-    const allRestaurantsSnapshot = await getDocs(collection(db, 'restaurants'));
-    if (allRestaurantsSnapshot.empty) {
-        await seedRestaurants();
-        const seededQuerySnapshot = await getDocs(q);
-        return processRestaurants(seededQuerySnapshot);
-    }
-    return [];
-  }
   
   return processRestaurants(querySnapshot);
 }
@@ -287,4 +280,33 @@ export async function getBannerConfig(): Promise<BannerConfig | null> {
         return docSnap.data() as BannerConfig;
     }
     return null;
+}
+
+export function listenToOrdersForRestaurant(
+  restaurantId: string,
+  callback: (orders: Order[]) => void,
+  onError: (error: Error) => void
+): () => void {
+  const ordersRef = collection(db, 'orders');
+  const q = query(
+    ordersRef,
+    where('restaurantId', '==', restaurantId),
+    orderBy('createdAt', 'desc')
+  );
+
+  const unsubscribe = onSnapshot(
+    q,
+    snapshot => {
+      const orders = snapshot.docs.map(
+        doc => ({...doc.data(), id: doc.id} as Order),
+      );
+      callback(orders);
+    },
+    error => {
+      console.error('Error listening to orders:', error);
+      onError(error);
+    },
+  );
+
+  return unsubscribe;
 }
