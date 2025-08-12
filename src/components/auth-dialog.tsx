@@ -12,6 +12,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendSignInLinkToEmail,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useState } from 'react';
@@ -53,6 +54,10 @@ const loginSchema = z.object({
   password: z.string().min(1, { message: 'Password is required.' }),
 });
 
+const forgotPasswordSchema = z.object({
+    email: z.string().email({ message: 'Please enter a valid email.' }),
+});
+
 type SignUpValues = z.infer<typeof signUpSchema>;
 
 async function isUsernameUnique(username: string): Promise<boolean> {
@@ -67,7 +72,8 @@ export function AuthDialog(props: Props) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-  
+  const [activeTab, setActiveTab] = useState('login');
+
   const signUpForm = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
@@ -84,6 +90,13 @@ export function AuthDialog(props: Props) {
     defaultValues: {
       emailOrUsername: '',
       password: '',
+    },
+  });
+  
+  const forgotPasswordForm = useForm<z.infer<typeof forgotPasswordSchema>>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: {
+      email: '',
     },
   });
 
@@ -104,7 +117,6 @@ export function AuthDialog(props: Props) {
       
       await sendSignInLinkToEmail(auth, values.email, actionCodeSettings);
       
-      // Store user info and password in local storage to retrieve after email verification
       window.localStorage.setItem('emailForSignIn', values.email);
       window.localStorage.setItem('signUpData', JSON.stringify(values));
       
@@ -125,7 +137,6 @@ export function AuthDialog(props: Props) {
     setIsSubmitting(true);
     let email = values.emailOrUsername;
 
-    // If the input doesn't look like an email, assume it's a username
     if (!email.includes('@')) {
       try {
         const usersRef = collection(db, 'users');
@@ -160,11 +171,63 @@ export function AuthDialog(props: Props) {
     }
   };
 
+  const handleForgotPassword = async (values: z.infer<typeof forgotPasswordSchema>) => {
+      setIsSubmitting(true);
+      try {
+          await sendPasswordResetEmail(auth, values.email);
+          toast({
+              title: 'Password Reset Email Sent',
+              description: 'Please check your inbox for a link to reset your password.'
+          });
+          setActiveTab('login');
+      } catch (error: any) {
+          toast({
+              variant: 'destructive',
+              title: 'Error',
+              description: error.message || 'Failed to send password reset email.'
+          });
+      } finally {
+          setIsSubmitting(false);
+      }
+  }
 
-  return (
-    <Dialog open={open} onOpenChange={(isOpen) => { onOpenChange(isOpen); if(!isOpen) setEmailSent(false);}}>
-      <DialogContent className="sm:max-w-md">
-         <Tabs defaultValue="login" className="w-full">
+  const renderContent = () => {
+    if (activeTab === 'forgot_password') {
+        return (
+            <>
+                <DialogHeader className="mb-4">
+                    <DialogTitle>Reset Your Password</DialogTitle>
+                    <DialogDescription>
+                        Enter your email address and we'll send you a link to reset your password.
+                    </DialogDescription>
+                </DialogHeader>
+                 <Form {...forgotPasswordForm}>
+                    <form onSubmit={forgotPasswordForm.handleSubmit(handleForgotPassword)} className="space-y-4">
+                        <FormField
+                            control={forgotPasswordForm.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="you@email.com" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="submit" className="w-full" disabled={isSubmitting}>
+                            {isSubmitting ? 'Sending...' : 'Send Reset Link'}
+                        </Button>
+                        <Button variant="link" className="w-full" onClick={() => setActiveTab('login')}>Back to Login</Button>
+                    </form>
+                </Form>
+            </>
+        )
+    }
+
+    return (
+         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Login</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -204,7 +267,10 @@ export function AuthDialog(props: Props) {
                             </FormItem>
                         )}
                         />
-                        <Button type="submit" className="w-full" disabled={isSubmitting}>
+                         <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => setActiveTab('forgot_password')}>
+                            Forgot Password?
+                        </Button>
+                        <Button type="submit" className="w-full !mt-6" disabled={isSubmitting}>
                            {isSubmitting ? 'Logging in...' : 'Login'}
                         </Button>
                     </form>
@@ -326,6 +392,13 @@ export function AuthDialog(props: Props) {
                 )}
             </TabsContent>
          </Tabs>
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(isOpen) => { onOpenChange(isOpen); if(!isOpen) {setEmailSent(false); setActiveTab('login');} }}>
+      <DialogContent className="sm:max-w-md">
+         {renderContent()}
       </DialogContent>
     </Dialog>
   );

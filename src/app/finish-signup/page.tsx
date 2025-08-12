@@ -20,51 +20,53 @@ export default function FinishSignUpPage() {
 
   useEffect(() => {
     const finishSignUp = async () => {
-      if (isSignInWithEmailLink(auth, window.location.href)) {
-        let email = window.localStorage.getItem('emailForSignIn');
-        const signUpDataString = window.localStorage.getItem('signUpData');
-        
-        if (!email || !signUpDataString) {
-          setErrorMessage('Sign-up session expired or invalid. Please try signing up again.');
-          setStatus('error');
-          return;
-        }
+      if (typeof window !== 'undefined') {
+          if (isSignInWithEmailLink(auth, window.location.href)) {
+            let email = window.localStorage.getItem('emailForSignIn');
+            const signUpDataString = window.localStorage.getItem('signUpData');
+            
+            if (!email || !signUpDataString) {
+              setErrorMessage('Sign-up session expired or invalid. Please try signing up again.');
+              setStatus('error');
+              return;
+            }
 
-        const signUpData = JSON.parse(signUpDataString);
+            const signUpData = JSON.parse(signUpDataString);
 
-        try {
-          const userCredential = await createUserWithEmailAndPassword(auth, email, signUpData.password);
-          const user = userCredential.user;
+            try {
+              const userCredential = await createUserWithEmailAndPassword(auth, email, signUpData.password);
+              const user = userCredential.user;
 
-          await setDoc(doc(db, 'users', user.uid), {
-            uid: user.uid,
-            username: signUpData.username,
-            displayName: signUpData.username,
-            email: user.email,
-            phone: signUpData.phone,
-            role: signUpData.role,
-            createdAt: new Date(),
-            status: 'active',
-            emailVerified: true,
-          });
+              await setDoc(doc(db, 'users', user.uid), {
+                uid: user.uid,
+                username: signUpData.username,
+                displayName: signUpData.username,
+                email: user.email,
+                phone: signUpData.phone,
+                role: signUpData.role,
+                createdAt: new Date(),
+                status: 'active',
+                emailVerified: true,
+              });
 
-          // Clean up local storage
-          window.localStorage.removeItem('emailForSignIn');
-          window.localStorage.removeItem('signUpData');
+              // Clean up local storage
+              window.localStorage.removeItem('emailForSignIn');
+              window.localStorage.removeItem('signUpData');
 
-          setStatus('success');
-          toast({
-            title: 'Welcome to Village Eats!',
-            description: 'Your account has been created successfully.',
-          });
+              setStatus('success');
+              toast({
+                title: 'Welcome to Village Eats!',
+                description: 'Your account has been created successfully.',
+              });
 
-        } catch (error: any) {
-          setErrorMessage(error.message || 'An unknown error occurred. Please try again.');
-          setStatus('error');
-        }
-      } else {
-         setErrorMessage('Invalid verification link.');
-         setStatus('error');
+            } catch (error: any) {
+              setErrorMessage(error.message || 'An unknown error occurred. Please try again.');
+              setStatus('error');
+            }
+          } else {
+            setErrorMessage('Invalid verification link.');
+            setStatus('error');
+          }
       }
     };
 
