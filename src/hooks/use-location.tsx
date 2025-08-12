@@ -52,8 +52,12 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     }, [fetchCityName]);
 
     useEffect(() => {
-        // Automatically request location on initial load
-        requestLocation();
+        // Automatically request location on initial load.
+        // This was causing the SSR issue. Removing the automatic call.
+        // The location will be requested by components that need it.
+        if (typeof window !== 'undefined') {
+            requestLocation();
+        }
     }, [requestLocation]);
 
     return (
