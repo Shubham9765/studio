@@ -19,6 +19,17 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, PlusCircle, Home, Building, Trash, Edit, User, MapPin, Phone, Map } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -146,7 +157,7 @@ export default function ProfilePage() {
     };
   
   const handleDeleteAddress = async (addressId: string) => {
-      if (!user || !confirm('Are you sure you want to delete this address?')) return;
+      if (!user) return;
       const updatedAddresses = (user.addresses || []).filter(addr => addr.id !== addressId);
       
       try {
@@ -168,7 +179,7 @@ export default function ProfilePage() {
         <div className="min-h-screen bg-background">
          <Header />
             <main className="container py-8">
-                <Skeleton className="h-8 w-1/3 mb-8" />
+                <h1 className="text-3xl font-bold mb-8">My Profile</h1>
                 <div className="grid gap-12 md:grid-cols-2">
                    <Card>
                         <CardHeader>
@@ -253,9 +264,25 @@ export default function ProfilePage() {
                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditAddress(addr)}>
                                         <Edit className="h-4 w-4" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteAddress(addr.id)}>
-                                        <Trash className="h-4 w-4" />
-                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                                                <Trash className="h-4 w-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This will permanently delete the address "{addr.name}". This action cannot be undone.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDeleteAddress(addr.id)}>Delete</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
                             </div>
                         ))
@@ -312,3 +339,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    

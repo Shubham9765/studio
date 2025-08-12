@@ -42,9 +42,9 @@ export default function CheckoutPage() {
     const [transactionId, setTransactionId] = useState('');
     const [orderNotes, setOrderNotes] = useState('');
     
+    // This state now holds either a saved address ID, 'current', or 'map'
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
     const [mapSelectedLocation, setMapSelectedLocation] = useState<Address | null>(null);
-    const [deliveryMode, setDeliveryMode] = useState<'saved' | 'current' | 'map'>('saved');
 
     const [isLocating, setIsLocating] = useState(false);
     const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
@@ -53,38 +53,28 @@ export default function CheckoutPage() {
         if (!authLoading && !user) {
             router.push('/');
         }
-        // Set the first saved address as the default selection
-        if (user?.addresses && user.addresses.length > 0 && !selectedAddressId) {
-            setSelectedAddressId(user.addresses[0].id);
-            setDeliveryMode('saved');
-        } else if ((!user?.addresses || user.addresses.length === 0) && deliveryMode !== 'map') {
-            setDeliveryMode('current'); // Default to current location if no saved addresses
-             setIsLocating(true);
-            requestLocation();
+        if (!selectedAddressId) {
+            if (user?.addresses && user.addresses.length > 0) {
+                setSelectedAddressId(user.addresses[0].id);
+            } else {
+                setSelectedAddressId('current');
+            }
         }
-    }, [authLoading, user, router, selectedAddressId, deliveryMode, requestLocation]);
+    }, [authLoading, user, selectedAddressId]);
     
-    const handleDeliveryModeChange = (value: string) => {
-        if (value === 'current') {
-            setDeliveryMode('current');
-            setIsLocating(true);
-            setSelectedAddressId(null);
-            setMapSelectedLocation(null);
-            requestLocation();
-        } else if (value === 'map') {
-            setDeliveryMode('map');
-            setSelectedAddressId(null);
+    const handleAddressSelectionChange = (value: string) => {
+        setSelectedAddressId(value);
+        if (value === 'map') {
             setIsMapDialogOpen(true);
-        } else { // It's a saved address ID
-            setDeliveryMode('saved');
-            setSelectedAddressId(value);
-            setMapSelectedLocation(null);
+        } else if (value === 'current') {
+            setIsLocating(true);
+            requestLocation();
         }
     };
 
 
     useEffect(() => {
-        if (deliveryMode === 'current') {
+        if (selectedAddressId === 'current') {
             if (location) {
                 toast({ title: "Location Set!", description: "Your current location will be used for delivery." });
             }
@@ -93,7 +83,7 @@ export default function CheckoutPage() {
             }
              setIsLocating(false);
         }
-    }, [location, locationError, deliveryMode, toast]);
+    }, [location, locationError, selectedAddressId, toast]);
 
      const handleMapLocationSelect = (loc: { latitude: number; longitude: number; address: string }) => {
         setMapSelectedLocation({
@@ -109,8 +99,7 @@ export default function CheckoutPage() {
     const deliveryFee = restaurant?.deliveryCharge || 0;
     const subtotal = totalPrice;
     
-    // GST Calculation
-    const gstRate = 0.05; // 5% total (2.5% CGST + 2.5% SGST)
+    const gstRate = 0.05; 
     const gstEnabled = restaurant?.gstEnabled || false;
     const gstAmount = gstEnabled ? subtotal * gstRate : 0;
     const cgst = gstAmount / 2;
@@ -119,25 +108,22 @@ export default function CheckoutPage() {
     const finalTotal = subtotal + deliveryFee + gstAmount;
 
     const getFinalAddress = (): Address | null => {
-        switch (deliveryMode) {
-            case 'saved':
-                return user?.addresses?.find(a => a.id === selectedAddressId) || null;
-            case 'current':
-                if (location) {
-                    return {
-                        id: 'current-location',
-                        name: 'Current Location',
-                        address: location.address,
-                        phone: user?.phone || '',
-                        ...location,
-                    };
-                }
-                return null;
-            case 'map':
-                return mapSelectedLocation;
-            default:
-                return null;
+        if (selectedAddressId === 'current') {
+            if (location) {
+                return {
+                    id: 'current-location',
+                    name: 'Current Location',
+                    address: location.address,
+                    phone: user?.phone || '',
+                    ...location,
+                };
+            }
+            return null;
         }
+        if (selectedAddressId === 'map') {
+            return mapSelectedLocation;
+        }
+        return user?.addresses?.find(a => a.id === selectedAddressId) || null;
     }
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -165,14 +151,11 @@ export default function CheckoutPage() {
         
         setIsSubmitting(true);
         try {
-            // Geocode saved address ONLY if it's missing coordinates
-            if (deliveryMode === 'saved' && (!finalAddress.latitude || !finalAddress.longitude)) {
+            if (selectedAddressId !== 'current' && selectedAddressId !== 'map' && finalAddress && (!finalAddress.latitude || !finalAddress.longitude)) {
                 const coords = await getCoordinatesForAddress(finalAddress.address);
                 if (coords) {
                     finalAddress = { ...finalAddress, ...coords };
                 } else {
-                    // Don't block order if geocoding fails. Proceed without coords.
-                    // The backend and order tracking will gracefully handle missing coordinates.
                     console.warn(`Could not find coordinates for address: ${finalAddress.address}. Proceeding without them.`);
                 }
             }
@@ -181,9 +164,9 @@ export default function CheckoutPage() {
                 paymentMethod,
                 paymentStatus: paymentMethod === 'upi' ? 'pending' : 'pending',
                 ...(paymentMethod === 'upi' && { paymentDetails: { transactionId } }),
-                deliveryAddress: finalAddress.address, // Text address for display
+                deliveryAddress: finalAddress.address,
                 customerPhone: finalAddress.phone,
-                customerAddress: finalAddress, // Full address object including coords
+                customerAddress: finalAddress,
                 notes: orderNotes,
             };
 
@@ -270,15 +253,6 @@ export default function CheckoutPage() {
         );
     }
 
-    const getRadioValue = () => {
-        switch (deliveryMode) {
-            case 'current': return 'current';
-            case 'map': return 'map';
-            case 'saved': return selectedAddressId || '';
-            default: return '';
-        }
-    }
-
     return (
         <div className="min-h-screen bg-background">
             <Header />
@@ -297,8 +271,8 @@ export default function CheckoutPage() {
                                         <Label>Delivery Location</Label>
                                         
                                         <RadioGroup 
-                                            value={getRadioValue()}
-                                            onValueChange={handleDeliveryModeChange} 
+                                            value={selectedAddressId || ''}
+                                            onValueChange={handleAddressSelectionChange} 
                                             className="space-y-2"
                                         >
                                             {user.addresses?.map(addr => (
@@ -321,9 +295,9 @@ export default function CheckoutPage() {
                                                 </div>
                                                 <div className="text-sm flex-grow">
                                                     <p className="font-bold">Use Current Location</p>
-                                                    {deliveryMode === 'current' && isLocating && <p className="text-muted-foreground">Getting your location...</p>}
-                                                    {deliveryMode === 'current' && locationError && <p className="text-destructive text-xs">{locationError}</p>}
-                                                    {deliveryMode === 'current' && location && <p className="text-muted-foreground text-xs">{location.address}</p>}
+                                                    {selectedAddressId === 'current' && isLocating && <p className="text-muted-foreground">Getting your location...</p>}
+                                                    {selectedAddressId === 'current' && locationError && <p className="text-destructive text-xs">{locationError}</p>}
+                                                    {selectedAddressId === 'current' && location && <p className="text-muted-foreground text-xs">{location.address}</p>}
                                                 </div>
                                             </Label>
                                             
@@ -334,7 +308,7 @@ export default function CheckoutPage() {
                                                 </div>
                                                 <div className="text-sm flex-grow">
                                                     <p className="font-bold">Set Location on Map</p>
-                                                    {deliveryMode === 'map' && mapSelectedLocation && <p className="text-muted-foreground text-xs">{mapSelectedLocation.address}</p>}
+                                                    {selectedAddressId === 'map' && mapSelectedLocation && <p className="text-muted-foreground text-xs">{mapSelectedLocation.address}</p>}
                                                 </div>
                                             </Label>
                                         </RadioGroup>
@@ -429,7 +403,7 @@ export default function CheckoutPage() {
                                 </CardContent>
                                 <CardFooter>
                                      <Button type="submit" className="w-full" disabled={isSubmitting || !getFinalAddress()}>
-                                        {isSubmitting ? (deliveryMode === 'current' && isLocating ? 'Getting Location...' : 'Placing Order...') : `Place Order - Rs.${finalTotal.toFixed(2)}`}
+                                        {isSubmitting ? (isLocating ? 'Getting Location...' : 'Placing Order...') : `Place Order - Rs.${finalTotal.toFixed(2)}`}
                                      </Button>
                                 </CardFooter>
                             </Card>

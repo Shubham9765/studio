@@ -30,19 +30,17 @@ export default function ManageOrdersPage() {
     const [error, setError] = useState<string | null>(null);
     const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
     const [isNewOrderPending, setIsNewOrderPending] = useState(false);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
-        if (authLoading) return;
-
-        let audio: HTMLAudioElement | null = null;
-        
         const manageAudioPlayback = (hasPending: boolean) => {
              if (typeof window !== 'undefined') {
-                if (!audio) {
-                    audio = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_942323b2f9.mp3');
-                    audio.loop = true;
-                    audio.volume = 1.0;
+                if (!audioRef.current) {
+                    audioRef.current = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_942323b2f9.mp3');
+                    audioRef.current.loop = true;
+                    audioRef.current.volume = 1.0;
                 }
+                const audio = audioRef.current;
                 if (hasPending) {
                     audio.play().catch(e => console.error("Error playing sound:", e));
                 } else {
@@ -50,6 +48,8 @@ export default function ManageOrdersPage() {
                 }
             }
         }
+
+        if (authLoading) return;
 
         let unsubscribe: (() => void) | undefined;
         
@@ -93,7 +93,7 @@ export default function ManageOrdersPage() {
             if (unsubscribe) {
                 unsubscribe();
             }
-            audio?.pause();
+            audioRef.current?.pause();
         };
     }, [user, authLoading, toast]);
 
