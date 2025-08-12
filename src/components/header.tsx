@@ -62,7 +62,7 @@ export function Header() {
         <div className="container flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <UtensilsCrossed className="h-7 w-7 text-primary" />
-            <h1 className="text-2xl font-bold font-headline text-primary">Village Eats</h1>
+            <h1 className="text-xl sm:text-2xl font-bold font-headline text-primary">Village Eats</h1>
           </Link>
           <div className="hidden md:flex flex-1 max-w-sm items-center relative">
             <form onSubmit={handleSearch} className="w-full">

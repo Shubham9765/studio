@@ -20,7 +20,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const requestPermission = () => {
-        if (!('Notification' in window)) {
+        if (typeof window === 'undefined' || !('Notification' in window)) {
             console.log('This browser does not support desktop notification');
             return;
         }
