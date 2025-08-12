@@ -64,13 +64,24 @@ function LoadingSkeleton() {
   );
 }
 
+function SectionHeading({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="text-center mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold font-headline relative inline-block">
+                {children}
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-2/3 h-1 bg-primary rounded-full" />
+            </h2>
+        </div>
+    )
+}
+
 function CategoryItem({ name, imageUrl }: { name: string, imageUrl?: string }) {
   return (
-    <Link href={`/search?q=${name}`} className="flex flex-col items-center gap-2 group flex-shrink-0 w-24">
-      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-primary transition-all">
-        <Image src={imageUrl || 'https://placehold.co/100x100.png'} alt={name} width={80} height={80} className="object-cover w-full h-full" />
+    <Link href={`/search?q=${name}`} className="flex flex-col items-center gap-3 group flex-shrink-0 w-28">
+      <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-4 border-transparent group-hover:border-primary group-hover:shadow-lg transition-all duration-300 transform group-hover:scale-110">
+        <Image src={imageUrl || 'https://placehold.co/100x100.png'} alt={name} width={96} height={96} className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-125" />
       </div>
-      <span className="font-semibold text-sm text-center truncate w-full">{name}</span>
+      <span className="font-semibold text-sm text-center truncate w-full group-hover:text-primary transition-colors">{name}</span>
     </Link>
   )
 }
@@ -134,12 +145,12 @@ function MobileSearch() {
   };
 
   return (
-    <div className="md:hidden mb-6">
-      <form onSubmit={handleSearch} className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+    <div className="md:hidden mb-8">
+      <form onSubmit={handleSearch} className="relative transition-shadow duration-300 focus-within:shadow-lg">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary animate-pulse" />
         <Input
           placeholder="Search restaurants or dishes..."
-          className="pl-12 text-base h-12 rounded-full w-full bg-muted border-transparent focus-visible:ring-primary"
+          className="pl-12 text-base h-14 rounded-full w-full bg-muted border-2 border-transparent focus-visible:ring-primary focus-visible:border-primary hover:shadow-md transition-all duration-300"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -199,10 +210,10 @@ export function HomePage() {
   
   const mainContent = (
     <>
-      <div className="flex items-center gap-2 text-xl font-semibold mb-6">
-            <MapPin className="h-6 w-6 text-primary" />
+      <div className="flex items-center gap-3 text-lg font-semibold mb-6 bg-card shadow-sm p-3 rounded-lg">
+            <MapPin className="h-6 w-6 text-primary animate-pulse" />
             <div className="flex items-center gap-2">
-              <span>Delivering to:</span>
+              <span className="text-muted-foreground">Delivering to:</span>
               {location ? <span className="font-bold">{location.city || 'your location'}</span> : <Skeleton className="h-5 w-24" />}
             </div>
         </div>
@@ -227,8 +238,8 @@ export function HomePage() {
           isServiceAvailable && (
             <div className="space-y-12">
               {categories.length > 0 && (
-                  <section>
-                      <h2 className="text-3xl font-bold font-headline mb-6 text-center">What's on your mind?</h2>
+                  <section className="section-gradient-1 py-12 px-4 sm:px-6 rounded-xl">
+                      <SectionHeading>What's on your mind?</SectionHeading>
                       <div className="flex gap-6 justify-center flex-wrap">
                           {categories.map(cat => <CategoryItem key={cat.name} name={cat.name} imageUrl={cat.imageUrl} />)}
                       </div>
@@ -236,12 +247,12 @@ export function HomePage() {
               )}
 
               {topMenuItems.length > 0 && (
-                  <section>
-                      <h2 className="text-3xl font-bold font-headline mb-6">Top Rated Dishes</h2>
+                  <section className="section-gradient-2 py-12 px-4 sm:px-6 rounded-xl">
+                      <SectionHeading>Top Rated Dishes</SectionHeading>
                       <Carousel opts={{ align: "start", loop: true, }} className="w-full">
-                          <CarouselContent className="-ml-2">
+                          <CarouselContent className="-ml-4">
                               {topMenuItems.map((item) => (
-                              <CarouselItem key={item.id} className="pl-2 basis-full md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                              <CarouselItem key={item.id} className="pl-4 basis-full md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                                   <MenuItemSearchCard item={item} />
                               </CarouselItem>
                               ))}
@@ -252,8 +263,8 @@ export function HomePage() {
                   </section>
               )}
 
-              <section id="restaurants">
-                <h2 className="text-3xl font-bold font-headline mb-6">All Restaurants</h2>
+              <section id="restaurants" className="py-12 px-4 sm:px-6">
+                <SectionHeading>All Restaurants</SectionHeading>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                 {allRestaurants.map(restaurant => (
                     <RestaurantCard key={restaurant.id} restaurant={restaurant} />

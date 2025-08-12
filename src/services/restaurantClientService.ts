@@ -31,31 +31,28 @@ export async function getRestaurants(): Promise<Restaurant[]> {
   
   const cuisinesConfigDoc = await getDoc(doc(db, 'app_config', 'cuisines'));
   const cuisinesConfig = cuisinesConfigDoc.exists() ? cuisinesConfigDoc.data() : {};
+  
+  const querySnapshot = await getDocs(q);
 
-  const processRestaurants = (snapshot: any): Restaurant[] => {
-    if (snapshot.empty) {
-        return MOCK_RESTAURANTS.filter(r => r.status === 'approved');
-    }
-    const restaurants = snapshot.docs.map((doc: any) => {
-        const restaurantData = doc.data() as Restaurant;
-        const cuisineImage = cuisinesConfig[restaurantData.cuisine]?.imageUrl || undefined;
-        return { 
-            ...restaurantData, 
-            id: doc.id,
-            categoryImageUrl: cuisineImage,
-        } as Restaurant
-    });
-
-    // Separate promoted from non-promoted and sort them
-    const promoted = restaurants.filter((r: Restaurant) => r.isPromoted).sort((a,b) => b.rating - a.rating);
-    const notPromoted = restaurants.filter((r: Restaurant) => !r.isPromoted);
-
-    return [...promoted, ...notPromoted];
+  if (querySnapshot.empty) {
+      return MOCK_RESTAURANTS.filter(r => r.status === 'approved');
   }
 
-  const querySnapshot = await getDocs(q);
-  
-  return processRestaurants(querySnapshot);
+  const restaurants = querySnapshot.docs.map((doc: any) => {
+      const restaurantData = doc.data() as Restaurant;
+      const cuisineImage = cuisinesConfig[restaurantData.cuisine]?.imageUrl || undefined;
+      return { 
+          ...restaurantData, 
+          id: doc.id,
+          categoryImageUrl: cuisineImage,
+      } as Restaurant
+  });
+
+  // Separate promoted from non-promoted and sort them
+  const promoted = restaurants.filter((r: Restaurant) => r.isPromoted).sort((a,b) => b.rating - a.rating);
+  const notPromoted = restaurants.filter((r: Restaurant) => !r.isPromoted);
+
+  return [...promoted, ...notPromoted];
 }
 
 export async function getRestaurantById(id: string): Promise<Restaurant | null> {
@@ -283,30 +280,28 @@ export async function getBannerConfig(): Promise<BannerConfig | null> {
 }
 
 export function listenToOrdersForRestaurant(
-  restaurantId: string,
-  callback: (orders: Order[]) => void,
-  onError: (error: Error) => void
+    restaurantId: string,
+    callback: (orders: Order[]) => void,
+    onError: (error: Error) => void
 ): () => void {
-  const ordersRef = collection(db, 'orders');
-  const q = query(
-    ordersRef,
-    where('restaurantId', '==', restaurantId),
-    orderBy('createdAt', 'desc')
-  );
-
-  const unsubscribe = onSnapshot(
-    q,
-    snapshot => {
-      const orders = snapshot.docs.map(
-        doc => ({...doc.data(), id: doc.id} as Order),
-      );
-      callback(orders);
-    },
-    error => {
-      console.error('Error listening to orders:', error);
-      onError(error);
-    },
-  );
-
-  return unsubscribe;
+    const ordersRef = collection(db, 'orders');
+    const q = query(
+        ordersRef,
+        where('restaurantId', '==', restaurantId)
+    );
+    
+    const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+            const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+            const sortedOrders = orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+            callback(sortedOrders);
+        },
+        (error) => {
+            console.error('Error listening to orders:', error);
+            onError(error);
+        }
+    );
+    
+    return unsubscribe;
 }

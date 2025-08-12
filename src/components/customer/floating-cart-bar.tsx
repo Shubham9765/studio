@@ -17,20 +17,23 @@ export function FloatingCartBar() {
 
     return (
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-transparent p-4 z-40 flex justify-end">
+            <div className="fixed bottom-0 left-1/2 -translate-x-1/2 lg:hidden bg-transparent p-4 z-40 flex justify-center">
                  <SheetTrigger asChild>
-                    <Button className="h-16 w-16 rounded-full shadow-lg text-lg flex flex-col items-center justify-center gap-0.5">
-                        <ShoppingCart className="h-6 w-6"/>
-                        <span className="font-bold text-sm">Rs.{totalPrice.toFixed(2)}</span>
-                         <Badge variant="secondary" className="absolute -top-1 -right-1 h-6 w-6 flex items-center justify-center rounded-full text-sm">
-                            {cartCount}
-                        </Badge>
+                    <Button className="h-16 w-auto px-6 rounded-full shadow-lg text-lg flex items-center justify-center gap-4 animate-bounce-slow">
+                        <div className="relative">
+                            <ShoppingCart className="h-7 w-7"/>
+                            <Badge variant="secondary" className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center rounded-full text-sm font-bold text-primary bg-white border-2 border-primary">
+                                {cartCount}
+                            </Badge>
+                        </div>
+                        <span className="font-bold text-lg">Rs.{totalPrice.toFixed(2)}</span>
                     </Button>
                  </SheetTrigger>
             </div>
-            <SheetContent side="bottom" className="h-4/5 flex flex-col rounded-t-2xl">
-                <SheetHeader className="text-left">
-                    <SheetTitle>Your Order</SheetTitle>
+            <SheetContent side="bottom" className="h-4/5 flex flex-col rounded-t-2xl border-t-4 border-primary shadow-2xl">
+                <SheetHeader className="text-left flex-row items-center gap-3">
+                    <ShoppingCart className="h-6 w-6 text-primary"/>
+                    <SheetTitle className="text-2xl font-bold">Your Order</SheetTitle>
                 </SheetHeader>
                 <div className="flex-grow overflow-hidden py-4">
                     {restaurant && <Cart restaurant={restaurant} isSheet={true} />}

@@ -94,4 +94,11 @@
       display: block;
     }
   }
+  
+  .section-gradient-1 {
+      background-image: linear-gradient(to bottom, hsl(var(--background)), hsl(var(--primary) / 0.03));
+  }
+  .section-gradient-2 {
+      background-image: linear-gradient(to bottom, hsl(var(--background)), hsl(var(--accent) / 0.04));
+  }
 }
