@@ -26,11 +26,12 @@ export function PrintProvider({ children }: { children: ReactNode }) {
     document.body.appendChild(iframe);
     iframeRef.current = iframe;
 
-    // Cleanup function to remove the iframe when the provider unmounts
+    // The local variable `iframe` is captured in the closure of the cleanup function.
+    // This ensures that we always try to remove the exact iframe that was created
+    // in this specific effect run, avoiding race conditions with Fast Refresh.
     return () => {
-      if (iframeRef.current) {
-        document.body.removeChild(iframeRef.current);
-        iframeRef.current = null;
+      if (iframe) {
+        document.body.removeChild(iframe);
       }
     };
   }, []); // Empty dependency array ensures this runs only once on mount

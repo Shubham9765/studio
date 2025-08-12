@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
@@ -31,34 +32,43 @@ export default function ManageOrdersPage() {
     const [isNewOrderPending, setIsNewOrderPending] = useState(false);
 
     useEffect(() => {
-        if (!user || authLoading) return;
-        
+        if (authLoading) return;
+
         let audio: HTMLAudioElement | null = null;
         
+        const manageAudioPlayback = (hasPending: boolean) => {
+             if (typeof window !== 'undefined') {
+                if (!audio) {
+                    audio = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_942323b2f9.mp3');
+                    audio.loop = true;
+                    audio.volume = 1.0;
+                }
+                if (hasPending) {
+                    audio.play().catch(e => console.error("Error playing sound:", e));
+                } else {
+                    audio.pause();
+                }
+            }
+        }
+
+        let unsubscribe: (() => void) | undefined;
+        
         const fetchInitialData = async () => {
+            if (!user) {
+                 setLoading(false);
+                 return;
+            }
             setLoading(true);
             try {
                 const rest = await getRestaurantByOwnerId(user.uid);
                 setRestaurant(rest);
                 if (rest) {
-                    const unsubscribe = listenToOrdersForRestaurant(rest.id, (fetchedOrders) => {
+                    unsubscribe = listenToOrdersForRestaurant(rest.id, (fetchedOrders) => {
                         setOrders(fetchedOrders);
                         
                         const hasPendingOrders = fetchedOrders.some(o => o.status === 'pending');
                         setIsNewOrderPending(hasPendingOrders);
-
-                        if (typeof window !== 'undefined') {
-                            if (hasPendingOrders) {
-                                if (!audio) {
-                                    audio = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_942323b2f9.mp3');
-                                    audio.loop = true;
-                                    audio.volume = 1.0;
-                                }
-                                audio.play().catch(e => console.error("Error playing sound:", e));
-                            } else {
-                                audio?.pause();
-                            }
-                        }
+                        manageAudioPlayback(hasPendingOrders);
                         
                         setLoading(false);
                     }, (err) => {
@@ -66,7 +76,6 @@ export default function ManageOrdersPage() {
                         setError('Failed to set up order listener.');
                         setLoading(false);
                     });
-                    return unsubscribe;
                 } else {
                     setError('No restaurant found for this owner.');
                     setLoading(false);
@@ -78,10 +87,12 @@ export default function ManageOrdersPage() {
             }
         };
 
-        const unsubscribePromise = fetchInitialData();
+        fetchInitialData();
 
         return () => {
-            unsubscribePromise.then(unsub => unsub && unsub());
+            if (unsubscribe) {
+                unsubscribe();
+            }
             audio?.pause();
         };
     }, [user, authLoading, toast]);

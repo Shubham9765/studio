@@ -143,44 +143,70 @@ export default function ManageOrdersPage() {
         setOrderToPrint(order);
     };
 
-    const fetchOrdersData = async (restaurantId: string) => {
-        try {
-            const items = await getOrdersForRestaurant(restaurantId);
-            setOrders(items);
-        } catch (e: any) {
-            setError('Failed to fetch orders.');
-            toast({ variant: 'destructive', title: 'Error', description: e.message });
-        }
-    };
-
     useEffect(() => {
-        const fetchRestaurantAndOrders = async () => {
-            if (user?.uid) {
-                try {
-                    setLoading(true);
-                    const rest = await getRestaurantByOwnerId(user.uid);
-                    setRestaurant(rest);
-                    if (rest) {
-                        await fetchOrdersData(rest.id);
-                    } else {
-                         setError('No restaurant found for this owner.');
-                    }
-                } catch (e: any) {
-                    setError('Failed to fetch restaurant data.');
-                    toast({ variant: 'destructive', title: 'Error', description: e.message });
-                } finally {
+        if (authLoading) return;
+
+        let audio: HTMLAudioElement | null = null;
+        if (typeof window !== 'undefined') {
+            audio = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_942323b2f9.mp3');
+            audio.loop = true;
+            audio.volume = 1.0;
+        }
+        
+        const manageAudioPlayback = (hasPending: boolean) => {
+             if (audio) {
+                if (hasPending) {
+                    audio.play().catch(e => console.error("Error playing sound:", e));
+                } else {
+                    audio.pause();
+                }
+            }
+        }
+
+        let unsubscribe: (() => void) | undefined;
+
+        const fetchInitialData = async () => {
+            if (!user) {
+                setLoading(false);
+                return;
+            }
+            setLoading(true);
+            try {
+                const rest = await getRestaurantByOwnerId(user.uid);
+                setRestaurant(rest);
+                if (rest) {
+                    unsubscribe = listenToOrdersForRestaurant(rest.id, (fetchedOrders) => {
+                        setOrders(fetchedOrders);
+                        const hasPendingOrders = fetchedOrders.some(o => o.status === 'pending');
+                        manageAudioPlayback(hasPendingOrders);
+                        setLoading(false);
+                    }, (err) => {
+                        console.error(err);
+                        setError('Failed to set up order listener.');
+                        setLoading(false);
+                    });
+                } else {
+                    setError('No restaurant found for this owner.');
                     setLoading(false);
                 }
+            } catch (e: any) {
+                setError('Failed to fetch restaurant data.');
+                toast({ variant: 'destructive', title: 'Error', description: e.message });
+                setLoading(false);
             }
         };
 
-        if (!authLoading && user) {
-            fetchRestaurantAndOrders();
-        } else if (!authLoading && !user) {
-            setLoading(false);
-        }
+        fetchInitialData();
+
+        return () => {
+            if (unsubscribe) {
+                unsubscribe();
+            }
+            audio?.pause();
+        };
     }, [user, authLoading, toast]);
-    
+
+
     const handleMarkAsPaid = async (orderId: string) => {
         setUpdatingOrderId(orderId);
         
@@ -319,7 +345,7 @@ export default function ManageOrdersPage() {
                                             </div>
                                             <div className="hidden md:block text-sm text-muted-foreground">{format(order.createdAt.toDate(), 'PPpp')}</div>
                                             <div><Badge variant={order.status === 'delivered' ? 'default' : 'secondary'} className="capitalize">{order.status.replace('-', ' ')}</Badge></div>
-                                            <div className="font-bold text-lg">${order.total.toFixed(2)}</div>
+                                            <div className="font-bold text-lg">Rs.{order.total.toFixed(2)}</div>
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="p-4 pt-0">

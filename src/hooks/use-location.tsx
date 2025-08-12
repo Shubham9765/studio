@@ -35,7 +35,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const requestLocation = useCallback(() => {
-        if (!navigator.geolocation) {
+        if (typeof window === 'undefined' || !navigator.geolocation) {
             setError('Geolocation is not supported by your browser.');
             return;
         }
@@ -50,11 +50,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
             }
         );
     }, [fetchCityName]);
-
-    useEffect(() => {
-        // Automatically request location on initial load is removed to prevent SSR issues.
-        // Components that need the location should call `requestLocation`.
-    }, []);
 
     return (
         <LocationContext.Provider value={{ location, error, requestLocation }}>
