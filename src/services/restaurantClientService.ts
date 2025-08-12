@@ -26,6 +26,23 @@ function deg2rad(deg: number) {
   return deg * (Math.PI/180)
 }
 
+export async function getCoordinatesForAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
+    try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+        const data = await response.json();
+        if (data && data.length > 0) {
+            return {
+                latitude: parseFloat(data[0].lat),
+                longitude: parseFloat(data[0].lon),
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error("Geocoding failed:", error);
+        return null;
+    }
+}
+
 
 export async function getRestaurants(): Promise<Restaurant[]> {
   const q = query(collection(db, 'restaurants'), where('status', '==', 'approved'));

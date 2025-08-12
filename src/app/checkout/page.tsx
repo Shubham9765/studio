@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -16,6 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, CheckCircle, ShoppingCart, Banknote, Landmark, Crosshair, Loader2, Home, Building, Map } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { createOrder } from '@/services/restaurantService';
+import { getCoordinatesForAddress } from '@/services/restaurantClientService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { Order, Restaurant } from '@/lib/types';
@@ -25,24 +27,6 @@ import Link from 'next/link';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogTrigger, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LocationPickerMap } from '@/components/location-picker-map';
-
-
-async function getCoordinatesForAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
-    try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
-        const data = await response.json();
-        if (data && data.length > 0) {
-            return {
-                latitude: parseFloat(data[0].lat),
-                longitude: parseFloat(data[0].lon),
-            };
-        }
-        return null;
-    } catch (error) {
-        console.error("Geocoding failed:", error);
-        return null;
-    }
-}
 
 
 export default function CheckoutPage() {
@@ -75,8 +59,10 @@ export default function CheckoutPage() {
             setDeliveryMode('saved');
         } else if ((!user?.addresses || user.addresses.length === 0) && deliveryMode !== 'map') {
             setDeliveryMode('current'); // Default to current location if no saved addresses
+             setIsLocating(true);
+            requestLocation();
         }
-    }, [authLoading, user, router, selectedAddressId, deliveryMode]);
+    }, [authLoading, user, router, selectedAddressId, deliveryMode, requestLocation]);
     
     const handleDeliveryModeChange = (value: string) => {
         if (value === 'current') {
@@ -340,19 +326,20 @@ export default function CheckoutPage() {
                                                     {deliveryMode === 'current' && location && <p className="text-muted-foreground text-xs">{location.address}</p>}
                                                 </div>
                                             </Label>
-                                            <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
-                                                <DialogTrigger asChild>
-                                                    <Label htmlFor="map" onClick={() => handleDeliveryModeChange('map')} className="flex items-start gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:border-primary">
-                                                        <RadioGroupItem value="map" id="map" className="mt-1" />
-                                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center mt-1">
-                                                            <Map className="h-5 w-5 text-muted-foreground"/>
-                                                        </div>
-                                                        <div className="text-sm flex-grow">
-                                                            <p className="font-bold">Set Location on Map</p>
-                                                            {deliveryMode === 'map' && mapSelectedLocation && <p className="text-muted-foreground text-xs">{mapSelectedLocation.address}</p>}
-                                                        </div>
-                                                    </Label>
-                                                </DialogTrigger>
+                                            
+                                            <Label htmlFor="map" className="flex items-start gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:border-primary">
+                                                <RadioGroupItem value="map" id="map" className="mt-1" />
+                                                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center mt-1">
+                                                    <Map className="h-5 w-5 text-muted-foreground"/>
+                                                </div>
+                                                <div className="text-sm flex-grow">
+                                                    <p className="font-bold">Set Location on Map</p>
+                                                    {deliveryMode === 'map' && mapSelectedLocation && <p className="text-muted-foreground text-xs">{mapSelectedLocation.address}</p>}
+                                                </div>
+                                            </Label>
+                                        </RadioGroup>
+
+                                        <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
                                                 <DialogContent className="sm:max-w-2xl h-4/5 flex flex-col">
                                                     <DialogHeader>
                                                         <DialogTitle>Pin Your Delivery Location</DialogTitle>
@@ -360,8 +347,7 @@ export default function CheckoutPage() {
                                                     </DialogHeader>
                                                     <LocationPickerMap onLocationSelect={handleMapLocationSelect} />
                                                 </DialogContent>
-                                            </Dialog>
-                                        </RadioGroup>
+                                        </Dialog>
                                         
                                         {(user.addresses?.length || 0) === 0 && (
                                              <Alert>

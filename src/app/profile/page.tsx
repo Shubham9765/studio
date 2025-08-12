@@ -13,6 +13,7 @@ import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { updateUserProfile } from '@/services/userService';
+import { getCoordinatesForAddress } from '@/services/restaurantClientService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, PlusCircle, Home, Building, Trash, Edit, User, MapPin, Phone, Map } from 'lucide-react';
@@ -44,23 +45,6 @@ const addressSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 type AddressFormValues = z.infer<typeof addressSchema>;
-
-async function getCoordinatesForAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
-    try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
-        const data = await response.json();
-        if (data && data.length > 0) {
-            return {
-                latitude: parseFloat(data[0].lat),
-                longitude: parseFloat(data[0].lon),
-            };
-        }
-        return null;
-    } catch (error) {
-        console.error("Geocoding failed:", error);
-        return null;
-    }
-}
 
 
 export default function ProfilePage() {

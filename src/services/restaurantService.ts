@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from './firebase';
@@ -7,6 +8,8 @@ import type { Order } from '@/lib/types';
 import type { CartItem } from '@/hooks/use-cart';
 import type { Restaurant } from '@/lib/types';
 import { getServiceableCities } from './adminService';
+import { getCoordinatesForAddress as getCoords } from './restaurantClientService';
+
 
 async function getCityFromCoordinates(latitude: number, longitude: number): Promise<string | null> {
     try {
@@ -114,3 +117,8 @@ export async function rateRestaurant(orderId: string, restaurantId: string, newR
         throw e;
     }
 }
+
+export async function getCoordinatesForAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
+    return getCoords(address);
+}
+
