@@ -55,7 +55,7 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
 }
 
 
-export function listenToOrdersForRestaurant(restaurantId: string, callback: (orders: Order[]) => void): () => void {
+export function listenToOrdersForRestaurant(restaurantId: string, callback: (orders: Order[]) => void, onError: (error: Error) => void): () => void {
     const ordersRef = collection(db, 'orders');
     const q = query(ordersRef, where('restaurantId', '==', restaurantId));
     
@@ -63,6 +63,9 @@ export function listenToOrdersForRestaurant(restaurantId: string, callback: (ord
         const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
         const sortedOrders = orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
         callback(sortedOrders);
+    }, (error) => {
+        console.error("Error listening to orders:", error);
+        onError(error);
     });
 
     return unsubscribe;

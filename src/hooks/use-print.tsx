@@ -30,7 +30,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
     // This ensures that we always try to remove the exact iframe that was created
     // in this specific effect run, avoiding race conditions with Fast Refresh.
     return () => {
-      if (iframe) {
+      if (iframe && document.body.contains(iframe)) {
         document.body.removeChild(iframe);
       }
     };

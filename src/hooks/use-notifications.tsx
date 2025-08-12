@@ -13,12 +13,6 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export function NotificationProvider({ children }: { children: ReactNode }) {
     const [permission, setPermission] = useState<NotificationPermission | null>(null);
 
-    useEffect(() => {
-        if (typeof window !== 'undefined' && 'Notification' in window) {
-            setPermission(Notification.permission);
-        }
-    }, []);
-
     const requestPermission = () => {
         if (typeof window === 'undefined' || !('Notification' in window)) {
             console.log('This browser does not support desktop notification');
