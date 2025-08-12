@@ -150,7 +150,7 @@ function MobileSearch() {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary animate-pulse" />
         <Input
           placeholder="Search restaurants or dishes..."
-          className="pl-12 text-base h-14 rounded-full w-full bg-muted border-2 border-transparent focus-visible:ring-primary focus-visible:border-primary hover:shadow-md transition-all duration-300"
+          className="pl-12 text-sm h-14 rounded-full w-full bg-muted border-2 border-transparent focus-visible:ring-primary focus-visible:border-primary hover:shadow-md transition-all duration-300"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -165,9 +165,13 @@ export function HomePage() {
   const [serviceableCities, setServiceableCities] = useState<string[]>([]);
   const [bannerConfig, setBannerConfig] = useState<BannerConfig | null>(null);
   const [loading, setLoading] = useState(true);
-  const { location, error: locationError } = useLocation();
+  const { location, error: locationError, requestLocation } = useLocation();
   const { cart, restaurant: cartRestaurant } = useCart();
   const isCartVisible = cart.length > 0 && cartRestaurant;
+
+  useEffect(() => {
+    requestLocation();
+  }, [requestLocation]);
 
   const isServiceAvailable = useMemo(() => {
     if (!location || serviceableCities.length === 0) return true; // Default to true if location or cities aren't loaded yet
@@ -210,11 +214,11 @@ export function HomePage() {
   
   const mainContent = (
     <>
-      <div className="flex items-center gap-3 text-lg font-semibold mb-6 bg-card shadow-sm p-3 rounded-lg">
-            <MapPin className="h-6 w-6 text-primary animate-pulse" />
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">Delivering to:</span>
-              {location ? <span className="font-bold">{location.city || 'your location'}</span> : <Skeleton className="h-5 w-24" />}
+      <div className="flex items-baseline gap-3 text-lg font-semibold mb-6 bg-card shadow-sm p-3 rounded-lg overflow-hidden">
+            <MapPin className="h-6 w-6 text-primary animate-pulse flex-shrink-0" />
+            <span className="text-muted-foreground whitespace-nowrap">Delivering to:</span>
+            <div className="min-w-0">
+                {location ? <span className="font-bold truncate">{location.city || 'your location'}</span> : <Skeleton className="h-5 w-24" />}
             </div>
         </div>
 

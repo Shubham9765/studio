@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useRef, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useRef, useCallback, ReactNode, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import type { Order, Restaurant } from '@/lib/types';
 import { KOT } from '@/components/owner/kot';
@@ -16,23 +16,35 @@ const PrintContext = createContext<PrintContextType | undefined>(undefined);
 export function PrintProvider({ children }: { children: ReactNode }) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  const print = useCallback((order: Order, restaurant: Restaurant) => {
-    if (!iframeRef.current) {
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'absolute';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      document.body.appendChild(iframe);
-      iframeRef.current = iframe;
-    }
+  useEffect(() => {
+    // Create the iframe only on the client side
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+    iframeRef.current = iframe;
 
+    // Cleanup function to remove the iframe when the provider unmounts
+    return () => {
+      if (iframeRef.current) {
+        document.body.removeChild(iframeRef.current);
+        iframeRef.current = null;
+      }
+    };
+  }, []); // Empty dependency array ensures this runs only once on mount
+
+  const print = useCallback((order: Order, restaurant: Restaurant) => {
     const iframe = iframeRef.current;
+    if (!iframe) return;
+
     const iframeDoc = iframe.contentWindow?.document;
     if (!iframeDoc) return;
 
     // Create a root for React to render into.
     const printRoot = iframeDoc.createElement('div');
+    iframeDoc.body.innerHTML = ''; // Clear previous content
     iframeDoc.body.appendChild(printRoot);
 
     const componentToPrint = <KOT order={order} restaurant={restaurant} />;
@@ -48,7 +60,6 @@ export function PrintProvider({ children }: { children: ReactNode }) {
     const handleAfterPrint = () => {
         if (printRoot) {
             ReactDOM.unmountComponentAtNode(printRoot);
-            printRoot.remove();
         }
     }
     iframe.contentWindow?.addEventListener('afterprint', handleAfterPrint, { once: true });
