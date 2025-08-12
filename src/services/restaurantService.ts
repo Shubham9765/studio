@@ -62,9 +62,9 @@ export async function createOrder(
       paymentMethod: orderDetails.paymentMethod || 'cash',
       paymentStatus: orderDetails.paymentStatus || 'pending',
       paymentDetails: orderDetails.paymentDetails || {},
-      deliveryAddress: orderDetails.deliveryAddress || 'N/A', // The text address for display
+      deliveryAddress: orderDetails.deliveryAddress || 'N/A',
       customerPhone: orderDetails.customerPhone || 'N/A',
-      customerAddress: orderDetails.customerAddress, // The full address object with coordinates
+      customerAddress: orderDetails.customerAddress, // This now correctly saves the full address object
       notes: orderDetails.notes || '',
   };
 
@@ -121,4 +121,5 @@ export async function rateRestaurant(orderId: string, restaurantId: string, newR
 export async function getCoordinatesForAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
     return getCoords(address);
 }
+
 

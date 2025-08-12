@@ -372,7 +372,6 @@ function ServiceableLocations({ locations, loading, onUpdate }: { locations: str
     };
 
     const handleRemoveCity = async (city: string) => {
-        if (!confirm(`Are you sure you want to remove "${city}"?`)) return;
         try {
             await removeServiceableCity(city);
             toast({ title: 'City Removed', description: `${city} is no longer a serviceable location.` });
@@ -406,9 +405,25 @@ function ServiceableLocations({ locations, loading, onUpdate }: { locations: str
                         locations.map(city => (
                             <div key={city} className="flex items-center justify-between p-2 bg-muted rounded-md">
                                 <span className="font-medium">{city}</span>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveCity(city)}>
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This action cannot be undone. This will permanently remove "{city}" from the list of serviceable locations.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleRemoveCity(city)}>Continue</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </div>
                         ))
                     ) : (

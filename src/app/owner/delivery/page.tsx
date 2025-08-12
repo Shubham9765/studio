@@ -14,6 +14,17 @@ import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Trash, User, Bike, AlertTriangle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function ManageDeliveryPage() {
     const { user, loading: authLoading } = useAuth();
@@ -61,7 +72,7 @@ export default function ManageDeliveryPage() {
     };
 
     const handleRemoveDeliveryBoy = async (deliveryBoy: DeliveryBoy) => {
-        if (!restaurant || !confirm(`Are you sure you want to remove ${deliveryBoy.name}?`)) return;
+        if (!restaurant) return;
 
         try {
             await removeDeliveryBoyFromRestaurant(restaurant.id, deliveryBoy);
@@ -162,9 +173,25 @@ export default function ManageDeliveryPage() {
                                                     <p className="text-sm text-muted-foreground">{boy.email}</p>
                                                 </div>
                                             </div>
-                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveDeliveryBoy(boy)}>
-                                                <Trash className="h-4 w-4 text-destructive"/>
-                                            </Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon">
+                                                        <Trash className="h-4 w-4 text-destructive"/>
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This action cannot be undone. This will permanently remove {boy.name} from your delivery team.
+                                                    </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleRemoveDeliveryBoy(boy)}>Remove</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
                                         </li>
                                     ))}
                                 </ul>
