@@ -2,7 +2,7 @@
 'use client';
 
 import { db } from './firebase';
-import { collection, getDocs, doc, setDoc, query, where, getDoc, collectionGroup, limit, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, query, where, getDoc, collectionGroup, limit, onSnapshot, orderBy, updateDoc, setDoc as setFirestoreDoc } from 'firebase/firestore';
 import type { Restaurant, MenuItem, Order, BannerConfig, Cuisine } from '@/lib/types';
 import { MOCK_RESTAURANTS } from '@/lib/seed';
 
@@ -304,4 +304,53 @@ export function listenToOrdersForRestaurant(
     );
     
     return unsubscribe;
+}
+
+// Cuisine Functions
+const cuisinesConfigRef = doc(db, 'app_config', 'cuisines');
+
+export async function getCuisineTypes(): Promise<Cuisine[]> {
+    const restaurantSnapshot = await getDocs(query(collection(db, 'restaurants'), where('status', '==', 'approved')));
+    const uniqueCuisines = new Set<string>();
+    
+    restaurantSnapshot.forEach(doc => {
+        const data = doc.data() as Partial<Restaurant>;
+        if (data.cuisine && typeof data.cuisine === 'string' && data.cuisine.trim() !== '') {
+            uniqueCuisines.add(data.cuisine);
+        }
+    });
+
+    if (uniqueCuisines.size === 0) {
+        return [];
+    }
+
+    const cuisineConfigDoc = await getDoc(cuisinesConfigRef);
+    const cuisineConfigData = cuisineConfigDoc.exists() ? cuisineConfigDoc.data() : {};
+
+    const cuisinesArray = Array.from(uniqueCuisines).map(name => {
+        const imageUrl = cuisineConfigData[name]?.imageUrl || '';
+        return {
+            name,
+            imageUrl,
+        };
+    });
+
+    return cuisinesArray;
+}
+
+
+export async function updateCuisineImageUrl(cuisineName: string, imageUrl: string): Promise<void> {
+    const docSnap = await getDoc(cuisinesConfigRef);
+    if (!docSnap.exists()) {
+        // If the document doesn't exist, create it.
+        await setFirestoreDoc(cuisinesConfigRef, {});
+    }
+    
+    const updateData = {
+        [`${cuisineName}.imageUrl`]: imageUrl,
+        [`${cuisineName}.name`]: cuisineName,
+    };
+    
+    // Use updateDoc which works correctly with dot notation for nested fields.
+    await updateDoc(cuisinesConfigRef, updateData);
 }

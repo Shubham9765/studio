@@ -12,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
-import { getCuisineTypes, updateCuisineImageUrl } from '@/services/adminService';
+import { getCuisineTypes, updateCuisineImageUrl } from '@/services/restaurantClientService';
 
 interface CuisineType {
     name: string;

@@ -464,7 +464,7 @@ export default function CheckoutPage() {
                                             <p className="font-medium text-sm">{item.name}</p>
                                             <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                                         </div>
-                                        <p className="font-semibold text-sm">Rs.${(item.price * item.quantity).toFixed(2)}</p>
+                                        <p className="font-semibold text-sm">Rs.{(item.price * item.quantity).toFixed(2)}</p>
                                     </div>
                                 ))}
                                 </div>
@@ -472,21 +472,21 @@ export default function CheckoutPage() {
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between">
                                         <span>Subtotal</span>
-                                        <span>Rs.${subtotal.toFixed(2)}</span>
+                                        <span>Rs.{subtotal.toFixed(2)}</span>
                                     </div>
                                      <div className="flex justify-between">
                                         <span>Delivery Fee</span>
-                                        <span>Rs.${deliveryFee.toFixed(2)}</span>
+                                        <span>Rs.{deliveryFee.toFixed(2)}</span>
                                     </div>
                                     {gstEnabled && (
                                         <>
                                             <div className="flex justify-between text-muted-foreground">
                                                 <span>CGST (2.5%)</span>
-                                                <span>Rs.${cgst.toFixed(2)}</span>
+                                                <span>Rs.{cgst.toFixed(2)}</span>
                                             </div>
                                             <div className="flex justify-between text-muted-foreground">
                                                 <span>SGST (2.5%)</span>
-                                                <span>Rs.${sgst.toFixed(2)}</span>
+                                                <span>Rs.{sgst.toFixed(2)}</span>
                                             </div>
                                         </>
                                     )}
@@ -494,7 +494,7 @@ export default function CheckoutPage() {
                                 <Separator />
                                 <div className="flex justify-between font-bold text-lg">
                                     <span>Total</span>
-                                    <span>Rs.${finalTotal.toFixed(2)}</span>
+                                    <span>Rs.{finalTotal.toFixed(2)}</span>
                                 </div>
                             </CardContent>
                         </Card>
@@ -504,3 +504,5 @@ export default function CheckoutPage() {
         </div>
     );
 }
+
+    
