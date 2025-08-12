@@ -29,6 +29,7 @@ const LiveMap = dynamic(() => import('@/components/live-map').then(mod => mod.Li
 });
 
 function MapDialog({ order, deliveryBoyLocation }: { order: Order; deliveryBoyLocation: { latitude: number; longitude: number } | null }) {
+    if (!deliveryBoyLocation) return null;
     const showMap = deliveryBoyLocation?.latitude && deliveryBoyLocation?.longitude && order.customerAddress?.latitude && order.customerAddress?.longitude;
 
     return (
@@ -153,7 +154,7 @@ export default function DeliveryDashboard() {
     };
     
     const startLocationTracking = () => {
-        if (user?.uid && navigator.geolocation) {
+        if (user?.uid && typeof window !== 'undefined' && navigator.geolocation) {
             // Watch for high-frequency updates when the app is active
             locationWatcher = navigator.geolocation.watchPosition(
                 handlePositionUpdate,
@@ -299,7 +300,7 @@ export default function DeliveryDashboard() {
                                     </div>
                                 </Suspense>
                                  <div className='absolute bottom-2 left-1/2 -translate-x-1/2 w-full px-2'>
-                                    <MapDialog order={order} deliveryBoyLocation={deliveryBoyLocation} />
+                                    {deliveryBoyLocation && <MapDialog order={order} deliveryBoyLocation={deliveryBoyLocation} />}
                                 </div>
                             </div>
                         ) : (
@@ -355,3 +356,5 @@ export default function DeliveryDashboard() {
     </div>
   );
 }
+
+    

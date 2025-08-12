@@ -153,7 +153,7 @@ export default function DeliveryDashboard() {
     };
     
     const startLocationTracking = () => {
-        if (user?.uid && navigator.geolocation) {
+        if (user?.uid && typeof window !== 'undefined' && navigator.geolocation) {
             // Watch for high-frequency updates when the app is active
             locationWatcher = navigator.geolocation.watchPosition(
                 handlePositionUpdate,

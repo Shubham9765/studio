@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { db } from './firebase';
@@ -49,8 +50,8 @@ export async function getRestaurants(): Promise<Restaurant[]> {
   });
 
   // Separate promoted from non-promoted and sort them
-  const promoted = restaurants.filter((r: Restaurant) => r.isPromoted).sort((a,b) => b.rating - a.rating);
-  const notPromoted = restaurants.filter((r: Restaurant) => !r.isPromoted);
+  const promoted = restaurants.filter((r: Restaurant) => r.isPromoted === true).sort((a,b) => (b.rating ?? 0) - (a.rating ?? 0));
+  const notPromoted = restaurants.filter((r: Restaurant) => r.isPromoted !== true);
 
   return [...promoted, ...notPromoted];
 }
@@ -279,33 +280,6 @@ export async function getBannerConfig(): Promise<BannerConfig | null> {
     return null;
 }
 
-export function listenToOrdersForRestaurant(
-    restaurantId: string,
-    callback: (orders: Order[]) => void,
-    onError: (error: Error) => void
-): () => void {
-    const ordersRef = collection(db, 'orders');
-    const q = query(
-        ordersRef,
-        where('restaurantId', '==', restaurantId)
-    );
-    
-    const unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-            const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
-            const sortedOrders = orders.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
-            callback(sortedOrders);
-        },
-        (error) => {
-            console.error('Error listening to orders:', error);
-            onError(error);
-        }
-    );
-    
-    return unsubscribe;
-}
-
 // Cuisine Functions
 const cuisinesConfigRef = doc(db, 'app_config', 'cuisines');
 
@@ -354,3 +328,5 @@ export async function updateCuisineImageUrl(cuisineName: string, imageUrl: strin
     // Use updateDoc which works correctly with dot notation for nested fields.
     await updateDoc(cuisinesConfigRef, updateData);
 }
+
+    
