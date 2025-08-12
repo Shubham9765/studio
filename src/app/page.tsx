@@ -5,8 +5,21 @@ import { useAuth } from '@/hooks/use-auth';
 import { HomePage } from '@/components/home-page';
 import AdminDashboard from '@/components/admin/admin-dashboard';
 import OwnerDashboard from '@/components/owner/owner-dashboard';
-import DeliveryDashboard from '@/app/delivery/delivery-dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
+import dynamic from 'next/dynamic';
+
+const DeliveryDashboard = dynamic(() => import('@/components/delivery/delivery-dashboard'), {
+    ssr: false,
+    loading: () => (
+         <div className="flex flex-col items-center justify-center min-h-screen">
+            <div className="w-full max-w-4xl p-8 space-y-8">
+                <Skeleton className="h-16 w-1/3" />
+                <Skeleton className="h-32 w-full" />
+            </div>
+        </div>
+    )
+});
+
 
 export default function Home() {
   const { user, loading } = useAuth();

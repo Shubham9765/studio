@@ -67,8 +67,8 @@ export async function getRestaurants(): Promise<Restaurant[]> {
   });
 
   // Separate promoted from non-promoted and sort them
-  const promoted = restaurants.filter((r: Restaurant) => r.isPromoted === true).sort((a,b) => (b.rating ?? 0) - (a.rating ?? 0));
-  const notPromoted = restaurants.filter((r: Restaurant) => r.isPromoted !== true);
+  const promoted = restaurants.filter(r => r.isPromoted === true).sort((a,b) => (b.rating ?? 0) - (a.rating ?? 0));
+  const notPromoted = restaurants.filter(r => r.isPromoted !== true);
 
   return [...promoted, ...notPromoted];
 }

@@ -11,6 +11,26 @@ import { getServiceableCities } from './adminService';
 import { getCoordinatesForAddress as getCoords } from './restaurantClientService';
 
 
+// Helper function to calculate distance between two lat/lng points in kilometers
+function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2-lat1);
+  const dLon = deg2rad(lon2-lon1); 
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+    ; 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  const d = R * c; // Distance in km
+  return d;
+}
+
+function deg2rad(deg: number) {
+  return deg * (Math.PI/180)
+}
+
+
 async function getCityFromCoordinates(latitude: number, longitude: number): Promise<string | null> {
     try {
         const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=en`);
@@ -33,9 +53,22 @@ export async function createOrder(
 ): Promise<string> {
   // Serviceability Check (only if coordinates are present)
   if (orderDetails.customerAddress?.latitude && orderDetails.customerAddress?.longitude) {
+      // 1. Check distance
+      if (restaurant.latitude && restaurant.longitude) {
+        const distance = getDistanceFromLatLonInKm(
+          orderDetails.customerAddress.latitude,
+          orderDetails.customerAddress.longitude,
+          restaurant.latitude,
+          restaurant.longitude
+        );
+        if (distance > 7) {
+          throw new Error(`This restaurant is ${distance.toFixed(1)}km away and does not deliver to your location.`);
+        }
+      }
+
+      // 2. Check city serviceability
       const deliveryCity = await getCityFromCoordinates(orderDetails.customerAddress.latitude, orderDetails.customerAddress.longitude);
       if (!deliveryCity) {
-          // Don't block the order, but we can log this.
           console.warn(`Could not determine city for coordinates: ${orderDetails.customerAddress.latitude}, ${orderDetails.customerAddress.longitude}`);
       } else {
           const serviceableCities = await getServiceableCities();
@@ -121,5 +154,6 @@ export async function rateRestaurant(orderId: string, restaurantId: string, newR
 export async function getCoordinatesForAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
     return getCoords(address);
 }
+
 
 
