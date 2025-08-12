@@ -159,6 +159,16 @@ function MobileSearch() {
   );
 }
 
+function Footer() {
+    return (
+        <footer className="mt-12 text-center text-xs text-muted-foreground">
+            <Link href="/terms" className="hover:text-primary transition-colors">
+                Terms & Conditions
+            </Link>
+        </footer>
+    )
+}
+
 export function HomePage() {
   const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
   const [topMenuItems, setTopMenuItems] = useState<MenuItem[]>([]);
@@ -297,6 +307,7 @@ export function HomePage() {
             </aside>
           )}
         </div>
+        <Footer />
       </main>
       <FloatingCartBar />
     </div>

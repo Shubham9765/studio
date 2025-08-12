@@ -33,15 +33,14 @@ export default function ManageOrdersPage() {
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
-        if (typeof window !== 'undefined' && !audioRef.current) {
-            audioRef.current = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_942323b2f9.mp3');
-            audioRef.current.loop = true;
-            audioRef.current.volume = 1.0;
-        }
-
         const manageAudioPlayback = (hasPending: boolean) => {
-             const audio = audioRef.current;
-             if (audio) {
+             if (typeof window !== 'undefined') {
+                if (!audioRef.current) {
+                    audioRef.current = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_942323b2f9.mp3');
+                    audioRef.current.loop = true;
+                    audioRef.current.volume = 1.0;
+                }
+                const audio = audioRef.current;
                 if (hasPending) {
                     audio.play().catch(e => console.error("Error playing sound:", e));
                 } else {

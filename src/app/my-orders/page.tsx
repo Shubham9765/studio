@@ -156,11 +156,13 @@ export default function MyOrdersPage() {
     }, [user, authLoading, router]);
 
     const handleCopyId = (id: string) => {
-        navigator.clipboard.writeText(id);
-        toast({
-            title: 'Copied!',
-            description: 'Order ID copied to clipboard.',
-        });
+        if (typeof window !== 'undefined' && navigator.clipboard) {
+            navigator.clipboard.writeText(id);
+            toast({
+                title: 'Copied!',
+                description: 'Order ID copied to clipboard.',
+            });
+        }
     }
 
     if (authLoading || loading) {
@@ -278,3 +280,5 @@ export default function MyOrdersPage() {
         </div>
     );
 }
+
+    

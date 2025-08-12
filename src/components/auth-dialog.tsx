@@ -46,7 +46,7 @@ const signUpSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
   phone: z.string().min(10, { message: 'Please enter a valid phone number.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
-  role: z.enum(['customer', 'owner', 'delivery']),
+  role: z.enum(['customer', 'owner', 'delivery']).default('customer'),
 });
 
 const loginSchema = z.object({
@@ -63,6 +63,13 @@ type SignUpValues = z.infer<typeof signUpSchema>;
 async function isUsernameUnique(username: string): Promise<boolean> {
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('username', '==', username));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.empty;
+}
+
+async function isPhoneUnique(phone: string): Promise<boolean> {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('phone', '==', phone));
     const querySnapshot = await getDocs(q);
     return querySnapshot.empty;
 }
@@ -103,12 +110,20 @@ export function AuthDialog(props: Props) {
   const handleSignUp = async (values: SignUpValues) => {
     setIsSubmitting(true);
     try {
-      const unique = await isUsernameUnique(values.username);
-      if (!unique) {
+      const isUnameUnique = await isUsernameUnique(values.username);
+      if (!isUnameUnique) {
         signUpForm.setError('username', { type: 'manual', message: 'Username is already taken.' });
         setIsSubmitting(false);
         return;
       }
+      
+      const isNumUnique = await isPhoneUnique(values.phone);
+       if (!isNumUnique) {
+        signUpForm.setError('phone', { type: 'manual', message: 'This phone number is already registered.' });
+        setIsSubmitting(false);
+        return;
+      }
+
 
       const actionCodeSettings = {
         url: `${window.location.origin}/finish-signup`,
@@ -118,7 +133,9 @@ export function AuthDialog(props: Props) {
       await sendSignInLinkToEmail(auth, values.email, actionCodeSettings);
       
       window.localStorage.setItem('emailForSignIn', values.email);
-      window.localStorage.setItem('signUpData', JSON.stringify(values));
+      // Explicitly set role to customer before storing
+      const signUpData = { ...values, role: 'customer' as const };
+      window.localStorage.setItem('signUpData', JSON.stringify(signUpData));
       
       setEmailSent(true);
 
@@ -294,7 +311,7 @@ export function AuthDialog(props: Props) {
                         </DialogDescription>
                     </DialogHeader>
                     <Form {...signUpForm}>
-                        <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-2">
+                        <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4">
                             <FormField
                                 control={signUpForm.control}
                                 name="username"
@@ -342,42 +359,6 @@ export function AuthDialog(props: Props) {
                                     <FormLabel>Password</FormLabel>
                                     <FormControl>
                                         <Input type="password" placeholder="••••••••" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={signUpForm.control}
-                                name="role"
-                                render={({ field }) => (
-                                    <FormItem className="space-y-3 pt-2">
-                                    <FormLabel>I am a...</FormLabel>
-                                    <FormControl>
-                                        <RadioGroup
-                                        onValueChange={field.onChange}
-                                        defaultValue={field.value}
-                                        className="flex items-center space-x-1 sm:space-x-4"
-                                        >
-                                        <FormItem className="flex items-center space-x-2 space-y-0">
-                                            <FormControl>
-                                            <RadioGroupItem value="customer" />
-                                            </FormControl>
-                                            <FormLabel className="font-normal">Customer</FormLabel>
-                                        </FormItem>
-                                        <FormItem className="flex items-center space-x-2 space-y-0">
-                                            <FormControl>
-                                            <RadioGroupItem value="owner" />
-                                            </FormControl>
-                                            <FormLabel className="font-normal">Owner</FormLabel>
-                                        </FormItem>
-                                        <FormItem className="flex items-center space-x-2 space-y-0">
-                                            <FormControl>
-                                            <RadioGroupItem value="delivery" />
-                                            </FormControl>
-                                            <FormLabel className="font-normal">Delivery</FormLabel>
-                                        </FormItem>
-                                        </RadioGroup>
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
