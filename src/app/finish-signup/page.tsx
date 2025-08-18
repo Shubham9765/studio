@@ -60,7 +60,11 @@ export default function FinishSignUpPage() {
               });
 
             } catch (error: any) {
-              setErrorMessage(error.message || 'An unknown error occurred. Please try again.');
+              if (error.code === 'auth/email-already-in-use') {
+                  setErrorMessage('This email is already registered. Please log in.');
+              } else {
+                  setErrorMessage(error.message || 'An unknown error occurred. Please try again.');
+              }
               setStatus('error');
             }
           } else {
