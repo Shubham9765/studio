@@ -32,11 +32,9 @@ interface CartProviderProps {
 
 export function CartProvider({ children }: CartProviderProps) {
   const [cart, setCart] = useLocalStorageState<CartItem[]>('cart', {
-    ssr: true,
     defaultValue: [],
   });
   const [restaurant, setRestaurant] = useLocalStorageState<Restaurant | null>('cartRestaurant', {
-    ssr: true,
     defaultValue: null,
   });
 

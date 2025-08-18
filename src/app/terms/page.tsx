@@ -136,7 +136,7 @@ export default function TermsAndConditionsPage() {
               contact us:
             </p>
             <ul>
-              <li>By email: contact@villageeats.example.com</li>
+              <li>By email: shubhamonlineinsta@gmail.com</li>
             </ul>
           </CardContent>
         </Card>
