@@ -1,3 +1,4 @@
+'use client';
 
 import { UtensilsCrossed, Search, User, Shield, Crown, Package, UserCog, Bike, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';

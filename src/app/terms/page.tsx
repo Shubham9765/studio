@@ -1,8 +1,17 @@
 
+'use client';
+
 import { Header } from '@/components/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
 
 export default function TermsAndConditionsPage() {
+  const [currentDate, setCurrentDate] = useState('');
+
+  useEffect(() => {
+    setCurrentDate(new Date().toLocaleDateString());
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -12,7 +21,7 @@ export default function TermsAndConditionsPage() {
             <CardTitle className="text-3xl font-bold">Terms and Conditions</CardTitle>
           </CardHeader>
           <CardContent className="prose prose-sm sm:prose-base lg:prose-lg dark:prose-invert max-w-none">
-            <p>Last updated: {new Date().toLocaleDateString()}</p>
+            <p>Last updated: {currentDate}</p>
             <p>
               Please read these terms and conditions carefully before using Our
               Service.
