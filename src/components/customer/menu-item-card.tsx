@@ -9,6 +9,7 @@ import { PlusCircle } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 import { useToast } from '@/hooks/use-toast';
 import { getRestaurantById } from '@/services/restaurantClientService';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface MenuItemCardProps {
     item: MenuItem;
@@ -53,23 +54,58 @@ export function MenuItemCard({ item, restaurantId }: MenuItemCardProps) {
             !item.isAvailable && "bg-muted/50 text-muted-foreground cursor-not-allowed",
             item.isAvailable && "hover:shadow-lg hover:-translate-y-1"
         )}>
-            {item.imageUrl && (
-                 <div className="relative overflow-hidden">
-                    <Image
-                        src={item.imageUrl}
-                        alt={item.name}
-                        width={300}
-                        height={200}
-                        className={cn("object-cover w-full h-32 transition-transform duration-300 group-hover:scale-105", !item.isAvailable && "grayscale")}
-                    />
-                    {!item.isAvailable && (
-                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                            <span className="text-white font-bold text-sm tracking-wider">UNAVAILABLE</span>
+            <Dialog>
+                <DialogTrigger asChild>
+                    <div className="relative overflow-hidden cursor-pointer">
+                        {item.imageUrl ? (
+                            <Image
+                                src={item.imageUrl}
+                                alt={item.name}
+                                width={300}
+                                height={200}
+                                className={cn("object-cover w-full h-32 transition-transform duration-300 group-hover:scale-105", !item.isAvailable && "grayscale")}
+                            />
+                        ) : (
+                             <div className="w-full h-32 bg-muted flex items-center justify-center">
+                                <span className="text-xs text-muted-foreground">No Image</span>
+                            </div>
+                        )}
+                        {!item.isAvailable && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                <span className="text-white font-bold text-sm tracking-wider">UNAVAILABLE</span>
+                            </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </div>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl">{item.name}</DialogTitle>
+                        <DialogDescription className="flex items-center gap-2 pt-1">
+                             <VegNonVegIcon type={item.type} />
+                             <span className="font-semibold">{item.category}</span>
+                        </DialogDescription>
+                    </DialogHeader>
+                    {item.imageUrl && (
+                         <div className="relative w-full aspect-video rounded-lg overflow-hidden mt-2">
+                            <Image
+                                src={item.imageUrl}
+                                alt={item.name}
+                                fill
+                                className="object-cover"
+                            />
                         </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                </div>
-            )}
+                    <p className="text-muted-foreground text-base py-2">{item.description}</p>
+                    <div className="flex justify-between items-center">
+                        <p className="font-bold text-primary text-2xl">Rs.{item.price.toFixed(2)}</p>
+                        <Button size="lg" disabled={!item.isAvailable} onClick={handleAddToCart}>
+                            <PlusCircle className="mr-2 h-5 w-5" />
+                            Add to Cart
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
             <div className="p-3 flex-grow flex flex-col">
                  <div className="flex items-center gap-2">
                     <VegNonVegIcon type={item.type} />
