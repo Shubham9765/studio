@@ -184,7 +184,7 @@ export function HomePage() {
   }, [requestLocation]);
 
   const isServiceAvailable = useMemo(() => {
-    if (!location || serviceableCities.length === 0) return true; // Default to true if location or cities aren't loaded yet
+    if (!location || !location.city || serviceableCities.length === 0) return true;
     return serviceableCities.some(city => city.toLowerCase() === location.city.toLowerCase());
   }, [location, serviceableCities]);
 
@@ -313,3 +313,5 @@ export function HomePage() {
     </div>
   );
 }
+
+    
