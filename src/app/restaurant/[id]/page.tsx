@@ -148,7 +148,7 @@ export default function RestaurantPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         </div>
 
-        <Card className="-mt-16 mx-4 md:mx-8 p-6 bg-background rounded-xl shadow-xl border-t-4 border-primary">
+        <Card className="mb-8 p-6 bg-card rounded-xl shadow-lg border">
             <CardContent className="p-0">
                  <h1 className="text-3xl md:text-4xl font-extrabold font-headline">{restaurant.name}</h1>
                 <p className="text-lg text-muted-foreground mt-1">{restaurant.cuisine}</p>
