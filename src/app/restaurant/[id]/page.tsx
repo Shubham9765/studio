@@ -8,13 +8,15 @@ import type { Restaurant, MenuItem } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Star, Clock, Utensils, Search, BadgeCheck, MapPin } from 'lucide-react';
+import { AlertTriangle, Star, Clock, Utensils, Search, BadgeCheck, MapPin, IndianRupee } from 'lucide-react';
 import { MenuItemCard } from '@/components/customer/menu-item-card';
 import { Cart } from '@/components/customer/cart';
 import { Input } from '@/components/ui/input';
 import { usePathname } from 'next/navigation';
 import { FloatingCartBar } from '@/components/customer/floating-cart-bar';
 import { useLocation } from '@/hooks/use-location';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 
 interface GroupedMenuItems {
   [category: string]: MenuItem[];
@@ -136,49 +138,64 @@ export default function RestaurantPage() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container py-8">
-        {/* Restaurant Header */}
-        <div className="relative h-64 rounded-xl overflow-hidden mb-8">
+        <div className="relative h-48 md:h-64 rounded-xl overflow-hidden mb-6 shadow-lg">
           <Image
             src={restaurant.image || 'https://placehold.co/1200x400.png'}
             alt={restaurant.name}
             fill
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-          <div className="absolute bottom-0 left-0 p-8 text-white">
-            <h1 className="text-4xl md:text-5xl font-extrabold font-headline">{restaurant.name}</h1>
-            <p className="text-lg text-gray-200 mt-1">{restaurant.cuisine}</p>
-             <div className="flex items-end gap-6 mt-4 text-sm">
-                <div className="flex items-center gap-1.5">
-                    <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
-                    <span className="font-bold text-lg">{restaurant.rating.toFixed(1)}</span>
-                </div>
-                <div className="text-center leading-tight">
-                    <p className="font-bold">{restaurant.deliveryTime}</p>
-                    <p className="text-xs text-gray-300">Delivery</p>
-                </div>
-                <div className="text-center leading-tight">
-                    <p className="font-bold">{restaurant.deliveryCharge > 0 ? `Rs.${restaurant.deliveryCharge.toFixed(2)}` : 'Free'}</p>
-                    <p className="text-xs text-gray-300">Delivery</p>
-                </div>
-                {distance !== null && (
-                     <div className="text-center leading-tight">
-                        <p className="font-bold">{distance.toFixed(1)} km</p>
-                        <p className="text-xs text-gray-300">away</p>
-                    </div>
-                )}
-            </div>
-            {restaurant.fssaiLicense && (
-              <div className="flex items-center gap-2 mt-3 text-xs text-gray-300">
-                <BadgeCheck className="w-4 h-4" />
-                <span>License No: {restaurant.fssaiLicense}</span>
-              </div>
-            )}
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         </div>
+
+        <Card className="-mt-16 mx-4 md:mx-8 p-6 bg-background rounded-xl shadow-xl border-t-4 border-primary">
+            <CardContent className="p-0">
+                 <h1 className="text-3xl md:text-4xl font-extrabold font-headline">{restaurant.name}</h1>
+                <p className="text-lg text-muted-foreground mt-1">{restaurant.cuisine}</p>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center my-6">
+                    <div className="flex flex-col items-center justify-center">
+                        <div className="flex items-center gap-1.5 text-2xl font-bold text-amber-500">
+                            <Star className="w-6 h-6 fill-amber-500" />
+                            <span>{restaurant.rating.toFixed(1)}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{restaurant.reviewCount}+ ratings</p>
+                    </div>
+                     <div className="flex flex-col items-center justify-center">
+                        <p className="text-xl font-bold">{restaurant.deliveryTime}</p>
+                        <p className="text-xs text-muted-foreground">Delivery Time</p>
+                    </div>
+                     <div className="flex flex-col items-center justify-center">
+                        <p className="text-xl font-bold">{restaurant.deliveryCharge > 0 ? `Rs.${restaurant.deliveryCharge.toFixed(2)}` : 'Free'}</p>
+                        <p className="text-xs text-muted-foreground">Delivery Fee</p>
+                    </div>
+                    {distance !== null && (
+                        <div className="flex flex-col items-center justify-center">
+                            <p className="text-xl font-bold">{distance.toFixed(1)} km</p>
+                            <p className="text-xs text-muted-foreground">Distance</p>
+                        </div>
+                    )}
+                </div>
+
+                <Separator />
+                
+                <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        <span>{restaurant.address}</span>
+                    </div>
+                     {restaurant.fssaiLicense && (
+                      <div className="flex items-center gap-2">
+                        <BadgeCheck className="h-4 w-4 text-green-500" />
+                        <span>FSSAI: {restaurant.fssaiLicense}</span>
+                      </div>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
         
         {isRestaurantUnavailable && (
-             <Alert variant="destructive" className="mb-8">
+             <Alert variant="destructive" className="my-8">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Restaurant Currently Unavailable</AlertTitle>
                 <AlertDescription>
@@ -187,7 +204,7 @@ export default function RestaurantPage() {
             </Alert>
         )}
 
-        <div className="grid lg:grid-cols-4 gap-8">
+        <div className="grid lg:grid-cols-4 gap-8 mt-8">
           {/* Menu Section */}
           <div className="lg:col-span-3">
              <div className="mb-8 relative">
