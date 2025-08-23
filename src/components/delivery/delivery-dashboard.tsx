@@ -19,7 +19,7 @@ import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogTrigger } from '../ui/dialog';
 import { Input } from '../ui/input';
 import dynamic from 'next/dynamic';
 import { IncomingOrderCard } from './incoming-order-card';
@@ -399,3 +399,5 @@ export default function DeliveryDashboard() {
     </div>
   );
 }
+
+    
