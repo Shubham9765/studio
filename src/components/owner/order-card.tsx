@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { Order, Restaurant } from '@/lib/types';
@@ -73,12 +74,18 @@ export function OrderCard({
                 icon: Package
             }
         case 'accepted':
+             return {
+                label: `Food is Preparing`,
+                action: () => onStatusChange(order.id, 'preparing'),
+                disabled: isUpdating,
+                icon: ChefHat
+            }
         case 'preparing':
              return {
-                label: `Food is Ready`,
-                action: () => onStatusChange(order.id, 'out-for-delivery'),
+                label: `Assign for Delivery`,
+                action: () => {}, // Action is handled by Select dropdown
                 disabled: isUpdating || !restaurant.deliveryBoys || restaurant.deliveryBoys.length === 0,
-                icon: ChefHat
+                icon: Bike
             }
         default:
             return null;
@@ -89,14 +96,19 @@ export function OrderCard({
       const action = getNextAction();
       if(!action) return null;
 
-      if (order.status === 'preparing' || order.status === 'accepted') {
+      if (order.status === 'preparing') {
         if (!restaurant.deliveryBoys || restaurant.deliveryBoys.length === 0) {
             return <p className="text-xs text-destructive text-center p-2 bg-destructive/10 rounded-md">Add delivery staff to assign orders.</p>
         }
         return (
             <Select onValueChange={(deliveryBoyId) => onAssignDelivery(order.id, deliveryBoyId)} disabled={isUpdating}>
-              <SelectTrigger>
-                <SelectValue placeholder="Assign Delivery Person" />
+              <SelectTrigger className="h-12 text-base">
+                <SelectValue placeholder={
+                    <span className="flex items-center gap-2">
+                        <Bike className="h-5 w-5" />
+                        Assign for Delivery
+                    </span>
+                } />
               </SelectTrigger>
               <SelectContent>
                 {restaurant.deliveryBoys?.map(boy => (

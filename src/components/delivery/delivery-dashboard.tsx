@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { verifyDeliveryOtpAndDeliver } from '@/services/ownerService';
+import { verifyDeliveryOtpAndDeliver, deliveryBoyRespondToOrder } from '@/services/ownerService';
 import { updateDeliveryBoyLocation } from '@/services/userService';
 import { listenToOrdersForDeliveryBoy } from '@/services/restaurantClientService';
 import type { Order } from '@/lib/types';
@@ -19,9 +19,10 @@ import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
 import { Input } from '../ui/input';
 import dynamic from 'next/dynamic';
+import { IncomingOrderCard } from './incoming-order-card';
 
 const LiveMap = dynamic(() => import('@/components/live-map').then(mod => mod.LiveMap), {
     ssr: false,
@@ -130,6 +131,7 @@ export default function DeliveryDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deliveryBoyLocation, setDeliveryBoyLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     let locationWatcher: number | null = null;
@@ -183,21 +185,19 @@ export default function DeliveryDashboard() {
     };
   }, [user?.uid, toast]);
   
-  const fetchAssignedOrders = async () => {
-      if (user?.uid) {
-          setLoading(true);
-          const unsubscribe = listenToOrdersForDeliveryBoy(user.uid, (allOrders) => {
-              const activeOrders = allOrders.filter(o => o.status === 'out-for-delivery');
-              setOrders(activeOrders);
-              setLoading(false);
-          }, (err) => {
-              setError('Failed to fetch assigned orders.');
-              console.error(err);
-              setLoading(false);
-          });
-          return unsubscribe;
-      }
-  };
+    const manageAudioPlayback = (hasPending: boolean) => {
+        if (typeof window !== 'undefined') {
+            if (!audioRef.current) {
+                audioRef.current = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_942323b2f9.mp3');
+                audioRef.current.loop = true;
+            }
+            if (hasPending) {
+                audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+            } else {
+                audioRef.current.pause();
+            }
+        }
+    }
 
 
   useEffect(() => {
@@ -207,23 +207,53 @@ export default function DeliveryDashboard() {
         return;
     }
     
-    let unsubscribe: (() => void) | undefined;
-    const setupListener = async () => {
-        unsubscribe = await fetchAssignedOrders();
-    };
-
-    setupListener();
+    setLoading(true);
+    const unsubscribe = listenToOrdersForDeliveryBoy(user.uid, (allOrders) => {
+        setOrders(allOrders);
+        const hasIncomingOrders = allOrders.some(o => o.status === 'accepted');
+        manageAudioPlayback(hasIncomingOrders);
+        if(hasIncomingOrders) {
+            // This is a simple browser notification
+            new Notification('New Delivery Request!', {
+                body: 'You have a new order to accept or reject.',
+                icon: '/favicon.ico'
+            });
+        }
+        setLoading(false);
+    }, (err) => {
+        setError('Failed to fetch assigned orders.');
+        console.error(err);
+        setLoading(false);
+    });
 
     return () => {
-      if (unsubscribe) {
         unsubscribe();
-      }
+        manageAudioPlayback(false);
     };
   }, [user, authLoading, router]);
+
+  const handleOrderResponse = async (orderId: string, response: 'accepted' | 'rejected') => {
+      try {
+          await deliveryBoyRespondToOrder(orderId, response);
+          toast({
+              title: `Order ${response}`,
+              description: `You have ${response} the order.`,
+          });
+      } catch (e: any) {
+          toast({
+              variant: 'destructive',
+              title: 'Failed to respond',
+              description: e.message,
+          });
+      }
+  }
 
   const handleOrderDelivered = () => {
     // The real-time listener will automatically remove the order from the active list.
   };
+  
+  const incomingOrders = orders.filter(o => o.status === 'accepted');
+  const activeDeliveries = orders.filter(o => o.status === 'out-for-delivery');
 
   if (authLoading || loading) {
     return (
@@ -259,6 +289,17 @@ export default function DeliveryDashboard() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container py-8">
+        {incomingOrders.length > 0 && (
+            <div className="mb-12">
+                 <h1 className="text-3xl font-bold mb-4">Incoming Orders</h1>
+                 <div className="space-y-4">
+                    {incomingOrders.map(order => (
+                        <IncomingOrderCard key={order.id} order={order} onRespond={handleOrderResponse} />
+                    ))}
+                 </div>
+            </div>
+        )}
+
         <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold">My Active Deliveries</h1>
             <Button asChild variant="outline">
@@ -268,9 +309,9 @@ export default function DeliveryDashboard() {
                 </Link>
             </Button>
         </div>
-        {orders.length > 0 ? (
+        {activeDeliveries.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {orders.map(order => {
+            {activeDeliveries.map(order => {
                 const showMap = deliveryBoyLocation?.latitude && deliveryBoyLocation?.longitude && order.customerAddress?.latitude && order.customerAddress?.longitude;
                 return (
               <Card key={order.id} className="flex flex-col">
@@ -346,11 +387,13 @@ export default function DeliveryDashboard() {
             )})}
           </div>
         ) : (
-          <Card className="flex flex-col items-center justify-center py-20 text-center">
-            <Bike className="mx-auto h-16 w-16 text-muted-foreground" />
-            <h3 className="mt-4 text-2xl font-bold">No Active Deliveries</h3>
-            <p className="mt-2 text-muted-foreground">You have no orders assigned to you at the moment.</p>
-          </Card>
+          incomingOrders.length === 0 && (
+              <Card className="flex flex-col items-center justify-center py-20 text-center">
+                <Bike className="mx-auto h-16 w-16 text-muted-foreground" />
+                <h3 className="mt-4 text-2xl font-bold">No Active Deliveries</h3>
+                <p className="mt-2 text-muted-foreground">You have no orders assigned to you at the moment.</p>
+              </Card>
+          )
         )}
       </main>
     </div>

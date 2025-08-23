@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from './firebase';
@@ -161,27 +162,35 @@ export async function removeDeliveryBoyFromRestaurant(restaurantId: string, deli
 
 export async function assignDeliveryBoy(orderId: string, deliveryBoy: {id: string, name: string}): Promise<void> {
     const orderRef = doc(db, 'orders', orderId);
-    const deliveryOtp = Math.floor(1000 + Math.random() * 9000).toString();
 
     await updateDoc(orderRef, { 
         deliveryBoy,
-        status: 'out-for-delivery',
-        deliveryOtp
+        status: 'accepted',
     });
-    
-    try {
-        const orderSnap = await getDoc(orderRef);
-        if (orderSnap.exists()) {
-            const orderData = orderSnap.data() as Order;
-            const message = `Your order #${orderId.substring(0, 6)} is out for delivery with ${deliveryBoy.name}! Your OTP is ${deliveryOtp}.`;
-            // This should be a proper notification service call, not console.log
-            // For now, we'll keep the stub but comment it out to prevent server-side issues.
-            // console.log(`(Notification Stub) To: ${orderData.customerId}, Message: ${message}`);
-        }
-    } catch (error) {
-        console.error("Failed to send delivery notification:", error);
+}
+
+export async function deliveryBoyRespondToOrder(orderId: string, response: 'accepted' | 'rejected'): Promise<void> {
+    const orderRef = doc(db, 'orders', orderId);
+    const orderSnap = await getDoc(orderRef);
+    if (!orderSnap.exists()) {
+        throw new Error("Order not found.");
+    }
+
+    if (response === 'accepted') {
+        const deliveryOtp = Math.floor(1000 + Math.random() * 9000).toString();
+        await updateDoc(orderRef, {
+            status: 'out-for-delivery',
+            deliveryOtp,
+        });
+    } else {
+        // If rejected, remove the delivery boy and set status back to what the owner will see.
+        await updateDoc(orderRef, {
+            deliveryBoy: null,
+            status: 'preparing',
+        });
     }
 }
+
 
 export async function verifyDeliveryOtpAndDeliver(orderId: string, otp: string): Promise<void> {
     const orderRef = doc(db, 'orders', orderId);
@@ -216,3 +225,4 @@ export async function updateDeliveryBoyLocation(deliveryBoyId: string, location:
     console.error("Failed to update delivery boy location:", error);
   }
 }
+
