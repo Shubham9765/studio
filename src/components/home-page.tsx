@@ -261,13 +261,15 @@ export function HomePage() {
               )}
 
               {topMenuItems.length > 0 && (
-                  <section className="section-gradient-2 py-12 px-4 sm:px-6 rounded-xl">
+                  <section className="py-12 rounded-xl">
                       <SectionHeading>Top Rated Dishes</SectionHeading>
-                      <Carousel opts={{ align: "start", loop: true, }} className="w-full">
-                          <CarouselContent className="-ml-4">
+                      <Carousel opts={{ align: "start", loop: true }} className="w-full">
+                          <CarouselContent className="-ml-2">
                               {topMenuItems.map((item) => (
-                              <CarouselItem key={item.id} className="pl-4 basis-full md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                                  <MenuItemSearchCard item={item} />
+                              <CarouselItem key={item.id} className="basis-11/12 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 pl-2">
+                                  <div className="p-2">
+                                    <MenuItemSearchCard item={item} />
+                                  </div>
                               </CarouselItem>
                               ))}
                           </CarouselContent>
@@ -313,5 +315,3 @@ export function HomePage() {
     </div>
   );
 }
-
-    
