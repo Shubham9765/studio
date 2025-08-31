@@ -79,7 +79,7 @@ function Routing({ from, to }: { from: [number, number], to: [number, number] })
         }).addTo(map);
         
         return () => {
-             if (routingControlRef.current) {
+             if (routingControlRef.current && routingControlRef.current.getPlan().getWaypoints().length) {
                 map.removeControl(routingControlRef.current);
             }
         }
