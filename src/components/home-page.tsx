@@ -49,7 +49,8 @@ function LoadingSkeleton() {
        <div>
         <Skeleton className="h-8 w-1/4 mb-6" />
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length
+: 4 }).map((_, i) => (
              <div key={i} className="flex flex-col space-y-3">
                 <Skeleton className="h-[220px] w-full rounded-xl" />
                 <div className="space-y-2 p-2">
@@ -77,11 +78,11 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 function CategoryItem({ name, imageUrl }: { name: string, imageUrl?: string }) {
   return (
-    <Link href={`/search?q=${name}`} className="flex flex-col items-center gap-3 group flex-shrink-0 w-28">
-      <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-4 border-transparent group-hover:border-primary group-hover:shadow-lg transition-all duration-300 transform group-hover:scale-110">
-        <Image src={imageUrl || 'https://placehold.co/100x100.png'} alt={name} width={96} height={96} className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-125" />
+    <Link href={`/search?q=${name}`} className="flex flex-col items-center gap-2 group flex-shrink-0 w-20">
+      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-primary group-hover:shadow-lg transition-all duration-300 transform group-hover:scale-105">
+        <Image src={imageUrl || 'https://placehold.co/100x100.png'} alt={name} width={80} height={80} className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-125" />
       </div>
-      <span className="font-semibold text-sm text-center truncate w-full group-hover:text-primary transition-colors">{name}</span>
+      <span className="font-semibold text-xs text-center truncate w-full group-hover:text-primary transition-colors">{name}</span>
     </Link>
   )
 }
@@ -261,12 +262,12 @@ export function HomePage() {
               )}
 
               {topMenuItems.length > 0 && (
-                  <section className="py-12 rounded-xl">
+                  <section className="py-12 px-2 sm:px-6 rounded-xl">
                       <SectionHeading>Top Rated Dishes</SectionHeading>
                       <Carousel opts={{ align: "start", loop: true }} className="w-full">
-                          <CarouselContent>
+                           <CarouselContent className="-ml-2 md:-ml-4">
                               {topMenuItems.map((item) => (
-                              <CarouselItem key={item.id} className="basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
+                              <CarouselItem key={item.id} className="basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5 pl-2 md:pl-4">
                                   <div className="p-1">
                                     <MenuItemSearchCard item={item} />
                                   </div>
@@ -279,7 +280,7 @@ export function HomePage() {
                   </section>
               )}
 
-              <section id="restaurants" className="py-12">
+              <section id="restaurants" className="py-12 px-2 sm:px-6">
                 <SectionHeading>All Restaurants</SectionHeading>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {allRestaurants.map(restaurant => (
