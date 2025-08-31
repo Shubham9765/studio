@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Header } from '@/components/header';
@@ -394,25 +393,6 @@ export function HomePage() {
                       </Carousel>
                   </section>
               )}
-
-               <section className="py-2">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                     <div className="bg-gradient-to-br from-red-500 to-orange-500 text-white p-6 rounded-xl flex items-center justify-between">
-                         <div>
-                             <h3 className="text-2xl font-bold">Offer Zone</h3>
-                             <p className="opacity-80">Up to 60% OFF</p>
-                         </div>
-                         <Button variant="secondary" className="bg-white/20 hover:bg-white/30">View All</Button>
-                     </div>
-                      <div className="bg-gradient-to-br from-blue-500 to-teal-400 text-white p-6 rounded-xl flex items-center justify-between">
-                         <div>
-                             <h3 className="text-2xl font-bold">Fast Delivery</h3>
-                             <p className="opacity-80">Restaurants under 30 mins</p>
-                         </div>
-                         <Button variant="secondary" className="bg-white/20 hover:bg-white/30">View All</Button>
-                     </div>
-                 </div>
-              </section>
 
               <section className="py-2">
                  <div className="flex justify-between items-center mb-6">
