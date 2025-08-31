@@ -266,8 +266,8 @@ export function HomePage() {
                       <Carousel opts={{ align: "start", loop: true }} className="w-full">
                           <CarouselContent>
                               {topMenuItems.map((item) => (
-                              <CarouselItem key={item.id} className="basis-11/12 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                                  <div className="p-2">
+                              <CarouselItem key={item.id} className="basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
+                                  <div className="p-1">
                                     <MenuItemSearchCard item={item} />
                                   </div>
                               </CarouselItem>
@@ -279,9 +279,9 @@ export function HomePage() {
                   </section>
               )}
 
-              <section id="restaurants" className="py-12 px-2 sm:px-6">
+              <section id="restaurants" className="py-12">
                 <SectionHeading>All Restaurants</SectionHeading>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {allRestaurants.map(restaurant => (
                     <RestaurantCard key={restaurant.id} restaurant={restaurant} />
                 ))}
