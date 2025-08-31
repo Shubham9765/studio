@@ -252,7 +252,7 @@ export function HomePage() {
           isServiceAvailable && (
             <div className="space-y-12">
               {categories.length > 0 && (
-                  <section className="section-gradient-1 py-12 px-4 sm:px-6 rounded-xl">
+                  <section className="section-gradient-1 py-12 px-2 sm:px-6 rounded-xl">
                       <SectionHeading>What's on your mind?</SectionHeading>
                       <div className="flex gap-6 justify-center flex-wrap">
                           {categories.map(cat => <CategoryItem key={cat.name} name={cat.name} imageUrl={cat.imageUrl} />)}
@@ -264,9 +264,9 @@ export function HomePage() {
                   <section className="py-12 rounded-xl">
                       <SectionHeading>Top Rated Dishes</SectionHeading>
                       <Carousel opts={{ align: "start", loop: true }} className="w-full">
-                          <CarouselContent className="-ml-2">
+                          <CarouselContent>
                               {topMenuItems.map((item) => (
-                              <CarouselItem key={item.id} className="basis-11/12 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 pl-2">
+                              <CarouselItem key={item.id} className="basis-11/12 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                                   <div className="p-2">
                                     <MenuItemSearchCard item={item} />
                                   </div>
@@ -279,7 +279,7 @@ export function HomePage() {
                   </section>
               )}
 
-              <section id="restaurants" className="py-12 px-4 sm:px-6">
+              <section id="restaurants" className="py-12 px-2 sm:px-6">
                 <SectionHeading>All Restaurants</SectionHeading>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                 {allRestaurants.map(restaurant => (
