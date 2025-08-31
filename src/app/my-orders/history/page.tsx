@@ -227,4 +227,3 @@ export default function OrderHistoryPage() {
         </div>
     );
 }
-

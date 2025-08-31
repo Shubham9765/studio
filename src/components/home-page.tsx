@@ -6,7 +6,7 @@ import { Header } from '@/components/header';
 import { RestaurantCard } from '@/components/restaurant-card';
 import type { MenuItem, Restaurant, BannerConfig } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChefHat, Utensils, MapPin, ArrowRight, AlertTriangle, Search, Star, Filter, Sparkles } from 'lucide-react';
+import { ChefHat, Utensils, MapPin, ArrowRight, AlertTriangle, Search, Star, Filter, Sparkles, Check } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { getRestaurants, getTopRatedMenuItems, getServiceableCities, getBannerConfig, getMenuItemsForRestaurant, getTrendingRestaurantRecommendations } from '@/services/restaurantClientService';
 import { MenuItemSearchCard } from './customer/menu-item-search-card';
