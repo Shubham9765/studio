@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -52,7 +53,6 @@ export default function ManageMenuPage() {
         try {
             const items = await getMenuItems(restaurantId);
             setMenuItems(items);
-            setFilteredMenuItems(items);
         } catch (e: any) {
             setError('Failed to fetch menu items.');
             toast({ variant: 'destructive', title: 'Error', description: e.message });

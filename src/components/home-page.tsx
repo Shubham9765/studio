@@ -1,13 +1,14 @@
 
+
 'use client';
 
 import { Header } from '@/components/header';
 import { RestaurantCard } from '@/components/restaurant-card';
-import type { MenuItem, Restaurant, BannerConfig } from '@/lib/types';
+import type { MenuItem, Restaurant, BannerConfig, Cuisine } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChefHat, Utensils, MapPin, ArrowRight, AlertTriangle, Search, Star, Filter, Sparkles, Check } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
-import { getRestaurants, getTopRatedMenuItems, getServiceableCities, getBannerConfig, getMenuItemsForRestaurant, getTrendingRestaurantRecommendations } from '@/services/restaurantClientService';
+import { getRestaurants, getTopRatedMenuItems, getServiceableCities, getBannerConfig, getMenuItemsForRestaurant, getTrendingRestaurantRecommendations, getCuisineTypes } from '@/services/restaurantClientService';
 import { MenuItemSearchCard } from './customer/menu-item-search-card';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -195,14 +196,14 @@ function Footer() {
 export function HomePage() {
   const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
   const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
-  const [topMenuItems, setTopMenuItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<Cuisine[]>([]);
   const [serviceableCities, setServiceableCities] = useState<string[]>([]);
   const [bannerConfig, setBannerConfig] = useState<BannerConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const { location, error: locationError, requestLocation } = useLocation();
   const { cart, restaurant: cartRestaurant } = useCart();
   const { user } = useAuth();
-  const [trendingRestaurants, setTrendingRestaurants] = useState<any[]>([]);
+  
   const [isPureVegFilter, setIsPureVegFilter] = useState(false);
   const [isTopRatedFilter, setIsTopRatedFilter] = useState(false);
   
@@ -217,14 +218,6 @@ export function HomePage() {
     requestLocation();
   }, [requestLocation]);
 
-    useEffect(() => {
-        if(user?.uid) {
-            getTrendingRestaurantRecommendations({customerId: user.uid}).then(res => {
-                setTrendingRestaurants(res.restaurantRecommendations);
-            }).catch(console.error);
-        }
-    }, [user]);
-
   const isServiceAvailable = useMemo(() => {
     if (!location || !location.city || serviceableCities.length === 0) return true;
     return serviceableCities.some(city => city.toLowerCase() === location.city.toLowerCase());
@@ -234,15 +227,15 @@ export function HomePage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [restaurants, menuItems, cities, banner] = await Promise.all([
+        const [restaurants, fetchedCategories, cities, banner] = await Promise.all([
           getRestaurants(),
-          getTopRatedMenuItems(),
+          getCuisineTypes(),
           getServiceableCities(),
           getBannerConfig(),
         ]);
         setAllRestaurants(restaurants);
         setFilteredRestaurants(restaurants);
-        setTopMenuItems(menuItems);
+        setCategories(fetchedCategories);
         setServiceableCities(cities);
         setBannerConfig(banner);
       } catch (error) {
@@ -265,21 +258,13 @@ export function HomePage() {
     setIsCategoryLoading(true);
 
     try {
-        const allItemsPromises = allRestaurants.map(r => getMenuItemsForRestaurant(r.id));
+        const restaurantsForCuisine = allRestaurants.filter(r => r.cuisine.includes(categoryName));
+        const allItemsPromises = restaurantsForCuisine.map(r => getMenuItemsForRestaurant(r.id));
         const allItemsNested = await Promise.all(allItemsPromises);
         const allItems = allItemsNested.flat();
         
-        const itemsForCategory = allItems.filter(item => item.category.toLowerCase() === categoryName.toLowerCase());
-
-        const promotedItems = itemsForCategory.filter(item => {
-            const restaurant = allRestaurants.find(r => r.id === item.restaurantId);
-            return restaurant?.isPromoted;
-        });
-
-        const otherItems = itemsForCategory.filter(item => {
-            const restaurant = allRestaurants.find(r => r.id === item.restaurantId);
-            return !restaurant?.isPromoted;
-        });
+        const promotedItems = allItems.filter(item => item.restaurant?.isPromoted);
+        const otherItems = allItems.filter(item => !item.restaurant?.isPromoted);
 
         setCategoryMenuItems([...promotedItems, ...otherItems]);
     } catch (e) {
@@ -301,19 +286,6 @@ export function HomePage() {
         }
         setFilteredRestaurants(results);
     }, [isPureVegFilter, isTopRatedFilter, allRestaurants]);
-  
-  const categories = useMemo(() => {
-      if (loading) return [];
-      const cuisineMap = new Map<string, string | undefined>();
-      allRestaurants.forEach(r => {
-        if (r.cuisine && typeof r.cuisine === 'string' && r.cuisine.trim() !== '') {
-            if (!cuisineMap.has(r.cuisine)) {
-                cuisineMap.set(r.cuisine, r.categoryImageUrl);
-            }
-        }
-      });
-      return Array.from(cuisineMap.entries()).map(([name, imageUrl]) => ({ name, imageUrl }));
-  }, [allRestaurants, loading]);
   
   const mainContent = (
     <>
@@ -368,7 +340,7 @@ export function HomePage() {
                   <div className="space-y-4">
                       <Skeleton className="h-8 w-1/3" />
                        <div className="flex gap-4 overflow-hidden">
-                           {Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-48 w-40 rounded-lg flex-shrink-0" />)}
+                           {Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-64 w-48 rounded-lg flex-shrink-0" />)}
                        </div>
                   </div>
               )}
@@ -381,7 +353,7 @@ export function HomePage() {
                        <Carousel opts={{ align: "start", dragFree: true }} className="w-full">
                            <CarouselContent>
                               {categoryMenuItems.map((item) => (
-                              <CarouselItem key={item.id} className="basis-4/5 sm:basis-1/2 md:basis-1/3">
+                              <CarouselItem key={item.id} className="basis-4/5 sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
                                   <div className="p-1 h-full">
                                     <MenuItemSearchCard item={item} />
                                   </div>
@@ -393,6 +365,16 @@ export function HomePage() {
                       </Carousel>
                   </section>
               )}
+              
+               {selectedCategory && !isCategoryLoading && categoryMenuItems.length === 0 && (
+                 <Alert>
+                    <Utensils className="h-4 w-4" />
+                    <AlertTitle>No Dishes Found</AlertTitle>
+                    <AlertDescription>
+                        There are no dishes available for {selectedCategory} at the moment. Try another cuisine!
+                    </AlertDescription>
+                 </Alert>
+               )}
 
               <section className="py-2">
                  <div className="flex justify-between items-center mb-6">
@@ -401,8 +383,6 @@ export function HomePage() {
                  <div className="flex flex-wrap items-center gap-2 mb-8">
                     <Button variant={isPureVegFilter ? 'default' : 'outline'} onClick={() => setIsPureVegFilter(p => !p)}>Pure Veg</Button>
                     <Button variant={isTopRatedFilter ? 'default' : 'outline'} onClick={() => setIsTopRatedFilter(p => !p)}>Rating 4.0+</Button>
-                    <Button variant="outline">Sort By</Button>
-                    <Button variant="outline">Offers</Button>
                  </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

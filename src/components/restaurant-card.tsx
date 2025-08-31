@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Image from 'next/image';
@@ -44,7 +45,7 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
           width={600}
           height={400}
           className={cn("object-cover w-full h-48 transition-transform duration-500 ease-in-out group-hover:scale-110", !restaurant.isOpen && "grayscale")}
-          data-ai-hint={restaurant.dataAiHint}
+          data-ai-hint={Array.isArray(restaurant.cuisine) ? restaurant.cuisine[0] : restaurant.cuisine}
         />
          <div className={cn(
              "absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent",
@@ -69,7 +70,7 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
                  <Star className="w-3 h-3 fill-white" />
             </div>
         </div>
-        <p className="text-sm text-muted-foreground truncate">{restaurant.cuisine}</p>
+        <p className="text-sm text-muted-foreground truncate">{Array.isArray(restaurant.cuisine) ? restaurant.cuisine.join(', ') : restaurant.cuisine}</p>
         
         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mt-auto pt-3">
             <div className="flex items-center gap-1.5 bg-secondary px-2 py-1 rounded-full">

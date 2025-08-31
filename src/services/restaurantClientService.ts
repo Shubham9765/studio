@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import { db } from './firebase';
@@ -59,7 +60,10 @@ export async function getRestaurants(): Promise<Restaurant[]> {
 
   const restaurants = querySnapshot.docs.map((doc: any) => {
       const restaurantData = doc.data() as Restaurant;
-      const cuisineImage = cuisinesConfig[restaurantData.cuisine]?.imageUrl || undefined;
+      
+      const mainCuisine = Array.isArray(restaurantData.cuisine) ? restaurantData.cuisine[0] : restaurantData.cuisine;
+      const cuisineImage = mainCuisine ? cuisinesConfig[mainCuisine]?.imageUrl : undefined;
+
       return { 
           ...restaurantData, 
           id: doc.id,
@@ -79,7 +83,11 @@ export async function getRestaurantById(id: string): Promise<Restaurant | null> 
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-        return { ...docSnap.data(), id: docSnap.id } as Restaurant;
+        const restaurantData = docSnap.data() as Restaurant;
+        if (!Array.isArray(restaurantData.cuisine)) {
+            restaurantData.cuisine = [restaurantData.cuisine].filter(Boolean) as string[];
+        }
+        return { ...restaurantData, id: docSnap.id };
     } else {
         return null;
     }
@@ -175,7 +183,7 @@ export async function searchRestaurantsAndMenuItems(
 
     const matchingRestaurants = allRestaurants.filter(restaurant =>
         restaurant.name.toLowerCase().includes(lowercasedTerm) ||
-        restaurant.cuisine.toLowerCase().includes(lowercasedTerm)
+        (Array.isArray(restaurant.cuisine) ? restaurant.cuisine.some(c => c.toLowerCase().includes(lowercasedTerm)) : restaurant.cuisine.toLowerCase().includes(lowercasedTerm))
     );
     
     // Fetch all menu items from the now location-filtered restaurants
@@ -218,7 +226,11 @@ export async function getRestaurantByOwnerId(ownerId: string): Promise<Restauran
     }
 
     const restaurantDoc = snapshot.docs[0];
-    return { ...restaurantDoc.data(), id: restaurantDoc.id } as Restaurant;
+    const restaurantData = { ...restaurantDoc.data(), id: restaurantDoc.id } as Restaurant;
+    if (!Array.isArray(restaurantData.cuisine)) {
+        restaurantData.cuisine = [restaurantData.cuisine].filter(Boolean) as string[];
+    }
+    return restaurantData;
 }
 
 export async function getMenuItems(restaurantId: string): Promise<MenuItem[]> {
@@ -308,8 +320,13 @@ export async function getCuisineTypes(): Promise<Cuisine[]> {
     
     restaurantSnapshot.forEach(doc => {
         const data = doc.data() as Partial<Restaurant>;
-        if (data.cuisine && typeof data.cuisine === 'string' && data.cuisine.trim() !== '') {
-            uniqueCuisines.add(data.cuisine);
+        if (data.cuisine) {
+            const cuisines = Array.isArray(data.cuisine) ? data.cuisine : [data.cuisine];
+            cuisines.forEach(c => {
+                if(typeof c === 'string' && c.trim() !== '') {
+                    uniqueCuisines.add(c)
+                }
+            });
         }
     });
 

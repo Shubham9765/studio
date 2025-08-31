@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { getRestaurantById, getMenuItemsForRestaurant, getDistanceFromLatLonInKm } from '@/services/restaurantClientService';
+import { getRestaurantById, getMenuItemsForRestaurant } from '@/services/restaurantClientService';
 import type { Restaurant, MenuItem } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,7 +32,6 @@ export default function RestaurantPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { location } = useLocation();
-  const [distance, setDistance] = useState<number | null>(null);
 
 
   useEffect(() => {
@@ -58,16 +58,6 @@ export default function RestaurantPage() {
 
         setRestaurant(restaurantData);
         setMenuItems(menuItemsData);
-
-        if (location && restaurantData.latitude && restaurantData.longitude) {
-            const dist = getDistanceFromLatLonInKm(
-                location.latitude,
-                location.longitude,
-                restaurantData.latitude,
-                restaurantData.longitude
-            );
-            setDistance(dist);
-        }
 
       } catch (e: any) {
         setError('Failed to load restaurant details. Please try again later.');
@@ -151,7 +141,7 @@ export default function RestaurantPage() {
         <Card className="mb-8 p-6 bg-card rounded-xl shadow-lg border">
             <CardContent className="p-0">
                  <h1 className="text-3xl md:text-4xl font-extrabold font-headline">{restaurant.name}</h1>
-                <p className="text-lg text-muted-foreground mt-1">{restaurant.cuisine}</p>
+                <p className="text-lg text-muted-foreground mt-1">{Array.isArray(restaurant.cuisine) ? restaurant.cuisine.join(', ') : restaurant.cuisine}</p>
                 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center my-6">
                     <div className="flex flex-col items-center justify-center">
@@ -169,12 +159,6 @@ export default function RestaurantPage() {
                         <p className="text-xl font-bold">{restaurant.deliveryCharge > 0 ? `Rs.${restaurant.deliveryCharge.toFixed(2)}` : 'Free'}</p>
                         <p className="text-xs text-muted-foreground">Delivery Fee</p>
                     </div>
-                    {distance !== null && (
-                        <div className="flex flex-col items-center justify-center">
-                            <p className="text-xl font-bold">{distance.toFixed(1)} km</p>
-                            <p className="text-xs text-muted-foreground">Distance</p>
-                        </div>
-                    )}
                 </div>
 
                 <Separator />

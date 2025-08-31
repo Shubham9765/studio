@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm, Controller } from 'react-hook-form';
@@ -25,11 +26,12 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { ScrollArea } from '../ui/scroll-area';
 import { Textarea } from '../ui/textarea';
 import { LocationPickerMap } from '../location-picker-map';
-import { MapPin } from 'lucide-react';
+import { MapPin, X } from 'lucide-react';
+import { Badge } from '../ui/badge';
 
 export const EditRestaurantSchema = z.object({
   name: z.string().min(3, { message: 'Restaurant name must be at least 3 characters.' }),
-  cuisine: z.string().min(3, { message: 'Cuisine type must be at least 3 characters.' }),
+  cuisine: z.array(z.string()).min(1, { message: 'At least one cuisine type is required.' }),
   deliveryTime: z.string().min(1, { message: 'Please provide an estimated delivery time (e.g., 30-45 min).' }),
   deliveryCharge: z.coerce.number().min(0, { message: 'Delivery charge must be a positive number.' }),
   isOpen: z.boolean(),
@@ -43,6 +45,7 @@ export const EditRestaurantSchema = z.object({
   fssaiLicense: z.string().optional(),
   gstEnabled: z.boolean().default(false),
   gstin: z.string().optional(),
+  isPureVeg: z.boolean().default(false),
 });
 
 interface EditRestaurantFormProps {
@@ -55,9 +58,10 @@ interface EditRestaurantFormProps {
 export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaurantUpdated }: EditRestaurantFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cuisineInput, setCuisineInput] = useState('');
 
   const getPaymentMethodOption = (methods?: Restaurant['paymentMethods']) => {
-    if (!methods) return 'cash'; // Guard clause for undefined methods
+    if (!methods) return 'cash';
     if (methods.cash && methods.upi) return 'both';
     if (methods.upi) return 'upi';
     return 'cash';
@@ -67,7 +71,7 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
     resolver: zodResolver(EditRestaurantSchema),
     defaultValues: {
       name: restaurant?.name || '',
-      cuisine: restaurant?.cuisine || '',
+      cuisine: Array.isArray(restaurant?.cuisine) ? restaurant.cuisine : [restaurant?.cuisine].filter(Boolean),
       deliveryTime: restaurant?.deliveryTime || '',
       deliveryCharge: restaurant?.deliveryCharge || 0,
       isOpen: restaurant?.isOpen || false,
@@ -81,8 +85,25 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
       fssaiLicense: restaurant?.fssaiLicense || '',
       gstEnabled: restaurant?.gstEnabled || false,
       gstin: restaurant?.gstin || '',
+      isPureVeg: restaurant?.isPureVeg || false,
     },
   });
+  
+  const currentCuisines = form.watch('cuisine');
+
+  const handleAddCuisine = () => {
+    if (cuisineInput && !currentCuisines.includes(cuisineInput)) {
+        const newCuisines = [...currentCuisines, cuisineInput.trim()];
+        form.setValue('cuisine', newCuisines, { shouldValidate: true });
+        setCuisineInput('');
+    }
+  };
+
+  const handleRemoveCuisine = (cuisineToRemove: string) => {
+    const newCuisines = currentCuisines.filter((c) => c !== cuisineToRemove);
+    form.setValue('cuisine', newCuisines, { shouldValidate: true });
+  };
+
 
   const paymentMethodOption = form.watch('paymentMethodOption');
   const gstEnabled = form.watch('gstEnabled');
@@ -91,7 +112,7 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
     if (restaurant && isOpen) {
       form.reset({
         name: restaurant.name,
-        cuisine: restaurant.cuisine,
+        cuisine: Array.isArray(restaurant.cuisine) ? restaurant.cuisine : [restaurant.cuisine].filter(Boolean) as string[],
         deliveryTime: restaurant.deliveryTime,
         deliveryCharge: restaurant.deliveryCharge,
         isOpen: restaurant.isOpen,
@@ -105,6 +126,7 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
         fssaiLicense: restaurant.fssaiLicense || '',
         gstEnabled: restaurant.gstEnabled || false,
         gstin: restaurant.gstin || '',
+        isPureVeg: restaurant.isPureVeg || false,
       });
     }
   }, [restaurant, isOpen, form]);
@@ -203,19 +225,45 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
                       <LocationPickerMap onLocationSelect={handleMapLocationSelect} />
                   </DialogContent>
               </Dialog>
-              <FormField
+              
+               <FormField
                 control={form.control}
                 name="cuisine"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cuisine Type</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Indian, Italian, Mexican" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                render={() => (
+                    <FormItem>
+                        <FormLabel>Cuisine Types</FormLabel>
+                        <div className="flex gap-2">
+                           <Input
+                              placeholder="e.g., Indian"
+                              value={cuisineInput}
+                              onChange={(e) => setCuisineInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAddCuisine();
+                                }
+                              }}
+                           />
+                           <Button type="button" onClick={handleAddCuisine}>Add</Button>
+                        </div>
+                         <FormDescription>
+                          Add one or more cuisine types your restaurant serves.
+                         </FormDescription>
+                        <div className="flex flex-wrap gap-2">
+                            {currentCuisines.map((c, i) => (
+                                <Badge key={i} variant="secondary">
+                                    {c}
+                                    <button type="button" onClick={() => handleRemoveCuisine(c)} className="ml-2 rounded-full hover:bg-muted-foreground/20 p-0.5">
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                </Badge>
+                            ))}
+                        </div>
+                        <FormMessage />
+                    </FormItem>
                 )}
-              />
+               />
+
               <FormField
                 control={form.control}
                 name="deliveryTime"
@@ -361,6 +409,28 @@ export function EditRestaurantForm({ isOpen, onOpenChange, restaurant, onRestaur
                   />
                 )}
               </div>
+              
+              <FormField
+                control={form.control}
+                name="isPureVeg"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Pure Veg Restaurant</FormLabel>
+                       <FormDescription>
+                         Mark this if your restaurant serves only vegetarian food.
+                       </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
 
               <FormField
                 control={form.control}

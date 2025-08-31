@@ -12,7 +12,7 @@ export interface DeliveryBoy {
 export interface Restaurant {
   id: string;
   name: string;
-  cuisine: string;
+  cuisine: string[];
   rating: number;
   deliveryTime: string;
   image: string;

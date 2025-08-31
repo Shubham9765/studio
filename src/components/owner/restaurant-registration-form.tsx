@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm, Controller } from 'react-hook-form';
@@ -12,15 +13,16 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { createRestaurant } from '@/services/ownerService';
 import { useState } from 'react';
-import { Utensils, MapPin } from 'lucide-react';
+import { Utensils, MapPin, X } from 'lucide-react';
 import { Textarea } from '../ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { LocationPickerMap } from '../location-picker-map';
+import { Badge } from '../ui/badge';
 
 
 export const RestaurantSchema = z.object({
   name: z.string().min(3, { message: 'Restaurant name must be at least 3 characters.' }),
-  cuisine: z.string().min(3, { message: 'Cuisine type must be at least 3 characters.' }),
+  cuisine: z.array(z.string()).min(1, { message: 'At least one cuisine is required.' }),
   deliveryTime: z.string().min(1, { message: 'Please provide an estimated delivery time (e.g., 30-45 min).' }),
   address: z.string().min(10, "Please enter a full address for geocoding."),
   latitude: z.number({ required_error: "Please pin your location on the map." }),
@@ -35,16 +37,33 @@ export function RestaurantRegistrationForm({ onRestaurantCreated }: RestaurantRe
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cuisineInput, setCuisineInput] = useState('');
 
   const form = useForm<z.infer<typeof RestaurantSchema>>({
     resolver: zodResolver(RestaurantSchema),
     defaultValues: {
       name: '',
-      cuisine: '',
+      cuisine: [],
       deliveryTime: '',
       address: '',
     },
   });
+  
+  const currentCuisines = form.watch('cuisine');
+
+  const handleAddCuisine = () => {
+    if (cuisineInput && !currentCuisines.includes(cuisineInput)) {
+        const newCuisines = [...currentCuisines, cuisineInput.trim()];
+        form.setValue('cuisine', newCuisines, { shouldValidate: true });
+        setCuisineInput('');
+    }
+  };
+
+  const handleRemoveCuisine = (cuisineToRemove: string) => {
+    const newCuisines = currentCuisines.filter((c) => c !== cuisineToRemove);
+    form.setValue('cuisine', newCuisines, { shouldValidate: true });
+  };
+
 
   const handleMapLocationSelect = (loc: { latitude: number; longitude: number; address: string }) => {
     form.setValue('address', loc.address);
@@ -104,19 +123,42 @@ export function RestaurantRegistrationForm({ onRestaurantCreated }: RestaurantRe
                 </FormItem>
               )}
             />
+            
             <FormField
-              control={form.control}
-              name="cuisine"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cuisine Type</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Indian, Italian, Mexican" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                control={form.control}
+                name="cuisine"
+                render={() => (
+                    <FormItem>
+                        <FormLabel>Cuisine Types</FormLabel>
+                        <div className="flex gap-2">
+                           <Input
+                              placeholder="e.g., Indian"
+                              value={cuisineInput}
+                              onChange={(e) => setCuisineInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAddCuisine();
+                                }
+                              }}
+                           />
+                           <Button type="button" onClick={handleAddCuisine}>Add</Button>
+                        </div>
+                         <FormMessage />
+                        <div className="flex flex-wrap gap-2">
+                            {currentCuisines.map((c, i) => (
+                                <Badge key={i} variant="secondary">
+                                    {c}
+                                    <button type="button" onClick={() => handleRemoveCuisine(c)} className="ml-2 rounded-full hover:bg-muted-foreground/20 p-0.5">
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                </Badge>
+                            ))}
+                        </div>
+                    </FormItem>
+                )}
+             />
+
              <FormField
               control={form.control}
               name="deliveryTime"

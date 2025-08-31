@@ -1,5 +1,6 @@
 
 
+
 'use server';
 
 import { db } from './firebase';
@@ -46,7 +47,7 @@ export async function createRestaurant(ownerId: string, data: z.infer<typeof Res
         status: 'pending' as const,
         rating: 0,
         image: 'https://placehold.co/600x400.png',
-        dataAiHint: data.cuisine.toLowerCase().split(' ')[0] || 'food',
+        dataAiHint: Array.isArray(data.cuisine) ? data.cuisine[0].toLowerCase().split(' ')[0] : data.cuisine.toLowerCase().split(' ')[0] || 'food',
         deliveryCharge: 0,
         isOpen: true,
         paymentMethods: {
