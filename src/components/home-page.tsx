@@ -5,9 +5,9 @@ import { Header } from '@/components/header';
 import { RestaurantCard } from '@/components/restaurant-card';
 import type { MenuItem, Restaurant, BannerConfig } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChefHat, Utensils, MapPin, ArrowRight, AlertTriangle, Search } from 'lucide-react';
+import { ChefHat, Utensils, MapPin, ArrowRight, AlertTriangle, Search, Star, Filter } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
-import { getRestaurants, getTopRatedMenuItems, getServiceableCities, getBannerConfig } from '@/services/restaurantClientService';
+import { getRestaurants, getTopRatedMenuItems, getServiceableCities, getBannerConfig, getTrendingRestaurantRecommendations } from '@/services/restaurantClientService';
 import { MenuItemSearchCard } from './customer/menu-item-search-card';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -27,6 +27,7 @@ import { useCart } from '@/hooks/use-cart';
 import { Cart } from './customer/cart';
 import { cn } from '@/lib/utils';
 import { FloatingCartBar } from './customer/floating-cart-bar';
+import { useAuth } from '@/hooks/use-auth';
 
 
 function LoadingSkeleton() {
@@ -64,12 +65,11 @@ function LoadingSkeleton() {
   );
 }
 
-function SectionHeading({ children }: { children: React.ReactNode }) {
+function SectionHeading({ children, className }: { children: React.ReactNode, className?: string }) {
     return (
-        <div className="text-center mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold font-headline relative inline-block">
+        <div className={cn("text-left mb-6", className)}>
+            <h2 className="text-2xl md:text-3xl font-bold font-headline">
                 {children}
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-2/3 h-1 bg-primary rounded-full" />
             </h2>
         </div>
     )
@@ -77,13 +77,24 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 function CategoryItem({ name, imageUrl }: { name: string, imageUrl?: string }) {
   return (
-    <Link href={`/search?q=${name}`} className="flex flex-col items-center gap-1 group flex-shrink-0 w-20">
-      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-primary group-hover:shadow-lg transition-all duration-300 transform group-hover:scale-105">
-        <Image src={imageUrl || 'https://placehold.co/100x100.png'} alt={name} width={64} height={64} className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-125" />
+    (<Link
+      href={`/search?q=${name}`}
+      className="flex flex-col items-center justify-center gap-2 group text-center">
+      <div
+        className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-primary group-hover:shadow-lg transition-all duration-300 transform group-hover:scale-105">
+        <Image
+          src={imageUrl || 'https://placehold.co/100x100.png'}
+          alt={name}
+          width={100}
+          height={100}
+          className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-125" />
       </div>
-      <span className="font-semibold text-xs text-center truncate w-full group-hover:text-primary transition-colors">{name}</span>
-    </Link>
-  )
+      <span
+        className="font-semibold text-sm text-center w-full group-hover:text-primary transition-colors">
+        {name}
+      </span>
+    </Link>)
+  );
 }
 
 function PromotionalBanner({ config }: { config: BannerConfig | null }) {
@@ -177,11 +188,22 @@ export function HomePage() {
   const [loading, setLoading] = useState(true);
   const { location, error: locationError, requestLocation } = useLocation();
   const { cart, restaurant: cartRestaurant } = useCart();
+  const { user } = useAuth();
+  const [trendingRestaurants, setTrendingRestaurants] = useState<any[]>([]);
+
   const isCartVisible = cart.length > 0 && cartRestaurant;
 
   useEffect(() => {
     requestLocation();
   }, [requestLocation]);
+
+  useEffect(() => {
+        if(user?.uid) {
+            getTrendingRestaurantRecommendations({customerId: user.uid}).then(res => {
+                setTrendingRestaurants(res.restaurantRecommendations);
+            });
+        }
+    }, [user]);
 
   const isServiceAvailable = useMemo(() => {
     if (!location || !location.city || serviceableCities.length === 0) return true;
@@ -252,21 +274,29 @@ export function HomePage() {
           isServiceAvailable && (
             <div className="space-y-12">
               {categories.length > 0 && (
-                  <section className="section-gradient-1 py-12 rounded-xl">
+                  <section className="py-2">
                       <SectionHeading>What's on your mind?</SectionHeading>
-                      <div className="flex gap-6 justify-center flex-wrap px-2">
-                          {categories.map(cat => <CategoryItem key={cat.name} name={cat.name} imageUrl={cat.imageUrl} />)}
-                      </div>
+                        <Carousel opts={{ align: "start", }} className="w-full">
+                           <CarouselContent className="-ml-2">
+                              {categories.map((cat) => (
+                              <CarouselItem key={cat.name} className="basis-1/3 sm:basis-1/4 md:basis-1/5 lg:basis-1/6 pl-2">
+                                  <CategoryItem name={cat.name} imageUrl={cat.imageUrl} />
+                              </CarouselItem>
+                              ))}
+                          </CarouselContent>
+                          <CarouselPrevious className="hidden sm:flex" />
+                          <CarouselNext className="hidden sm:flex" />
+                      </Carousel>
                   </section>
               )}
 
-              {topMenuItems.length > 0 && (
-                  <section className="py-12">
-                      <SectionHeading>Top Rated Dishes</SectionHeading>
-                      <Carousel opts={{ align: "start", loop: true }} className="w-full">
+               {trendingRestaurants.length > 0 && (
+                  <section className="py-2">
+                      <SectionHeading>Trending Recommendations</SectionHeading>
+                        <Carousel opts={{ align: "start", }} className="w-full">
                            <CarouselContent>
-                              {topMenuItems.map((item) => (
-                              <CarouselItem key={item.id} className="basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
+                              {trendingRestaurants.map((item) => (
+                              <CarouselItem key={item.id} className="basis-4/5 sm:basis-1/2 md:basis-1/3">
                                   <div className="p-1">
                                     <MenuItemSearchCard item={item} />
                                   </div>
@@ -279,7 +309,7 @@ export function HomePage() {
                   </section>
               )}
 
-              <section id="restaurants" className="py-12">
+              <section className="py-2">
                 <SectionHeading>All Restaurants</SectionHeading>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {allRestaurants.map(restaurant => (
@@ -315,3 +345,5 @@ export function HomePage() {
     </div>
   );
 }
+
+    
