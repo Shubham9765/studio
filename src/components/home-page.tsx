@@ -1,13 +1,14 @@
 
+
 'use client';
 
 import { Header } from '@/components/header';
 import { RestaurantCard } from '@/components/restaurant-card';
 import type { MenuItem, Restaurant, BannerConfig } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChefHat, Utensils, MapPin, ArrowRight, AlertTriangle, Search, Star, Filter } from 'lucide-react';
+import { ChefHat, Utensils, MapPin, ArrowRight, AlertTriangle, Search, Star, Filter, Sparkles } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
-import { getRestaurants, getTopRatedMenuItems, getServiceableCities, getBannerConfig, getTrendingRestaurantRecommendations } from '@/services/restaurantClientService';
+import { getRestaurants, getTopRatedMenuItems, getServiceableCities, getBannerConfig, getMenuItemsForRestaurant, getTrendingRestaurantRecommendations } from '@/services/restaurantClientService';
 import { MenuItemSearchCard } from './customer/menu-item-search-card';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -75,25 +76,37 @@ function SectionHeading({ children, className }: { children: React.ReactNode, cl
     )
 }
 
-function CategoryItem({ name, imageUrl }: { name: string, imageUrl?: string }) {
+function CategoryItem({ name, imageUrl, isSelected, onSelect }: { name: string, imageUrl?: string, isSelected: boolean, onSelect: () => void }) {
   return (
-    (<Link
-      href={`/search?q=${name}`}
-      className="flex flex-col items-center justify-center gap-2 group text-center">
+    <button
+      onClick={onSelect}
+      className="flex flex-col items-center justify-start gap-2 group text-center w-24"
+    >
       <div
-        className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-primary group-hover:shadow-lg transition-all duration-300 transform group-hover:scale-105">
+        className={cn(
+            "relative w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 transition-all duration-300 transform group-hover:scale-105",
+            isSelected ? "border-primary shadow-lg scale-105" : "border-transparent group-hover:border-primary/50"
+        )}>
         <Image
           src={imageUrl || 'https://placehold.co/100x100.png'}
           alt={name}
           width={100}
           height={100}
           className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-125" />
+        {isSelected && (
+            <div className="absolute top-0 right-0 bg-primary rounded-full p-0.5">
+                <Check className="h-3 w-3 text-primary-foreground" />
+            </div>
+        )}
       </div>
       <span
-        className="font-semibold text-sm text-center w-full group-hover:text-primary transition-colors">
+        className={cn(
+            "font-semibold text-sm text-center w-full group-hover:text-primary transition-colors",
+            isSelected && "text-primary"
+        )}>
         {name}
       </span>
-    </Link>)
+    </button>
   );
 }
 
@@ -182,6 +195,7 @@ function Footer() {
 
 export function HomePage() {
   const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
+  const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
   const [topMenuItems, setTopMenuItems] = useState<MenuItem[]>([]);
   const [serviceableCities, setServiceableCities] = useState<string[]>([]);
   const [bannerConfig, setBannerConfig] = useState<BannerConfig | null>(null);
@@ -190,6 +204,13 @@ export function HomePage() {
   const { cart, restaurant: cartRestaurant } = useCart();
   const { user } = useAuth();
   const [trendingRestaurants, setTrendingRestaurants] = useState<any[]>([]);
+  const [isPureVegFilter, setIsPureVegFilter] = useState(false);
+  const [isTopRatedFilter, setIsTopRatedFilter] = useState(false);
+  
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [categoryMenuItems, setCategoryMenuItems] = useState<MenuItem[]>([]);
+  const [isCategoryLoading, setIsCategoryLoading] = useState(false);
+
 
   const isCartVisible = cart.length > 0 && cartRestaurant;
 
@@ -197,11 +218,11 @@ export function HomePage() {
     requestLocation();
   }, [requestLocation]);
 
-  useEffect(() => {
+    useEffect(() => {
         if(user?.uid) {
             getTrendingRestaurantRecommendations({customerId: user.uid}).then(res => {
                 setTrendingRestaurants(res.restaurantRecommendations);
-            });
+            }).catch(console.error);
         }
     }, [user]);
 
@@ -221,6 +242,7 @@ export function HomePage() {
           getBannerConfig(),
         ]);
         setAllRestaurants(restaurants);
+        setFilteredRestaurants(restaurants);
         setTopMenuItems(menuItems);
         setServiceableCities(cities);
         setBannerConfig(banner);
@@ -233,12 +255,62 @@ export function HomePage() {
     fetchData();
   }, []);
   
+  const handleCategoryClick = async (categoryName: string) => {
+    if (selectedCategory === categoryName) {
+        setSelectedCategory(null);
+        setCategoryMenuItems([]);
+        return;
+    }
+
+    setSelectedCategory(categoryName);
+    setIsCategoryLoading(true);
+
+    try {
+        const allItemsPromises = allRestaurants.map(r => getMenuItemsForRestaurant(r.id));
+        const allItemsNested = await Promise.all(allItemsPromises);
+        const allItems = allItemsNested.flat();
+        
+        const itemsForCategory = allItems.filter(item => item.category.toLowerCase() === categoryName.toLowerCase());
+
+        const promotedItems = itemsForCategory.filter(item => {
+            const restaurant = allRestaurants.find(r => r.id === item.restaurantId);
+            return restaurant?.isPromoted;
+        });
+
+        const otherItems = itemsForCategory.filter(item => {
+            const restaurant = allRestaurants.find(r => r.id === item.restaurantId);
+            return !restaurant?.isPromoted;
+        });
+
+        setCategoryMenuItems([...promotedItems, ...otherItems]);
+    } catch (e) {
+        console.error("Failed to fetch menu items for category:", e);
+        setCategoryMenuItems([]);
+    } finally {
+        setIsCategoryLoading(false);
+    }
+  };
+
+
+    useEffect(() => {
+        let results = [...allRestaurants];
+        if (isPureVegFilter) {
+            results = results.filter(r => r.isPureVeg);
+        }
+        if (isTopRatedFilter) {
+            results = results.filter(r => r.rating >= 4.0);
+        }
+        setFilteredRestaurants(results);
+    }, [isPureVegFilter, isTopRatedFilter, allRestaurants]);
+  
   const categories = useMemo(() => {
       if (loading) return [];
       const cuisineMap = new Map<string, string | undefined>();
       allRestaurants.forEach(r => {
-        if (!cuisineMap.has(r.cuisine)) {
-            cuisineMap.set(r.cuisine, r.categoryImageUrl);
+        if (r.cuisine && typeof r.cuisine === 'string' && r.cuisine.trim() !== '') {
+            if (!cuisineMap.has(r.cuisine)) {
+                cuisineMap.set(r.cuisine, r.categoryImageUrl);
+            }
         }
       });
       return Array.from(cuisineMap.entries()).map(([name, imageUrl]) => ({ name, imageUrl }));
@@ -276,43 +348,85 @@ export function HomePage() {
               {categories.length > 0 && (
                   <section className="py-2">
                       <SectionHeading>What's on your mind?</SectionHeading>
-                        <Carousel opts={{ align: "start", }} className="w-full">
+                        <Carousel opts={{ align: "start", dragFree: true }} className="w-full">
                            <CarouselContent className="-ml-2">
                               {categories.map((cat) => (
-                              <CarouselItem key={cat.name} className="basis-1/3 sm:basis-1/4 md:basis-1/5 lg:basis-1/6 pl-2">
-                                  <CategoryItem name={cat.name} imageUrl={cat.imageUrl} />
+                              <CarouselItem key={cat.name} className="basis-auto pl-2">
+                                  <CategoryItem 
+                                    name={cat.name} 
+                                    imageUrl={cat.imageUrl}
+                                    isSelected={selectedCategory === cat.name}
+                                    onSelect={() => handleCategoryClick(cat.name)}
+                                  />
                               </CarouselItem>
                               ))}
                           </CarouselContent>
-                          <CarouselPrevious className="hidden sm:flex" />
-                          <CarouselNext className="hidden sm:flex" />
                       </Carousel>
                   </section>
               )}
 
-               {trendingRestaurants.length > 0 && (
-                  <section className="py-2">
-                      <SectionHeading>Trending Recommendations</SectionHeading>
-                        <Carousel opts={{ align: "start", }} className="w-full">
+              {isCategoryLoading && (
+                  <div className="space-y-4">
+                      <Skeleton className="h-8 w-1/3" />
+                       <div className="flex gap-4 overflow-hidden">
+                           {Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-48 w-40 rounded-lg flex-shrink-0" />)}
+                       </div>
+                  </div>
+              )}
+
+              {selectedCategory && !isCategoryLoading && categoryMenuItems.length > 0 && (
+                   <section>
+                      <SectionHeading>
+                        Dishes for {selectedCategory}
+                      </SectionHeading>
+                       <Carousel opts={{ align: "start", dragFree: true }} className="w-full">
                            <CarouselContent>
-                              {trendingRestaurants.map((item) => (
+                              {categoryMenuItems.map((item) => (
                               <CarouselItem key={item.id} className="basis-4/5 sm:basis-1/2 md:basis-1/3">
-                                  <div className="p-1">
+                                  <div className="p-1 h-full">
                                     <MenuItemSearchCard item={item} />
                                   </div>
                               </CarouselItem>
                               ))}
                           </CarouselContent>
-                          <CarouselPrevious className="hidden sm:flex" />
+                           <CarouselPrevious className="hidden sm:flex" />
                           <CarouselNext className="hidden sm:flex" />
                       </Carousel>
                   </section>
               )}
 
+               <section className="py-2">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                     <div className="bg-gradient-to-br from-red-500 to-orange-500 text-white p-6 rounded-xl flex items-center justify-between">
+                         <div>
+                             <h3 className="text-2xl font-bold">Offer Zone</h3>
+                             <p className="opacity-80">Up to 60% OFF</p>
+                         </div>
+                         <Button variant="secondary" className="bg-white/20 hover:bg-white/30">View All</Button>
+                     </div>
+                      <div className="bg-gradient-to-br from-blue-500 to-teal-400 text-white p-6 rounded-xl flex items-center justify-between">
+                         <div>
+                             <h3 className="text-2xl font-bold">Fast Delivery</h3>
+                             <p className="opacity-80">Restaurants under 30 mins</p>
+                         </div>
+                         <Button variant="secondary" className="bg-white/20 hover:bg-white/30">View All</Button>
+                     </div>
+                 </div>
+              </section>
+
               <section className="py-2">
-                <SectionHeading>All Restaurants</SectionHeading>
+                 <div className="flex justify-between items-center mb-6">
+                    <SectionHeading className="mb-0">{filteredRestaurants.length} restaurants to explore</SectionHeading>
+                 </div>
+                 <div className="flex flex-wrap items-center gap-2 mb-8">
+                    <Button variant={isPureVegFilter ? 'default' : 'outline'} onClick={() => setIsPureVegFilter(p => !p)}>Pure Veg</Button>
+                    <Button variant={isTopRatedFilter ? 'default' : 'outline'} onClick={() => setIsTopRatedFilter(p => !p)}>Rating 4.0+</Button>
+                    <Button variant="outline">Sort By</Button>
+                    <Button variant="outline">Offers</Button>
+                 </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {allRestaurants.map(restaurant => (
+                {filteredRestaurants.map(restaurant => (
                     <RestaurantCard key={restaurant.id} restaurant={restaurant} />
                 ))}
                 </div>
@@ -345,5 +459,3 @@ export function HomePage() {
     </div>
   );
 }
-
-    

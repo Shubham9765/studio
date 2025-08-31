@@ -1,4 +1,5 @@
 
+
 import type { Timestamp } from 'firebase/firestore';
 
 export interface DeliveryBoy {
@@ -36,6 +37,7 @@ export interface Restaurant {
   gstEnabled?: boolean;
   gstin?: string;
   isPromoted?: boolean;
+  isPureVeg?: boolean;
 }
 
 export interface MenuItem {
@@ -49,6 +51,7 @@ export interface MenuItem {
   isAvailable: boolean;
   rating?: number;
   type: 'veg' | 'non-veg';
+  restaurant?: Partial<Restaurant>;
 }
 
 export interface Order {

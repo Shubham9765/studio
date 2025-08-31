@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Image from 'next/image';
@@ -6,7 +7,7 @@ import Link from 'next/link';
 import type { MenuItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/hooks/use-cart';
 import { getRestaurantById } from '@/services/restaurantClientService';
@@ -51,45 +52,51 @@ export function MenuItemSearchCard({ item }: MenuItemSearchCardProps) {
         });
     }
 
+    const isPromoted = item.restaurant?.isPromoted;
 
     return (
-        <div className={cn(
-            "group relative rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden flex flex-col justify-between transition-all duration-300",
+         <div className={cn(
+            "group relative rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden flex flex-col justify-between transition-all duration-300 h-full",
             !item.isAvailable && "bg-muted/50 text-muted-foreground cursor-not-allowed",
-            item.isAvailable && "hover:shadow-lg hover:-translate-y-1"
+            item.isAvailable && "hover:shadow-lg hover:-translate-y-1",
+            isPromoted && "border-amber-400 border-2"
         )}>
              <Link href={`/restaurant/${item.restaurantId}`} className="block flex flex-col h-full">
-                {item.imageUrl && (
-                    <div className="relative overflow-hidden">
-                        <Image
-                            src={item.imageUrl}
-                            alt={item.name}
-                            width={300}
-                            height={200}
-                            className={cn("object-cover w-full h-32 transition-transform duration-300 group-hover:scale-105", !item.isAvailable && "grayscale")}
-                        />
-                        {!item.isAvailable && (
-                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                <span className="text-white font-bold text-sm tracking-wider">UNAVAILABLE</span>
-                            </div>
-                        )}
-                    </div>
-                )}
+                <div className="relative overflow-hidden">
+                     {isPromoted && (
+                        <div className="absolute top-2 -left-10 bg-amber-400 text-black px-12 py-1 text-xs font-bold shadow-lg transform -rotate-45 z-10 flex items-center gap-1">
+                            <Sparkles className="w-3 h-3"/>
+                            <span>Promoted</span>
+                        </div>
+                    )}
+                    <Image
+                        src={item.imageUrl || 'https://placehold.co/300x200.png'}
+                        alt={item.name}
+                        width={300}
+                        height={200}
+                        className={cn("object-cover w-full h-32 transition-transform duration-300 group-hover:scale-105", !item.isAvailable && "grayscale")}
+                    />
+                    {!item.isAvailable && (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                            <span className="text-white font-bold text-sm tracking-wider">UNAVAILABLE</span>
+                        </div>
+                    )}
+                </div>
                 <div className="p-3 flex-grow flex flex-col">
                     <div className="flex items-start gap-2">
                         <div className="pt-1"><VegNonVegIcon type={item.type} /></div>
                         <h3 className="font-semibold text-sm leading-tight flex-grow group-hover:text-primary">{item.name}</h3>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2 h-8">{item.description}</p>
+                     <p className="text-xs text-muted-foreground mt-1 font-medium">{item.restaurant?.name}</p>
                 </div>
-            </Link>
-             <div className="flex justify-between items-center px-3 pb-3 mt-auto">
-                <p className="font-bold text-primary text-base">Rs.{item.price.toFixed(2)}</p>
-                <Button size="sm" className="h-8 text-xs" disabled={!item.isAvailable} onClick={handleAddToCart}>
-                    <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
-                    Add
-                </Button>
-            </div>
+                <div className="flex justify-between items-center px-3 pb-3 mt-auto">
+                    <p className="font-bold text-primary text-base">Rs.{item.price.toFixed(2)}</p>
+                    <Button size="sm" className="h-8 text-xs" disabled={!item.isAvailable} onClick={handleAddToCart}>
+                        <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
+                        Add
+                    </Button>
+                </div>
+             </Link>
         </div>
     );
 }

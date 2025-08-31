@@ -53,6 +53,7 @@ export async function getRestaurants(): Promise<Restaurant[]> {
   const querySnapshot = await getDocs(q);
 
   if (querySnapshot.empty) {
+      console.warn("No approved restaurants found in Firestore, falling back to mock data.");
       return MOCK_RESTAURANTS.filter(r => r.status === 'approved');
   }
 
@@ -90,7 +91,8 @@ export async function getMenuItemsForRestaurant(restaurantId: string): Promise<M
     if (snapshot.empty) {
         return [];
     }
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as MenuItem));
+    const restaurant = await getRestaurantById(restaurantId);
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, restaurant } as MenuItem));
 }
 
 
@@ -345,5 +347,3 @@ export async function updateCuisineImageUrl(cuisineName: string, imageUrl: strin
     // Use updateDoc which works correctly with dot notation for nested fields.
     await updateDoc(cuisinesConfigRef, updateData);
 }
-
-    
