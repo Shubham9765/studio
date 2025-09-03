@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -19,16 +18,18 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { Textarea } from '../ui/textarea';
-import type { MenuItem } from '@/lib/types';
+import type { MenuItem, Cuisine } from '@/lib/types';
 import { addMenuItem, updateMenuItem } from '@/services/ownerService';
 import { Switch } from '../ui/switch';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { getCuisineTypes } from '@/services/restaurantClientService';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 export const MenuItemSchema = z.object({
   name: z.string().min(3, { message: 'Item name must be at least 3 characters.' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters.' }),
   price: z.coerce.number().min(0, { message: 'Price must be a positive number.' }),
-  category: z.string().min(3, { message: 'Category must be at least 3 characters.' }),
+  category: z.string().min(1, { message: 'Please select a category.' }),
   imageUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
   isAvailable: z.boolean().default(true),
   type: z.enum(['veg', 'non-veg']).default('veg'),
@@ -45,7 +46,23 @@ interface MenuItemFormProps {
 export function MenuItemForm({ isOpen, onOpenChange, restaurantId, menuItem, onFormSubmit }: MenuItemFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cuisineTypes, setCuisineTypes] = useState<Cuisine[]>([]);
   const isEditing = !!menuItem;
+
+  useEffect(() => {
+    async function fetchCuisines() {
+      try {
+        const cuisines = await getCuisineTypes();
+        setCuisineTypes(cuisines);
+      } catch (error) {
+        console.error("Failed to fetch cuisines for form", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not load cuisine types.' });
+      }
+    }
+    if (isOpen) {
+      fetchCuisines();
+    }
+  }, [isOpen, toast]);
 
   const form = useForm<z.infer<typeof MenuItemSchema>>({
     resolver: zodResolver(MenuItemSchema),
@@ -160,18 +177,27 @@ export function MenuItemForm({ isOpen, onOpenChange, restaurantId, menuItem, onF
                 )}
                 />
                  <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <FormControl>
-                        <Input placeholder="e.g., Appetizer, Main" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a cuisine" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {cuisineTypes.map(cuisine => (
+                                <SelectItem key={cuisine.name} value={cuisine.name}>{cuisine.name}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
             </div>
              <FormField
               control={form.control}

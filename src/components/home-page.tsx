@@ -261,7 +261,7 @@ export function HomePage() {
         const restaurantsForCuisine = allRestaurants.filter(r => r.cuisine.includes(categoryName));
         const allItemsPromises = restaurantsForCuisine.map(r => getMenuItemsForRestaurant(r.id));
         const allItemsNested = await Promise.all(allItemsPromises);
-        const allItems = allItemsNested.flat();
+        const allItems = allItemsNested.flat().filter(item => item.category === categoryName);
         
         const promotedItems = allItems.filter(item => item.restaurant?.isPromoted);
         const otherItems = allItems.filter(item => !item.restaurant?.isPromoted);
