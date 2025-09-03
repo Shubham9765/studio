@@ -88,6 +88,7 @@ export async function createOrder(
       customerName,
       restaurantId: restaurant.id,
       restaurantName: restaurant.name,
+      orderType: 'food',
       items,
       total,
       status: 'pending',
@@ -154,6 +155,4 @@ export async function rateRestaurant(orderId: string, restaurantId: string, newR
 export async function getCoordinatesForAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
     return getCoords(address);
 }
-
-
 

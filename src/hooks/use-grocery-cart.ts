@@ -1,21 +1,18 @@
 
-
 'use client';
 
 import { createContext, useContext, ReactNode } from 'react';
 import useLocalStorageState from 'use-local-storage-state';
-import type { MenuItem, Restaurant } from '@/lib/types';
+import type { GroceryItem, GroceryStore } from '@/lib/types';
 
-// Define the shape of a cart item
-export interface CartItem extends MenuItem {
+export interface GroceryCartItem extends GroceryItem {
   quantity: number;
 }
 
-// Define the shape of the cart context
-interface CartContextType {
-  cart: CartItem[];
-  restaurant: Restaurant | null;
-  addItem: (item: CartItem, restaurant: Restaurant) => void;
+interface GroceryCartContextType {
+  cart: GroceryCartItem[];
+  store: GroceryStore | null;
+  addItem: (item: GroceryCartItem, store: GroceryStore) => void;
   removeItem: (itemId: string) => void;
   updateItemQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
@@ -23,27 +20,24 @@ interface CartContextType {
   totalPrice: number;
 }
 
-// Create the context with a default undefined value
-const CartContext = createContext<CartContextType | undefined>(undefined);
+const GroceryCartContext = createContext<GroceryCartContextType | undefined>(undefined);
 
-// Define the props for the provider component
-interface CartProviderProps {
+interface GroceryCartProviderProps {
   children: ReactNode;
 }
 
-export function CartProvider({ children }: CartProviderProps) {
-  const [cart, setCart] = useLocalStorageState<CartItem[]>('cart', {
+export function GroceryCartProvider({ children }: GroceryCartProviderProps) {
+  const [cart, setCart] = useLocalStorageState<GroceryCartItem[]>('groceryCart', {
     defaultValue: [],
   });
-  const [restaurant, setRestaurant] = useLocalStorageState<Restaurant | null>('cartRestaurant', {
+  const [store, setStore] = useLocalStorageState<GroceryStore | null>('groceryCartStore', {
     defaultValue: null,
   });
 
-  const addItem = (item: CartItem, restaurantData: Restaurant) => {
-    // If the cart is from a different restaurant, clear it first.
-    if (restaurant && restaurant.id !== restaurantData.id) {
+  const addItem = (item: GroceryCartItem, storeData: GroceryStore) => {
+    if (store && store.id !== storeData.id) {
         setCart([{ ...item, quantity: 1 }]);
-        setRestaurant(restaurantData);
+        setStore(storeData);
         return;
     }
 
@@ -58,8 +52,8 @@ export function CartProvider({ children }: CartProviderProps) {
         }
     });
     
-    if (!restaurant) {
-        setRestaurant(restaurantData);
+    if (!store) {
+        setStore(storeData);
     }
   };
 
@@ -67,7 +61,7 @@ export function CartProvider({ children }: CartProviderProps) {
     setCart(prevCart => {
         const newCart = prevCart.filter(item => item.id !== itemId);
          if (newCart.length === 0) {
-            setRestaurant(null); // Clear restaurant if cart is empty
+            setStore(null);
         }
         return newCart;
     });
@@ -87,16 +81,15 @@ export function CartProvider({ children }: CartProviderProps) {
 
   const clearCart = () => {
     setCart([]);
-    setRestaurant(null);
+    setStore(null);
   };
   
   const cartCount = cart.reduce((count, item) => count + item.quantity, 0);
-
   const totalPrice = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
 
   const value = {
     cart,
-    restaurant,
+    store,
     addItem,
     removeItem,
     updateItemQuantity,
@@ -106,17 +99,16 @@ export function CartProvider({ children }: CartProviderProps) {
   };
 
   return (
-    <CartContext.Provider value={value}>
+    <GroceryCartContext.Provider value={value}>
       {children}
-    </CartContext.Provider>
+    </GroceryCartContext.Provider>
   );
 }
 
-// Custom hook to use the cart context
-export function useCart() {
-  const context = useContext(CartContext);
+export function useGroceryCart() {
+  const context = useContext(GroceryCartContext);
   if (context === undefined) {
-    throw new Error('useCart must be used within a CartProvider');
+    throw new Error('useGroceryCart must be used within a GroceryCartProvider');
   }
   return context;
 }

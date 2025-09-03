@@ -5,6 +5,7 @@ import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/hooks/use-auth';
 import { CartProvider } from '@/hooks/use-cart';
+import { GroceryCartProvider } from '@/hooks/use-grocery-cart';
 import { NotificationProvider } from '@/hooks/use-notifications';
 import { LocationProvider } from '@/hooks/use-location';
 import { PrintProvider } from '@/hooks/use-print';
@@ -35,8 +36,10 @@ export default function RootLayout({
               <NotificationProvider>
                 <LocationProvider>
                   <CartProvider>
-                    {children}
-                    <Toaster />
+                    <GroceryCartProvider>
+                      {children}
+                      <Toaster />
+                    </GroceryCartProvider>
                   </CartProvider>
                 </LocationProvider>
               </NotificationProvider>

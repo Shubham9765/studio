@@ -54,13 +54,40 @@ export interface MenuItem {
   restaurant?: Partial<Restaurant>;
 }
 
+export interface GroceryStore {
+    id: string;
+    name: string;
+    image: string;
+    ownerId?: string;
+    status: 'pending' | 'approved' | 'rejected' | 'disabled';
+    deliveryCharge: number;
+    isOpen: boolean;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+}
+
+export interface GroceryItem {
+    id: string;
+    storeId: string;
+    name: string;
+    description: string;
+    price: number;
+    category: string;
+    imageUrl?: string;
+    isAvailable: boolean;
+    unit?: string; // e.g., 'kg', 'litre', 'dozen'
+    store?: Partial<GroceryStore>;
+}
+
 export interface Order {
     id: string;
     customerId: string;
     customerName: string;
-    restaurantId: string;
-    restaurantName: string;
-    items: (MenuItem & { quantity: number })[];
+    restaurantId: string; // Could be restaurant or store ID
+    restaurantName: string; // Could be restaurant or store name
+    orderType: 'food' | 'grocery';
+    items: (MenuItem & { quantity: number } | GroceryItem & { quantity: number })[];
     total: number;
     status: 'pending' | 'accepted' | 'preparing' | 'out-for-delivery' | 'delivered' | 'cancelled';
     paymentMethod: 'cash' | 'upi';
@@ -101,6 +128,11 @@ export interface BannerConfig {
 }
 
 export interface Cuisine {
+    name: string;
+    imageUrl?: string;
+}
+
+export interface GroceryCategory {
     name: string;
     imageUrl?: string;
 }
