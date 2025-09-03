@@ -5,7 +5,7 @@
 
 import { db } from './firebase';
 import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, getDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
-import type { Restaurant, MenuItem, Order, DeliveryBoy } from '@/lib/types';
+import type { Restaurant, MenuItem, Order, DeliveryBoy, GroceryStore, GroceryItem } from '@/lib/types';
 import type { z } from 'zod';
 import type { RestaurantSchema } from '@/components/owner/restaurant-registration-form';
 import type { EditRestaurantSchema } from '@/components/owner/edit-restaurant-form';
@@ -227,3 +227,71 @@ export async function updateDeliveryBoyLocation(deliveryBoyId: string, location:
   }
 }
 
+// GROCERY STORE FUNCTIONS
+
+export async function createGroceryStore(ownerId: string, data: any) {
+    if (!ownerId) {
+        throw new Error('An owner ID is required to create a grocery store.');
+    }
+    
+    const existingStoreQuery = query(collection(db, 'grocery_stores'), where('ownerId', '==', ownerId), limit(1));
+    const existingStoreSnapshot = await getDocs(existingStoreQuery);
+    if (!existingStoreSnapshot.empty) {
+        throw new Error('This owner already has a grocery store.');
+    }
+
+    const newStore: Omit<GroceryStore, 'id'> = {
+        name: data.name,
+        address: data.address,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        deliveryTime: data.deliveryTime,
+        ownerId,
+        status: 'pending' as const,
+        rating: 0,
+        image: 'https://placehold.co/600x400.png',
+        deliveryCharge: 0,
+        isOpen: true,
+        reviewCount: 0,
+    };
+
+    const docRef = await addDoc(collection(db, "grocery_stores"), {
+      ...newStore,
+      createdAt: serverTimestamp()
+    });
+
+    return docRef.id;
+}
+
+export async function updateGroceryStore(storeId: string, data: any) {
+    if (!storeId) {
+        throw new Error('A store ID is required to update a grocery store.');
+    }
+    const storeRef = doc(db, 'grocery_stores', storeId);
+    await updateDoc(storeRef, data);
+}
+
+export async function addGroceryItem(storeId: string, data: Omit<GroceryItem, 'id' | 'storeId'>) {
+    const itemsRef = collection(db, 'grocery_stores', storeId, 'items');
+    const docRef = await addDoc(itemsRef, {
+        ...data,
+        storeId,
+        createdAt: serverTimestamp(),
+    });
+    return docRef.id;
+}
+
+export async function updateGroceryItem(storeId: string, itemId: string, data: Partial<GroceryItem>) {
+    const itemRef = doc(db, 'grocery_stores', storeId, 'items', itemId);
+    await updateDoc(itemRef, data);
+}
+
+export async function deleteGroceryItem(storeId: string, itemId: string) {
+    const itemRef = doc(db, 'grocery_stores', storeId, 'items', itemId);
+    await deleteDoc(itemRef);
+}
+
+export async function updateGroceryItemAvailability(storeId: string, itemId: string, isAvailable: boolean) {
+    const itemRef = doc(db, 'grocery_stores', storeId, 'items', itemId);
+    await updateDoc(itemRef, { isAvailable });
+}

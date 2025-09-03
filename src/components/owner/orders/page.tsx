@@ -1,6 +1,6 @@
 
-
 'use client';
+
 
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
@@ -64,9 +64,10 @@ export default function ManageOrdersPage() {
                 setRestaurant(rest);
                 if (rest) {
                     unsubscribe = listenToOrdersForRestaurant(rest.id, (fetchedOrders) => {
-                        setOrders(fetchedOrders);
+                        const foodOrders = fetchedOrders.filter(o => o.orderType === 'food');
+                        setOrders(foodOrders);
                         
-                        const hasPendingOrders = fetchedOrders.some(o => o.status === 'pending');
+                        const hasPendingOrders = foodOrders.some(o => o.status === 'pending');
                         setIsNewOrderPending(hasPendingOrders);
                         manageAudioPlayback(hasPendingOrders);
                         
@@ -93,7 +94,9 @@ export default function ManageOrdersPage() {
             if (unsubscribe) {
                 unsubscribe();
             }
-            audioRef.current?.pause();
+            if (audioRef.current) {
+                audioRef.current.pause();
+            }
         };
     }, [user, authLoading, toast]);
 
@@ -279,3 +282,5 @@ export default function ManageOrdersPage() {
         </div>
     );
 }
+
+    

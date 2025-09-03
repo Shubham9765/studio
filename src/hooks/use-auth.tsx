@@ -32,7 +32,7 @@ export interface AppUser {
   displayName: string | null;
   photoURL: string | null;
   emailVerified: boolean;
-  role?: 'customer' | 'owner' | 'admin' | 'delivery';
+  role?: 'customer' | 'owner' | 'admin' | 'delivery' | 'grocery-owner';
   username?: string;
   phone?: string;
   status?: 'active' | 'inactive';

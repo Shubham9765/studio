@@ -67,6 +67,9 @@ export interface GroceryStore {
     address?: string;
     latitude?: number;
     longitude?: number;
+    reviewCount?: number;
+    rating?: number;
+    deliveryTime?: string;
 }
 
 export interface GroceryItem {

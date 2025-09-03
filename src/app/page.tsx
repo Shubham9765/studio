@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Utensils, Carrot } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import GroceryOwnerDashboard from '@/components/grocery-owner/grocery-owner-dashboard';
 
 const DeliveryDashboard = dynamic(() => import('@/components/delivery/delivery-dashboard'), {
     ssr: false,
@@ -73,6 +74,10 @@ export default function Home() {
     return <OwnerDashboard />;
   }
   
+  if (user?.role === 'grocery-owner') {
+    return <GroceryOwnerDashboard />;
+  }
+
   if (user?.role === 'delivery') {
     return <DeliveryDashboard />;
   }

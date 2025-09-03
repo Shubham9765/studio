@@ -46,7 +46,7 @@ const signUpSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
   phone: z.string().min(10, { message: 'Please enter a valid phone number.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
-  role: z.enum(['customer', 'owner', 'delivery']).default('customer'),
+  role: z.enum(['customer', 'owner', 'delivery', 'grocery-owner']).default('customer'),
 });
 
 const loginSchema = z.object({
@@ -133,8 +133,7 @@ export function AuthDialog(props: Props) {
       await sendSignInLinkToEmail(auth, values.email, actionCodeSettings);
       
       window.localStorage.setItem('emailForSignIn', values.email);
-      // Explicitly set role to customer before storing
-      const signUpData = { ...values, role: 'customer' as const };
+      const signUpData = { ...values };
       window.localStorage.setItem('signUpData', JSON.stringify(signUpData));
       
       setEmailSent(true);
@@ -314,6 +313,40 @@ export function AuthDialog(props: Props) {
                         <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4">
                             <FormField
                                 control={signUpForm.control}
+                                name="role"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-3">
+                                    <FormLabel>I am a...</FormLabel>
+                                    <FormControl>
+                                        <RadioGroup
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                        className="flex flex-wrap gap-x-4 gap-y-2"
+                                        >
+                                        <FormItem className="flex items-center space-x-2 space-y-0">
+                                            <FormControl><RadioGroupItem value="customer" /></FormControl>
+                                            <FormLabel className="font-normal">Customer</FormLabel>
+                                        </FormItem>
+                                        <FormItem className="flex items-center space-x-2 space-y-0">
+                                            <FormControl><RadioGroupItem value="owner" /></FormControl>
+                                            <FormLabel className="font-normal">Restaurant Owner</FormLabel>
+                                        </FormItem>
+                                        <FormItem className="flex items-center space-x-2 space-y-0">
+                                            <FormControl><RadioGroupItem value="grocery-owner" /></FormControl>
+                                            <FormLabel className="font-normal">Grocery Owner</FormLabel>
+                                        </FormItem>
+                                        <FormItem className="flex items-center space-x-2 space-y-0">
+                                            <FormControl><RadioGroupItem value="delivery" /></FormControl>
+                                            <FormLabel className="font-normal">Delivery Person</FormLabel>
+                                        </FormItem>
+                                        </RadioGroup>
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={signUpForm.control}
                                 name="username"
                                 render={({ field }) => (
                                     <FormItem>
@@ -384,3 +417,5 @@ export function AuthDialog(props: Props) {
     </Dialog>
   );
 }
+
+    
