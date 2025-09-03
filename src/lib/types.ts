@@ -1,6 +1,8 @@
 
 
 import type { Timestamp } from 'firebase/firestore';
+import type { CartItem } from '@/hooks/use-cart';
+import type { GroceryCartItem } from '@/hooks/use-grocery-cart';
 
 export interface DeliveryBoy {
     id: string;
@@ -87,7 +89,7 @@ export interface Order {
     restaurantId: string; // Could be restaurant or store ID
     restaurantName: string; // Could be restaurant or store name
     orderType: 'food' | 'grocery';
-    items: (MenuItem & { quantity: number } | GroceryItem & { quantity: number })[];
+    items: CartItem[] | GroceryCartItem[];
     total: number;
     status: 'pending' | 'accepted' | 'preparing' | 'out-for-delivery' | 'delivered' | 'cancelled';
     paymentMethod: 'cash' | 'upi';

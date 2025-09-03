@@ -1,8 +1,7 @@
 
 'use client';
 
-import { createContext, useContext, ReactNode } from 'react';
-import useLocalStorageState from 'use-local-storage-state';
+import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import type { GroceryItem, GroceryStore } from '@/lib/types';
 
 export interface GroceryCartItem extends GroceryItem {
@@ -27,12 +26,35 @@ interface GroceryCartProviderProps {
 }
 
 export function GroceryCartProvider({ children }: GroceryCartProviderProps) {
-  const [cart, setCart] = useLocalStorageState<GroceryCartItem[]>('groceryCart', {
-    defaultValue: [],
-  });
-  const [store, setStore] = useLocalStorageState<GroceryStore | null>('groceryCartStore', {
-    defaultValue: null,
-  });
+  const [cart, setCart] = useState<GroceryCartItem[]>([]);
+  const [store, setStore] = useState<GroceryStore | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    try {
+      const storedCart = window.localStorage.getItem('groceryCart');
+      const storedStore = window.localStorage.getItem('groceryCartStore');
+      if (storedCart) {
+        setCart(JSON.parse(storedCart));
+      }
+      if (storedStore) {
+        const parsedStore = JSON.parse(storedStore);
+        if (parsedStore) { 
+            setStore(parsedStore);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load grocery cart from local storage", error);
+    }
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded) {
+      window.localStorage.setItem('groceryCart', JSON.stringify(cart));
+      window.localStorage.setItem('groceryCartStore', JSON.stringify(store));
+    }
+  }, [cart, store, isLoaded]);
 
 
   const addItem = (item: GroceryCartItem, storeData: GroceryStore) => {
@@ -98,6 +120,10 @@ export function GroceryCartProvider({ children }: GroceryCartProviderProps) {
     cartCount,
     totalPrice,
   };
+
+  if (!isLoaded) {
+    return null; // or a loading spinner
+  }
 
   return (
     <GroceryCartContext.Provider value={value}>
