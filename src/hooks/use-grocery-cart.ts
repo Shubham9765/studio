@@ -38,7 +38,10 @@ export function GroceryCartProvider({ children }: GroceryCartProviderProps) {
         setCart(JSON.parse(storedCart));
       }
       if (storedStore) {
-        setStore(JSON.parse(storedStore));
+        const parsedStore = JSON.parse(storedStore);
+        if (parsedStore) { 
+            setStore(parsedStore);
+        }
       }
     } catch (error) {
       console.error("Failed to load grocery cart from local storage", error);
