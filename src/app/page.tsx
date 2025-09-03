@@ -1,14 +1,31 @@
 
 'use client';
 
+import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { HomePage } from '@/components/home-page';
 import AdminDashboard from '@/components/admin/admin-dashboard';
 import OwnerDashboard from '@/components/owner/owner-dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import dynamic from 'next/dynamic';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Utensils, Carrot } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const DeliveryDashboard = dynamic(() => import('@/components/delivery/delivery-dashboard'), {
+    ssr: false,
+    loading: () => (
+         <div className="flex flex-col items-center justify-center min-h-screen">
+            <div className="w-full max-w-4xl p-8 space-y-8">
+                <Skeleton className="h-16 w-1/3" />
+                <Skeleton className="h-32 w-full" />
+            </div>
+        </div>
+    )
+});
+
+const GroceryPage = dynamic(() => import('@/app/grocery/page'), {
     ssr: false,
     loading: () => (
          <div className="flex flex-col items-center justify-center min-h-screen">
@@ -23,7 +40,15 @@ const DeliveryDashboard = dynamic(() => import('@/components/delivery/delivery-d
 
 export default function Home() {
   const { user, loading } = useAuth();
+  const [service, setService] = useState<'food' | 'grocery'>('food');
+  const router = useRouter();
 
+
+  const handleServiceToggle = (isGrocery: boolean) => {
+    const newService = isGrocery ? 'grocery' : 'food';
+    setService(newService);
+  };
+  
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -52,5 +77,24 @@ export default function Home() {
     return <DeliveryDashboard />;
   }
 
-  return <HomePage />;
+  return (
+    <div>
+        <div className="container py-4 flex justify-center items-center gap-4">
+            <div className="flex items-center gap-2">
+                <Utensils className={`h-6 w-6 transition-colors ${service === 'food' ? 'text-primary' : 'text-muted-foreground'}`} />
+                <Label htmlFor="service-toggle" className={`font-semibold transition-colors ${service === 'food' ? 'text-primary' : 'text-muted-foreground'}`}>Food</Label>
+            </div>
+            <Switch
+                id="service-toggle"
+                checked={service === 'grocery'}
+                onCheckedChange={handleServiceToggle}
+            />
+             <div className="flex items-center gap-2">
+                <Carrot className={`h-6 w-6 transition-colors ${service === 'grocery' ? 'text-primary' : 'text-muted-foreground'}`} />
+                <Label htmlFor="service-toggle" className={`font-semibold transition-colors ${service === 'grocery' ? 'text-primary' : 'text-muted-foreground'}`}>Groceries</Label>
+            </div>
+        </div>
+        {service === 'food' ? <HomePage /> : <GroceryPage />}
+    </div>
+  )
 }
