@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { HomePage } from '@/components/home-page';
 import AdminDashboard from '@/components/admin/admin-dashboard';
@@ -13,7 +13,18 @@ import { Label } from '@/components/ui/label';
 import { Utensils, Carrot } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import GroceryOwnerDashboard from '@/components/grocery-owner/grocery-owner-dashboard';
-import DeliveryDashboard from '@/components/delivery/delivery-dashboard';
+
+const DeliveryDashboard = dynamic(() => import('@/components/delivery/delivery-dashboard'), {
+    ssr: false,
+    loading: () => (
+         <div className="flex flex-col items-center justify-center min-h-screen">
+            <div className="w-full max-w-4xl p-8 space-y-8">
+                <Skeleton className="h-16 w-1/3" />
+                <Skeleton className="h-32 w-full" />
+            </div>
+        </div>
+    )
+});
 
 const GroceryPage = dynamic(() => import('@/app/grocery/page'), {
     ssr: false,
@@ -68,7 +79,18 @@ export default function Home() {
   }
 
   if (user?.role === 'delivery') {
-    return <DeliveryDashboard />;
+    return (
+        <Suspense fallback={
+            <div className="flex flex-col items-center justify-center min-h-screen">
+                <div className="w-full max-w-4xl p-8 space-y-8">
+                    <Skeleton className="h-16 w-1/3" />
+                    <Skeleton className="h-32 w-full" />
+                </div>
+            </div>
+        }>
+            <DeliveryDashboard />
+        </Suspense>
+    )
   }
 
   return (
