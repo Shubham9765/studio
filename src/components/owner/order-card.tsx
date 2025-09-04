@@ -74,18 +74,19 @@ export function OrderCard({
                 icon: Package
             }
         case 'accepted':
-             return {
-                label: `Food is Preparing`,
-                action: () => onStatusChange(order.id, 'preparing'),
-                disabled: isUpdating,
-                icon: ChefHat
-            }
-        case 'preparing':
-             return {
+            return {
                 label: `Assign for Delivery`,
                 action: () => {}, // Action is handled by Select dropdown
                 disabled: isUpdating || !restaurant.deliveryBoys || restaurant.deliveryBoys.length === 0,
                 icon: Bike
+            }
+        case 'preparing':
+             return {
+                label: `Food is Preparing`,
+                action: () => {},
+                disabled: true,
+                icon: ChefHat,
+                isNote: true
             }
         default:
             return null;
@@ -96,7 +97,16 @@ export function OrderCard({
       const action = getNextAction();
       if(!action) return null;
 
-      if (order.status === 'preparing') {
+      if (action.isNote) {
+          return (
+              <div className="flex items-center justify-center gap-2 text-center p-3 h-12 text-base bg-secondary rounded-md text-secondary-foreground">
+                  <ChefHat className="mr-2 h-5 w-5 animate-pulse" />
+                  <span className="font-semibold">{action.label}...</span>
+              </div>
+          )
+      }
+
+      if (order.status === 'accepted') {
         if (!restaurant.deliveryBoys || restaurant.deliveryBoys.length === 0) {
             return <p className="text-xs text-destructive text-center p-2 bg-destructive/10 rounded-md">Add delivery staff to assign orders.</p>
         }

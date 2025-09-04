@@ -1,6 +1,7 @@
 
 
 
+
 'use server';
 
 import { db } from './firebase';
@@ -166,7 +167,7 @@ export async function assignDeliveryBoy(orderId: string, deliveryBoy: {id: strin
 
     await updateDoc(orderRef, { 
         deliveryBoy,
-        status: 'accepted',
+        status: 'preparing',
     });
 }
 
@@ -187,7 +188,7 @@ export async function deliveryBoyRespondToOrder(orderId: string, response: 'acce
         // If rejected, remove the delivery boy and set status back to what the owner will see.
         await updateDoc(orderRef, {
             deliveryBoy: null,
-            status: 'preparing',
+            status: 'accepted', // set back to accepted so owner can re-assign
         });
     }
 }
