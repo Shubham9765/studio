@@ -299,13 +299,13 @@ export default function ManageGroceryItemsPage() {
                     </Card>
                 </main>
             </div>
-            <GroceryItemForm 
+            {store && <GroceryItemForm 
                 isOpen={isFormOpen}
                 onOpenChange={setIsFormOpen}
                 storeId={store.id}
                 item={editingItem}
                 onFormSubmit={handleFormSubmit}
-            />
+            />}
         </>
     );
 }

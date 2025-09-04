@@ -173,9 +173,7 @@ export default function MyOrdersPage() {
                     <Skeleton className="h-8 w-1/3 mb-8" />
                     <Card>
                         <CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader>
-                        <CardContent>
-                            <Skeleton className="h-40 w-full" />
-                        </CardContent>
+                        <CardContent><Skeleton className="h-40 w-full" /></CardContent>
                     </Card>
                 </main>
             </div>
@@ -280,7 +278,3 @@ export default function MyOrdersPage() {
         </div>
     );
 }
-
-    
-
-    

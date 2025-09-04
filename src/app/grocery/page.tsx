@@ -5,13 +5,16 @@ import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Utensils, Check, Search, Carrot } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getGroceryCategoryTypes, getGroceryStores } from '@/services/restaurantClientService';
-import type { GroceryCategory, GroceryStore } from '@/lib/types';
+import { getGroceryCategoryTypes, getGroceryStores, getGroceryItems } from '@/services/restaurantClientService';
+import type { GroceryCategory, GroceryStore, GroceryItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { GroceryStoreCard } from '@/components/grocery-owner/grocery-store-card';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { GroceryItemSearchCard } from '@/components/customer/grocery-item-search-card';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 
 function SectionHeading({ children, className }: { children: React.ReactNode, className?: string }) {
@@ -90,6 +93,8 @@ export default function GroceryPage() {
     const [stores, setStores] = useState<GroceryStore[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [categoryItems, setCategoryItems] = useState<GroceryItem[]>([]);
+    const [isCategoryLoading, setIsCategoryLoading] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -110,11 +115,43 @@ export default function GroceryPage() {
         fetchData();
     }, []);
 
-    const handleCategoryClick = (categoryName: string) => {
-        // This is just for UI selection for now.
-        // Logic to filter items would be added here.
-        setSelectedCategory(prev => prev === categoryName ? null : categoryName);
+    const handleCategoryClick = async (categoryName: string) => {
+        if (selectedCategory === categoryName) {
+            setSelectedCategory(null);
+            setCategoryItems([]);
+            return;
+        }
+
+        setSelectedCategory(categoryName);
+        setIsCategoryLoading(true);
+        try {
+            const allItemsPromises = stores.map(s => getGroceryItems(s.id));
+            const allItemsNested = await Promise.all(allItemsPromises);
+            
+            const allItems = allItemsNested.flat().filter(item => 
+                item.category.toLowerCase() === categoryName.toLowerCase()
+            );
+            
+            // Enrich items with store info, which is needed for adding to cart
+            const enrichedItems = await Promise.all(
+                allItems.map(async item => {
+                    const store = stores.find(s => s.id === item.storeId);
+                    return { ...item, store: store ? { name: store.name, isPromoted: store.isPromoted } : undefined };
+                })
+            );
+
+            const promotedItems = enrichedItems.filter(item => item.store?.isPromoted);
+            const otherItems = enrichedItems.filter(item => !item.store?.isPromoted);
+
+            setCategoryItems([...promotedItems, ...otherItems]);
+        } catch (e) {
+            console.error("Failed to fetch items for category:", e);
+            setCategoryItems([]);
+        } finally {
+            setIsCategoryLoading(false);
+        }
     };
+
 
     return (
         <div className="min-h-screen bg-background">
@@ -134,19 +171,63 @@ export default function GroceryPage() {
                 {!loading && categories.length > 0 && (
                   <section className="py-2">
                       <SectionHeading>Shop by Category</SectionHeading>
-                        <div className="flex flex-wrap gap-4">
+                         <Carousel opts={{ align: "start", dragFree: true }} className="w-full">
+                           <CarouselContent className="-ml-2">
                             {categories.map((cat) => (
-                              <CategoryItem 
-                                key={cat.name}
-                                name={cat.name} 
-                                imageUrl={cat.imageUrl}
-                                isSelected={selectedCategory === cat.name}
-                                onSelect={() => handleCategoryClick(cat.name)}
-                              />
+                              <CarouselItem key={cat.name} className="basis-auto pl-2">
+                                <CategoryItem 
+                                    key={cat.name}
+                                    name={cat.name} 
+                                    imageUrl={cat.imageUrl}
+                                    isSelected={selectedCategory === cat.name}
+                                    onSelect={() => handleCategoryClick(cat.name)}
+                                />
+                              </CarouselItem>
                             ))}
-                        </div>
+                          </CarouselContent>
+                      </Carousel>
                   </section>
               )}
+
+                 {isCategoryLoading && (
+                  <div className="space-y-4 mt-8">
+                      <Skeleton className="h-8 w-1/3" />
+                       <div className="flex gap-4 overflow-hidden">
+                           {Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-64 w-48 rounded-lg flex-shrink-0" />)}
+                       </div>
+                  </div>
+                )}
+
+                {selectedCategory && !isCategoryLoading && categoryItems.length > 0 && (
+                   <section className="mt-8">
+                      <SectionHeading>
+                        Top Picks for {selectedCategory}
+                      </SectionHeading>
+                       <Carousel opts={{ align: "start", dragFree: true }} className="w-full">
+                           <CarouselContent>
+                              {categoryItems.map((item) => (
+                              <CarouselItem key={item.id} className="basis-4/5 sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
+                                  <div className="p-1 h-full">
+                                    <GroceryItemSearchCard item={item} />
+                                  </div>
+                              </CarouselItem>
+                              ))}
+                          </CarouselContent>
+                           <CarouselPrevious className="hidden sm:flex" />
+                          <CarouselNext className="hidden sm:flex" />
+                      </Carousel>
+                  </section>
+              )}
+              
+               {selectedCategory && !isCategoryLoading && categoryItems.length === 0 && (
+                 <Alert className="mt-8">
+                    <Carrot className="h-4 w-4" />
+                    <AlertTitle>No Items Found</AlertTitle>
+                    <AlertDescription>
+                        There are no items available for {selectedCategory} at the moment. Try another category!
+                    </AlertDescription>
+                 </Alert>
+               )}
 
 
                <section className="mt-12">
