@@ -83,7 +83,7 @@ export interface GroceryItem {
     category: string;
     imageUrl?: string;
     isAvailable: boolean;
-    unit?: string; // e.g., 'kg', 'litre', 'dozen'
+    unit?: string; // e.g., 'kg', 'piece', 'dozen'
     store?: Partial<GroceryStore>;
 }
 

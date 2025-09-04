@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, Suspense } from 'react';
+import { Suspense } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { HomePage } from '@/components/home-page';
 import AdminDashboard from '@/components/admin/admin-dashboard';
@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Utensils, Carrot } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import GroceryOwnerDashboard from '@/components/grocery-owner/grocery-owner-dashboard';
+import useLocalStorageState from 'use-local-storage-state';
 
 const DeliveryDashboard = dynamic(() => import('@/components/delivery/delivery-dashboard'), {
     ssr: false,
@@ -41,7 +42,7 @@ const GroceryPage = dynamic(() => import('@/app/grocery/page'), {
 
 export default function Home() {
   const { user, loading } = useAuth();
-  const [service, setService] = useState<'food' | 'grocery'>('food');
+  const [service, setService] = useLocalStorageState<'food' | 'grocery'>('serviceSelection', { defaultValue: 'food' });
   const router = useRouter();
 
 
