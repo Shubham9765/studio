@@ -1,11 +1,12 @@
 
 
 
+
 'use client';
 
 import { db } from './firebase';
 import { collection, getDocs, doc, setDoc, query, where, getDoc, collectionGroup, limit, onSnapshot, orderBy, updateDoc, setDoc as setFirestoreDoc } from 'firebase/firestore';
-import type { Restaurant, MenuItem, Order, BannerConfig, Cuisine } from '@/lib/types';
+import type { Restaurant, MenuItem, Order, BannerConfig, Cuisine, GroceryCategory } from '@/lib/types';
 import { MOCK_RESTAURANTS } from '@/lib/seed';
 
 // Helper function to calculate distance between two lat/lng points in kilometers
@@ -363,4 +364,48 @@ export async function updateCuisineImageUrl(cuisineName: string, imageUrl: strin
     
     // Use updateDoc which works correctly with dot notation for nested fields.
     await updateDoc(cuisinesConfigRef, updateData);
+}
+
+// Grocery Category Functions
+const groceryCategoriesConfigRef = doc(db, 'app_config', 'grocery_categories');
+
+export async function getGroceryCategoryTypes(): Promise<GroceryCategory[]> {
+    const storesSnapshot = await getDocs(query(collection(db, 'grocery_stores'), where('status', '==', 'approved')));
+    const uniqueCategories = new Set<string>();
+
+    for (const storeDoc of storesSnapshot.docs) {
+        const itemsSnapshot = await getDocs(collection(db, 'grocery_stores', storeDoc.id, 'items'));
+        itemsSnapshot.forEach(itemDoc => {
+            const itemData = itemDoc.data() as Partial<MenuItem>;
+            if (itemData.category && typeof itemData.category === 'string' && itemData.category.trim() !== '') {
+                uniqueCategories.add(itemData.category);
+            }
+        });
+    }
+
+    if (uniqueCategories.size === 0) {
+        return [];
+    }
+    
+    const categoryConfigDoc = await getDoc(groceryCategoriesConfigRef);
+    const categoryConfigData = categoryConfigDoc.exists() ? categoryConfigDoc.data() : {};
+
+    const categoriesArray = Array.from(uniqueCategories).map(name => ({
+        name,
+        imageUrl: categoryConfigData[name]?.imageUrl || '',
+    }));
+    
+    return categoriesArray;
+}
+
+export async function updateGroceryCategoryImageUrl(categoryName: string, imageUrl: string): Promise<void> {
+    const docSnap = await getDoc(groceryCategoriesConfigRef);
+    if (!docSnap.exists()) {
+        await setFirestoreDoc(groceryCategoriesConfigRef, {});
+    }
+
+    await updateDoc(groceryCategoriesConfigRef, {
+        [`${categoryName}.imageUrl`]: imageUrl,
+        [`${categoryName}.name`]: categoryName,
+    });
 }

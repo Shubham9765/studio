@@ -744,6 +744,9 @@ export default function AdminDashboard() {
                         <Button asChild variant="outline">
                             <Link href="/admin/cuisines"><Palette className="mr-2 h-4 w-4"/> Manage Cuisines</Link>
                         </Button>
+                        <Button asChild variant="outline">
+                            <Link href="/admin/grocery-categories"><Carrot className="mr-2 h-4 w-4"/> Manage Grocery Categories</Link>
+                        </Button>
                          <Button asChild variant="outline">
                             <Link href="/admin/reports"><FileDown className="mr-2 h-4 w-4"/> Commission Reports</Link>
                         </Button>

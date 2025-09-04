@@ -21,13 +21,12 @@ import { Textarea } from '../ui/textarea';
 import type { GroceryItem } from '@/lib/types';
 import { addGroceryItem, updateGroceryItem } from '@/services/ownerService';
 import { Switch } from '../ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 export const GroceryItemSchema = z.object({
   name: z.string().min(3, { message: 'Item name must be at least 3 characters.' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters.' }),
   price: z.coerce.number().min(0, { message: 'Price must be a positive number.' }),
-  category: z.string().min(1, { message: 'Please select a category.' }),
+  category: z.string().min(2, { message: 'Please enter a category.' }),
   unit: z.string().min(1, { message: 'Please specify a unit (e.g., kg, piece).' }),
   imageUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
   isAvailable: z.boolean().default(true),
@@ -40,9 +39,6 @@ interface GroceryItemFormProps {
   item?: GroceryItem | null;
   onFormSubmit: () => void;
 }
-
-// Dummy categories for now, this could be fetched from a config in a real app
-const groceryCategories = ["Fruits & Vegetables", "Dairy & Eggs", "Meat & Fish", "Bakery", "Pantry", "Snacks", "Beverages", "Household"];
 
 export function GroceryItemForm({ isOpen, onOpenChange, storeId, item, onFormSubmit }: GroceryItemFormProps) {
   const { toast } = useToast();
@@ -181,18 +177,9 @@ export function GroceryItemForm({ isOpen, onOpenChange, storeId, item, onFormSub
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                        {groceryCategories.map(cat => (
-                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
+                     <FormControl>
+                        <Input placeholder="e.g., Fruits & Vegetables" {...field} />
+                    </FormControl>
                     <FormMessage />
                     </FormItem>
                 )}
