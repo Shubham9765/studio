@@ -2,11 +2,12 @@
 
 
 
+
 'use client';
 
 import { db } from './firebase';
 import { collection, getDocs, doc, setDoc, query, where, getDoc, collectionGroup, limit, onSnapshot, orderBy, updateDoc, setDoc as setFirestoreDoc } from 'firebase/firestore';
-import type { Restaurant, MenuItem, Order, BannerConfig, Cuisine, GroceryCategory } from '@/lib/types';
+import type { Restaurant, MenuItem, Order, BannerConfig, Cuisine, GroceryCategory, GroceryStore, GroceryItem } from '@/lib/types';
 import { MOCK_RESTAURANTS } from '@/lib/seed';
 
 // Helper function to calculate distance between two lat/lng points in kilometers
@@ -408,4 +409,72 @@ export async function updateGroceryCategoryImageUrl(categoryName: string, imageU
         [`${categoryName}.imageUrl`]: imageUrl,
         [`${categoryName}.name`]: categoryName,
     });
+}
+
+// GROCERY-SPECIFIC FUNCTIONS
+
+export async function getGroceryStores(): Promise<GroceryStore[]> {
+  const q = query(collection(db, 'grocery_stores'), where('status', '==', 'approved'));
+  const querySnapshot = await getDocs(q);
+
+  if (querySnapshot.empty) {
+      return [];
+  }
+
+  const stores = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as GroceryStore));
+  
+  const promoted = stores.filter(s => s.isPromoted).sort((a,b) => (b.rating ?? 0) - (a.rating ?? 0));
+  const notPromoted = stores.filter(s => !s.isPromoted);
+
+  return [...promoted, ...notPromoted];
+}
+
+export async function getGroceryStoreById(id: string): Promise<GroceryStore | null> {
+    const docRef = doc(db, 'grocery_stores', id);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        return { ...docSnap.data(), id: docSnap.id } as GroceryStore;
+    } else {
+        return null;
+    }
+}
+
+export async function searchGroceryStoresAndItems(
+    searchTerm: string
+): Promise<{ stores: GroceryStore[], items: GroceryItem[] }> {
+    if (!searchTerm) {
+        return { stores: [], items: [] };
+    }
+    const lowercasedTerm = searchTerm.toLowerCase();
+
+    // 1. Search for stores
+    const allStores = await getGroceryStores();
+    const matchingStores = allStores.filter(store =>
+        store.name.toLowerCase().includes(lowercasedTerm)
+    );
+
+    // 2. Search for items across all approved stores
+    const allItemsQuery = query(
+        collectionGroup(db, 'items'),
+        where('isAvailable', '==', true)
+    );
+    const allItemsSnapshot = await getDocs(allItemsQuery);
+    
+    // Enrich items with their store info
+    const allItems = await Promise.all(
+        allItemsSnapshot.docs.map(async (doc) => {
+            const item = { ...doc.data(), id: doc.id } as GroceryItem;
+            const store = await getGroceryStoreById(item.storeId);
+            return { ...item, store: store ? { name: store.name, isPromoted: store.isPromoted } : undefined };
+        })
+    );
+
+    const matchingItems = allItems.filter(item =>
+        item.name.toLowerCase().includes(lowercasedTerm) ||
+        item.description.toLowerCase().includes(lowercasedTerm) ||
+        item.category.toLowerCase().includes(lowercasedTerm)
+    );
+
+    return { stores: matchingStores, items: matchingItems };
 }

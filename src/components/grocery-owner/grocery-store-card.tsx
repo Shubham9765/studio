@@ -102,7 +102,7 @@ export function GroceryStoreCard({ store }: GroceryStoreCardProps) {
 
   // Update this link when the grocery store page is created
   return (
-     <Link href={`/`} className="h-full block">
+     <Link href={`/grocery/store/${store.id}`} className="h-full block">
         {cardContent}
     </Link>
   );

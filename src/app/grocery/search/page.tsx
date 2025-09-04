@@ -8,12 +8,14 @@ import { searchGroceryStoresAndItems } from '@/services/restaurantClientService'
 import type { GroceryStore, GroceryItem } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Search as SearchIcon } from 'lucide-react';
+import { AlertTriangle, Search as SearchIcon, Carrot } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { GrocerySearchResultItem } from '@/components/customer/grocery-search-result-item';
 
-// This needs a new component, so let's create a placeholder for now
-// and then create the actual component.
-// import { GrocerySearchResultItem } from '@/components/grocery-search-result-item';
+
+type SearchResult = 
+    | { type: 'store'; data: GroceryStore }
+    | { type: 'item'; data: GroceryItem };
 
 function SearchResults() {
     const router = useRouter();
@@ -22,7 +24,7 @@ function SearchResults() {
     const query = searchParams.get('q') || '';
     
     const [searchTerm, setSearchTerm] = useState(query);
-    const [results, setResults] = useState<(GroceryStore | GroceryItem)[]>([]);
+    const [results, setResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -41,8 +43,10 @@ function SearchResults() {
             setError(null);
             try {
                 const { stores, items } = await searchGroceryStoresAndItems(query);
-                // For now, just combine them. We can differentiate in the result item component.
-                setResults([...stores, ...items]);
+                const storeResults: SearchResult[] = stores.map(s => ({ type: 'store', data: s }));
+                const itemResults: SearchResult[] = items.map(i => ({ type: 'item', data: i }));
+
+                setResults([...storeResults, ...itemResults]);
             } catch (err: any) {
                 setError('Failed to perform search. Please try again.');
             } finally {
@@ -107,13 +111,15 @@ function SearchResults() {
                 </div>
             ) : (!results.length && query) ? (
                  <div className="text-center py-16">
+                    <Carrot className="mx-auto h-16 w-16 text-muted-foreground" />
                     <h2 className="text-2xl font-bold">No results found for "{query}"</h2>
                     <p className="text-muted-foreground mt-2">Try searching for something else.</p>
                 </div>
             ) : (
                 <div className="space-y-2">
-                    {/* Results will be displayed here */}
-                    <p>{results.length} results found (rendering coming soon)</p>
+                    {results.map((result, index) => (
+                       <GrocerySearchResultItem key={`${result.type}-${result.data.id}-${index}`} result={result} />
+                    ))}
                 </div>
             )}
         </div>
