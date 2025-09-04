@@ -13,6 +13,12 @@ import { GroceryStoreRegistrationForm } from './grocery-store-registration-form'
 import { useState } from 'react';
 import { EditGroceryStoreForm } from './edit-grocery-store-form';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
+import OwnerDashboard from '../owner/owner-dashboard';
+import useLocalStorageState from 'use-local-storage-state';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
+import { Utensils } from 'lucide-react';
 
 function StatCard({ title, value, description, icon, loading }: { title: string, value: string | number, description: string, icon: React.ReactNode, loading: boolean }) {
     return (
@@ -39,10 +45,13 @@ function StatCard({ title, value, description, icon, loading }: { title: string,
 }
 
 export default function GroceryOwnerDashboard() {
+  const { user, loading: authLoading } = useAuth();
   const { data, loading, error, refreshData } = useGroceryOwnerDashboardData();
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
+  const [service, setService] = useLocalStorageState<'food' | 'grocery'>('serviceSelection', { defaultValue: 'grocery' });
 
-  if (loading) {
+
+  if (loading || authLoading) {
       return (
         <div className="min-h-screen bg-background">
           <Header />
@@ -89,6 +98,10 @@ export default function GroceryOwnerDashboard() {
            </main>
         </div>
      )
+  }
+  
+  if (user?.role === 'owner') {
+    return <OwnerDashboard />;
   }
 
   if (data.store.status === 'pending') {
@@ -149,6 +162,21 @@ export default function GroceryOwnerDashboard() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container py-8">
+        <div className="flex items-center gap-4 my-4">
+            <div className="flex items-center gap-2">
+                <Utensils className={`h-6 w-6 transition-colors ${service === 'food' ? 'text-primary' : 'text-muted-foreground'}`} />
+                <Label htmlFor="service-toggle" className={`font-semibold transition-colors ${service === 'food' ? 'text-primary' : 'text-muted-foreground'}`}>Food</Label>
+            </div>
+            <Switch
+                id="service-toggle"
+                checked={service === 'grocery'}
+                onCheckedChange={(isGrocery) => setService(isGrocery ? 'grocery' : 'food')}
+            />
+             <div className="flex items-center gap-2">
+                <Carrot className={`h-6 w-6 transition-colors ${service === 'grocery' ? 'text-primary' : 'text-muted-foreground'}`} />
+                <Label htmlFor="service-toggle" className={`font-semibold transition-colors ${service === 'grocery' ? 'text-primary' : 'text-muted-foreground'}`}>Groceries</Label>
+            </div>
+        </div>
         <div className="flex justify-between items-start mb-8">
             <h1 className="text-3xl font-bold">{data.store.name} Dashboard</h1>
             <div className="flex items-center gap-2">
