@@ -257,10 +257,21 @@ export function HomePage() {
     setIsCategoryLoading(true);
 
     try {
-        const restaurantsForCuisine = allRestaurants.filter(r => r.cuisine.includes(categoryName));
+        const restaurantsForCuisine = allRestaurants.filter(r => 
+          Array.isArray(r.cuisine) ? r.cuisine.includes(categoryName) : r.cuisine === categoryName
+        );
+        
+        if(restaurantsForCuisine.length === 0) {
+            setCategoryMenuItems([]);
+            return;
+        }
+
         const allItemsPromises = restaurantsForCuisine.map(r => getMenuItemsForRestaurant(r.id));
         const allItemsNested = await Promise.all(allItemsPromises);
-        const allItems = allItemsNested.flat().filter(item => item.category === categoryName);
+        
+        const allItems = allItemsNested.flat().filter(item => 
+            item.category.toLowerCase() === categoryName.toLowerCase()
+        );
         
         const promotedItems = allItems.filter(item => item.restaurant?.isPromoted);
         const otherItems = allItems.filter(item => !item.restaurant?.isPromoted);
@@ -347,7 +358,7 @@ export function HomePage() {
               {selectedCategory && !isCategoryLoading && categoryMenuItems.length > 0 && (
                    <section>
                       <SectionHeading>
-                        Dishes for {selectedCategory}
+                        Top Picks for {selectedCategory}
                       </SectionHeading>
                        <Carousel opts={{ align: "start", dragFree: true }} className="w-full">
                            <CarouselContent>

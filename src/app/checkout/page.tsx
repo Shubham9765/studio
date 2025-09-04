@@ -59,7 +59,7 @@ export default function CheckoutPage() {
                 setSelectedAddressId('current');
             }
         }
-    }, [authLoading, user, selectedAddressId]);
+    }, [authLoading, user, selectedAddressId, router]);
     
     const handleAddressSelectionChange = (value: string) => {
         setSelectedAddressId(value);
@@ -463,6 +463,8 @@ export default function CheckoutPage() {
         </div>
     );
 }
+
+    
 
     
 
