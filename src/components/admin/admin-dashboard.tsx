@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff, FileText, MapPin, PlusCircle, Trash2, Megaphone, Palette, Percent, Star, Carrot } from 'lucide-react';
+import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff, FileText, MapPin, PlusCircle, Trash2, Palette, Percent, Star, Carrot } from 'lucide-react';
 import { useAdminDashboardData } from '@/hooks/use-admin-dashboard-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,7 +18,7 @@ import { format } from 'date-fns';
 import { useState, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
-import { updateUserStatus, updateRestaurantStatus, addServiceableCity, removeServiceableCity, updateBannerConfig, updateCommissionRate, updateRestaurantPromotionStatus, updateGroceryStoreStatus } from '@/services/adminService';
+import { updateUserStatus, updateRestaurantStatus, addServiceableCity, removeServiceableCity, updateBannerConfig, updateCommissionRate, updateRestaurantPromotionStatus, updateGroceryStoreStatus, updateGroceryStorePromotionStatus } from '@/services/adminService';
 import { useToast } from '@/hooks/use-toast';
 import { generateSalesReport, type GenerateSalesReportOutput } from '@/ai/flows/generate-sales-report';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -268,6 +269,19 @@ function GroceryStoreTable({ stores, loading, onUpdate }: { stores: GroceryStore
             setUpdatingStoreId(null);
         }
     };
+
+     const handlePromotionToggle = async (storeId: string, isPromoted: boolean) => {
+        setUpdatingStoreId(storeId);
+        try {
+            await updateGroceryStorePromotionStatus(storeId, !isPromoted);
+            toast({ title: "Promotion status updated", description: `Store has been ${!isPromoted ? 'promoted' : 'demoted'}.` });
+            onUpdate();
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: 'Update failed', description: error.message });
+        } finally {
+            setUpdatingStoreId(null);
+        }
+    }
     
     return (
         <Card>
@@ -295,9 +309,17 @@ function GroceryStoreTable({ stores, loading, onUpdate }: { stores: GroceryStore
                              <TableRow key={store.id}>
                                 <TableCell className="font-medium">{store.name}</TableCell>
                                 <TableCell>
-                                    <Badge variant={getStatusVariant(store.status)} className="capitalize">{store.status}</Badge>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant={getStatusVariant(store.status)} className="capitalize">{store.status}</Badge>
+                                        {store.isPromoted && <Badge variant="secondary"><Star className="h-3 w-3 mr-1" />Promoted</Badge>}
+                                    </div>
                                 </TableCell>
                                 <TableCell className="text-right space-x-2">
+                                     {store.status === 'approved' && (
+                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handlePromotionToggle(store.id, !!store.isPromoted)} disabled={updatingStoreId === store.id}>
+                                            <Star className={cn("h-4 w-4", store.isPromoted && "fill-amber-400 text-amber-500")} />
+                                        </Button>
+                                    )}
                                     {store.status === 'pending' && (
                                         <>
                                          <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(store.id, 'approved')} disabled={updatingStoreId === store.id}>

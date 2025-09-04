@@ -3,6 +3,7 @@
 
 
 
+
 'use client';
 
 import { db } from './firebase';
@@ -456,7 +457,7 @@ export async function searchGroceryStoresAndItems(
 
     // 2. Search for items across all approved stores
     const allItemsQuery = query(
-        collectionGroup(db, 'items'),
+        collectionGroup(db, 'menuItems'), // FIX: Was 'items', should be 'menuItems'
         where('isAvailable', '==', true)
     );
     const allItemsSnapshot = await getDocs(allItemsQuery);
