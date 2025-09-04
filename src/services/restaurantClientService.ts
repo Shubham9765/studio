@@ -4,6 +4,7 @@
 
 
 
+
 'use client';
 
 import { db } from './firebase';
@@ -457,7 +458,7 @@ export async function searchGroceryStoresAndItems(
 
     // 2. Search for items across all approved stores
     const allItemsQuery = query(
-        collectionGroup(db, 'menuItems'), // FIX: Was 'items', should be 'menuItems'
+        collectionGroup(db, 'items'),
         where('isAvailable', '==', true)
     );
     const allItemsSnapshot = await getDocs(allItemsQuery);
@@ -478,4 +479,14 @@ export async function searchGroceryStoresAndItems(
     );
 
     return { stores: matchingStores, items: matchingItems };
+}
+
+export async function getGroceryItems(storeId: string): Promise<GroceryItem[]> {
+    const itemsRef = collection(db, 'grocery_stores', storeId, 'items');
+    const q = query(itemsRef, where('isAvailable', '==', true));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        return [];
+    }
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as GroceryItem));
 }
