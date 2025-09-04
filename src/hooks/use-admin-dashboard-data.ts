@@ -8,9 +8,11 @@ import type { AdminDashboardData } from '@/services/adminClientService';
 const initialData: AdminDashboardData = {
     customerCount: 0,
     restaurantCount: 0,
-    pendingApprovalCount: 0,
+    pendingRestaurantApprovalCount: 0,
+    pendingGroceryApprovalCount: 0,
     users: [],
     restaurants: [],
+    groceryStores: [],
     serviceableCities: [],
     bannerConfig: null,
     commissionRate: 0,

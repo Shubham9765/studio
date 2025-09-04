@@ -3,15 +3,17 @@
 
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
-import type { Restaurant, BannerConfig, Order } from '@/lib/types';
+import type { Restaurant, BannerConfig, Order, GroceryStore } from '@/lib/types';
 import type { AppUser } from '@/hooks/use-auth';
 
 export interface AdminDashboardData {
   customerCount: number;
   restaurantCount: number;
-  pendingApprovalCount: number;
+  pendingRestaurantApprovalCount: number;
+  pendingGroceryApprovalCount: number;
   users: AppUser[];
   restaurants: Restaurant[];
+  groceryStores: GroceryStore[];
   serviceableCities: string[];
   bannerConfig: BannerConfig | null;
   commissionRate: number;
@@ -27,6 +29,10 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const restaurantsSnapshot = await getDocs(collection(db, 'restaurants'));
   const allRestaurants = restaurantsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Restaurant));
   
+  // Fetch all grocery stores
+  const groceryStoresSnapshot = await getDocs(collection(db, 'grocery_stores'));
+  const allGroceryStores = groceryStoresSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as GroceryStore));
+
   // Fetch all orders
   const ordersSnapshot = await getDocs(collection(db, 'orders'));
   const allOrders = ordersSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
@@ -43,15 +49,18 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
 
   // Calculate stats
   const customerCount = allUsers.filter(u => u.role === 'customer').length;
-  const restaurantCount = allRestaurants.length;
-  const pendingApprovalCount = allRestaurants.filter(r => r.status === 'pending').length;
+  const restaurantCount = allRestaurants.length + allGroceryStores.length;
+  const pendingRestaurantApprovalCount = allRestaurants.filter(r => r.status === 'pending').length;
+  const pendingGroceryApprovalCount = allGroceryStores.filter(s => s.status === 'pending').length;
 
   return {
     customerCount,
     restaurantCount,
-    pendingApprovalCount,
+    pendingRestaurantApprovalCount,
+    pendingGroceryApprovalCount,
     users: allUsers,
     restaurants: allRestaurants,
+    groceryStores: allGroceryStores,
     serviceableCities,
     bannerConfig,
     commissionRate,

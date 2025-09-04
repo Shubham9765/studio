@@ -3,21 +3,21 @@
 
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff, FileText, MapPin, PlusCircle, Trash2, Megaphone, Palette, Percent, Star } from 'lucide-react';
+import { BarChart, Users, Utensils, ShieldCheck, UserCheck, UserX, CheckCircle, XCircle, FileDown, Calendar as CalendarIcon, Power, PowerOff, FileText, MapPin, PlusCircle, Trash2, Megaphone, Palette, Percent, Star, Carrot } from 'lucide-react';
 import { useAdminDashboardData } from '@/hooks/use-admin-dashboard-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { AppUser } from '@/hooks/use-auth';
-import type { Restaurant, BannerConfig } from '@/lib/types';
+import type { Restaurant, BannerConfig, GroceryStore } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { useState, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
-import { updateUserStatus, updateRestaurantStatus, addServiceableCity, removeServiceableCity, updateBannerConfig, updateCommissionRate, updateRestaurantPromotionStatus } from '@/services/adminService';
+import { updateUserStatus, updateRestaurantStatus, addServiceableCity, removeServiceableCity, updateBannerConfig, updateCommissionRate, updateRestaurantPromotionStatus, updateGroceryStoreStatus } from '@/services/adminService';
 import { useToast } from '@/hooks/use-toast';
 import { generateSalesReport, type GenerateSalesReportOutput } from '@/ai/flows/generate-sales-report';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -242,6 +242,97 @@ function RestaurantTable({ restaurants, loading, onUpdate }: { restaurants: Rest
     );
 }
 
+function GroceryStoreTable({ stores, loading, onUpdate }: { stores: GroceryStore[], loading: boolean, onUpdate: () => void }) {
+    const [updatingStoreId, setUpdatingStoreId] = useState<string | null>(null);
+    const { toast } = useToast();
+
+     const getStatusVariant = (status: GroceryStore['status']) => {
+        switch (status) {
+            case 'approved': return 'default';
+            case 'pending': return 'secondary';
+            case 'rejected': return 'destructive';
+            case 'disabled': return 'outline';
+            default: return 'secondary';
+        }
+    };
+
+    const handleUpdateStatus = async (storeId: string, status: GroceryStore['status']) => {
+        setUpdatingStoreId(storeId);
+        try {
+            await updateGroceryStoreStatus(storeId, status);
+            toast({ title: "Grocery store status updated", description: `Store has been ${status}.` });
+            onUpdate();
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Update failed', description: error.message });
+        } finally {
+            setUpdatingStoreId(null);
+        }
+    };
+    
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Manage Grocery Stores</CardTitle>
+                <CardDescription>Approve, reject, or disable grocery stores.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {loading ? Array.from({ length: 2 }).map((_, i) => (
+                             <TableRow key={i}>
+                                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                <TableCell className="text-right"><Skeleton className="h-8 w-40 ml-auto" /></TableCell>
+                            </TableRow>
+                        )) : stores.map(store => (
+                             <TableRow key={store.id}>
+                                <TableCell className="font-medium">{store.name}</TableCell>
+                                <TableCell>
+                                    <Badge variant={getStatusVariant(store.status)} className="capitalize">{store.status}</Badge>
+                                </TableCell>
+                                <TableCell className="text-right space-x-2">
+                                    {store.status === 'pending' && (
+                                        <>
+                                         <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(store.id, 'approved')} disabled={updatingStoreId === store.id}>
+                                            {updatingStoreId === store.id ? 'Approving...' : <><CheckCircle className="mr-2 h-4 w-4" />Approve</>}
+                                         </Button>
+                                         <Button variant="destructive" size="sm" onClick={() => handleUpdateStatus(store.id, 'rejected')} disabled={updatingStoreId === store.id}>
+                                            {updatingStoreId === store.id ? 'Rejecting...' : <><XCircle className="mr-2 h-4 w-4" />Reject</>}
+                                         </Button>
+                                        </>
+                                    )}
+                                     {store.status === 'approved' && (
+                                        <Button variant="destructive" size="sm" onClick={() => handleUpdateStatus(store.id, 'disabled')} disabled={updatingStoreId === store.id}>
+                                           {updatingStoreId === store.id ? 'Disabling...' : <><PowerOff className="mr-2 h-4 w-4" />Disable</>}
+                                        </Button>
+                                    )}
+                                     {store.status === 'disabled' && (
+                                        <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(store.id, 'approved')} disabled={updatingStoreId === store.id}>
+                                            {updatingStoreId === store.id ? 'Activating...' : <><Power className="mr-2 h-4 w-4" />Activate</>}
+                                        </Button>
+                                    )}
+                                     {store.status === 'rejected' && (
+                                        <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(store.id, 'pending')} disabled={updatingStoreId === store.id}>
+                                            Re-review
+                                        </Button>
+                                    )}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+}
+
 function Reports() {
     const [date, setDate] = useState<DateRange | undefined>();
     const [isGenerating, setIsGenerating] = useState(false);
@@ -415,7 +506,7 @@ function ServiceableLocations({ locations, loading, onUpdate }: { locations: str
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                This action cannot be undone. This will permanently remove "{city}" from the list of serviceable locations.
+                                                This will permanently remove "{city}" from the list of serviceable locations.
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
@@ -630,16 +721,17 @@ export default function AdminDashboard() {
       <Header />
       <main className="container py-8">
         <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 mb-12">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-12">
             <StatCard loading={loading} title="Total Revenue" value="Rs.45,231" icon={<BarChart className="h-4 w-4 text-muted-foreground" />} description="+20.1% from last month" />
             <StatCard loading={loading} title="Total Customers" value={data.customerCount} icon={<Users className="h-4 w-4 text-muted-foreground" />} description="All-time customer count" />
-            <StatCard loading={loading} title="Total Restaurants" value={data.restaurantCount} icon={<Utensils className="h-4 w-4 text-muted-foreground" />} description="All-time restaurant count" />
-            <StatCard loading={loading} title="Pending Approvals" value={data.pendingApprovalCount} icon={<ShieldCheck className="h-4 w-4 text-muted-foreground" />} description="Restaurants needing review" />
+            <StatCard loading={loading} title="Total Restaurants" value={data.restaurantCount} icon={<Utensils className="h-4 w-4 text-muted-foreground" />} description="Restaurants & grocery stores" />
+            <StatCard loading={loading} title="Pending Approvals" value={(data.pendingRestaurantApprovalCount ?? 0) + (data.pendingGroceryApprovalCount ?? 0)} icon={<ShieldCheck className="h-4 w-4 text-muted-foreground" />} description="Vendors needing review" />
         </div>
 
         <div className="grid gap-12 lg:grid-cols-3">
              <div className="lg:col-span-2 space-y-12">
                 <RestaurantTable restaurants={data.restaurants} loading={loading} onUpdate={refreshData} />
+                <GroceryStoreTable stores={data.groceryStores} loading={loading} onUpdate={refreshData} />
                 <UserTable users={data.users} loading={loading} onUpdate={refreshData} />
              </div>
              <div className="space-y-12">

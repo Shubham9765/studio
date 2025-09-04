@@ -3,12 +3,17 @@
 
 import { db } from './firebase';
 import { collection, getDocs, query, where, collectionGroup, doc, updateDoc, Timestamp, setDoc, arrayUnion, arrayRemove, getDoc as getFirestoreDoc } from 'firebase/firestore';
-import type { Restaurant, Order, BannerConfig, Cuisine } from '@/lib/types';
+import type { Restaurant, Order, BannerConfig, Cuisine, GroceryStore } from '@/lib/types';
 import type { AppUser } from '@/hooks/use-auth';
 
 export async function updateRestaurantStatus(restaurantId: string, status: Restaurant['status']): Promise<void> {
   const restaurantRef = doc(db, 'restaurants', restaurantId);
   await updateDoc(restaurantRef, { status });
+}
+
+export async function updateGroceryStoreStatus(storeId: string, status: GroceryStore['status']): Promise<void> {
+  const storeRef = doc(db, 'grocery_stores', storeId);
+  await updateDoc(storeRef, { status });
 }
 
 export async function updateRestaurantPromotionStatus(restaurantId: string, isPromoted: boolean): Promise<void> {
