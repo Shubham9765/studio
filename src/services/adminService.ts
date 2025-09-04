@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from './firebase';
@@ -19,6 +20,11 @@ export async function updateGroceryStoreStatus(storeId: string, status: GroceryS
 export async function updateRestaurantPromotionStatus(restaurantId: string, isPromoted: boolean): Promise<void> {
   const restaurantRef = doc(db, 'restaurants', restaurantId);
   await updateDoc(restaurantRef, { isPromoted });
+}
+
+export async function updateGroceryStorePromotionStatus(storeId: string, isPromoted: boolean): Promise<void> {
+  const storeRef = doc(db, 'grocery_stores', storeId);
+  await updateDoc(storeRef, { isPromoted });
 }
 
 export async function updateUserStatus(userId: string, status: AppUser['status']): Promise<void> {

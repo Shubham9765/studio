@@ -71,6 +71,7 @@ export interface GroceryStore {
     rating?: number;
     deliveryTime?: string;
     deliveryBoys?: DeliveryBoy[];
+    isPromoted?: boolean;
 }
 
 export interface GroceryItem {

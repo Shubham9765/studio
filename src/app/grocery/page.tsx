@@ -3,12 +3,16 @@
 
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Utensils, Check } from 'lucide-react';
+import { Utensils, Check, Search, Carrot } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getGroceryCategoryTypes } from '@/services/restaurantClientService';
-import type { GroceryCategory } from '@/lib/types';
+import { getGroceryCategoryTypes, getGroceryStores } from '@/services/restaurantClientService';
+import type { GroceryCategory, GroceryStore } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { Input } from '@/components/ui/input';
+import { GroceryStoreCard } from '@/components/grocery-owner/grocery-store-card';
+
 
 function SectionHeading({ children, className }: { children: React.ReactNode, className?: string }) {
     return (
@@ -54,25 +58,56 @@ function CategoryItem({ name, imageUrl, isSelected, onSelect }: { name: string, 
   );
 }
 
+function MobileSearch() {
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      router.push(`/grocery/search?q=${encodeURIComponent(searchTerm.trim())}`);
+    }
+  };
+
+  return (
+    <div className="md:hidden mb-8">
+      <form onSubmit={handleSearch} className="relative transition-shadow duration-300 focus-within:shadow-lg">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary animate-pulse" />
+        <Input
+          placeholder="Search for items or stores..."
+          className="pl-12 text-sm h-14 rounded-full w-full bg-muted border-2 border-transparent focus-visible:ring-primary focus-visible:border-primary hover:shadow-md transition-all duration-300"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </form>
+    </div>
+  );
+}
+
 
 export default function GroceryPage() {
     const [categories, setCategories] = useState<GroceryCategory[]>([]);
+    const [stores, setStores] = useState<GroceryStore[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchCategories = async () => {
+        const fetchData = async () => {
             try {
                 setLoading(true);
-                const fetchedCategories = await getGroceryCategoryTypes();
+                const [fetchedCategories, fetchedStores] = await Promise.all([
+                    getGroceryCategoryTypes(),
+                    getGroceryStores(),
+                ]);
                 setCategories(fetchedCategories);
+                setStores(fetchedStores);
             } catch (error) {
-                console.error("Failed to fetch grocery categories:", error);
+                console.error("Failed to fetch grocery data:", error);
             } finally {
                 setLoading(false);
             }
         };
-        fetchCategories();
+        fetchData();
     }, []);
 
     const handleCategoryClick = (categoryName: string) => {
@@ -85,7 +120,7 @@ export default function GroceryPage() {
         <div className="min-h-screen bg-background">
             <Header />
             <main className="container py-8">
-                <h1 className="text-3xl font-bold mb-8">Groceries</h1>
+                <MobileSearch />
                 
                 {loading && (
                      <div className="space-y-4">
@@ -114,9 +149,28 @@ export default function GroceryPage() {
               )}
 
 
-                <div className="flex items-center justify-center h-96">
-                    <p className="text-muted-foreground">More grocery features coming soon!</p>
-                </div>
+               <section className="mt-12">
+                 <SectionHeading>All Stores</SectionHeading>
+                 {loading ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-lg" />)}
+                      </div>
+                 ) : stores.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {stores.map(store => (
+                            <GroceryStoreCard key={store.id} store={store} />
+                        ))}
+                     </div>
+                 ) : (
+                    <div className="text-center py-16">
+                        <Carrot className="mx-auto h-16 w-16 text-muted-foreground" />
+                        <h3 className="mt-4 text-xl font-medium">No Grocery Stores Found</h3>
+                        <p className="mt-1 text-muted-foreground">
+                            There are no available grocery stores in your area at the moment.
+                        </p>
+                    </div>
+                 )}
+               </section>
             </main>
         </div>
     )
