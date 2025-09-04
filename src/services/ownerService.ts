@@ -2,6 +2,7 @@
 
 
 
+
 'use server';
 
 import { db } from './firebase';
@@ -254,6 +255,7 @@ export async function createGroceryStore(ownerId: string, data: any) {
         deliveryCharge: 0,
         isOpen: true,
         reviewCount: 0,
+        deliveryBoys: [],
     };
 
     const docRef = await addDoc(collection(db, "grocery_stores"), {
@@ -295,4 +297,36 @@ export async function deleteGroceryItem(storeId: string, itemId: string) {
 export async function updateGroceryItemAvailability(storeId: string, itemId: string, isAvailable: boolean) {
     const itemRef = doc(db, 'grocery_stores', storeId, 'items', itemId);
     await updateDoc(itemRef, { isAvailable });
+}
+
+export async function addDeliveryBoyToGroceryStore(storeId: string, email: string): Promise<void> {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('email', '==', email), where('role', '==', 'delivery'), limit(1));
+    const userSnapshot = await getDocs(q);
+
+    if (userSnapshot.empty) {
+        throw new Error('No delivery person found with this email.');
+    }
+
+    const userDoc = userSnapshot.docs[0];
+    const userData = userDoc.data();
+    
+    const newDeliveryBoy: DeliveryBoy = {
+        id: userDoc.id,
+        name: userData.displayName || userData.username,
+        email: userData.email,
+        phone: userData.phone,
+    };
+
+    const storeRef = doc(db, 'grocery_stores', storeId);
+    await updateDoc(storeRef, {
+        deliveryBoys: arrayUnion(newDeliveryBoy)
+    });
+}
+
+export async function removeDeliveryBoyFromGroceryStore(storeId: string, deliveryBoy: DeliveryBoy): Promise<void> {
+    const storeRef = doc(db, 'grocery_stores', storeId);
+    await updateDoc(storeRef, {
+        deliveryBoys: arrayRemove(deliveryBoy)
+    });
 }

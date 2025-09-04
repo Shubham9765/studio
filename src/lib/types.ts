@@ -70,6 +70,7 @@ export interface GroceryStore {
     reviewCount?: number;
     rating?: number;
     deliveryTime?: string;
+    deliveryBoys?: DeliveryBoy[];
 }
 
 export interface GroceryItem {
