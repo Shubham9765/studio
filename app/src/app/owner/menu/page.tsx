@@ -301,13 +301,13 @@ export default function ManageMenuPage() {
                     </Card>
                 </main>
             </div>
-            <MenuItemForm 
+            {restaurant && <MenuItemForm 
                 isOpen={isFormOpen}
                 onOpenChange={setIsFormOpen}
                 restaurantId={restaurant.id}
                 menuItem={editingItem}
                 onFormSubmit={handleFormSubmit}
-            />
+            />}
         </>
     );
 }
