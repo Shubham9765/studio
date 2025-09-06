@@ -218,7 +218,7 @@ export default function MyOrdersPage() {
                                             <div className="flex justify-between w-full items-center">
                                                 <div className="flex flex-col text-left">
                                                     <span className="font-bold">Order #{order.id.substring(0, 6)}...</span>
-                                                    <span className="text-sm text-muted-foreground">{order.restaurantName || 'Restaurant'}</span>
+                                                    <span className="text-sm text-muted-foreground">{order.restaurantName}</span>
                                                 </div>
                                                 <div className="hidden sm:block text-sm">{format(order.createdAt.toDate(), 'PP')}</div>
                                                 <div><Badge variant={order.status === 'out-for-delivery' ? 'default' : 'secondary'} className="capitalize">{order.status.replace('-', ' ')}</Badge></div>

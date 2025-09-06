@@ -153,17 +153,7 @@ export default function GroceryCheckoutPage() {
                 notes: orderNotes,
             };
 
-            // This is a temporary adaptation. Ideally createOrder should be more generic
-            // or have a separate version for grocery stores.
-            const storeAsRestaurant: Restaurant = {
-                ...store,
-                cuisine: [],
-                rating: store.rating || 0,
-                deliveryTime: store.deliveryTime || '',
-                paymentMethods: { cash: true, upi: false },
-            };
-
-            await createOrder(user.uid, user.displayName || 'N/A', storeAsRestaurant, cart, finalTotal, orderDetails);
+            await createOrder(user.uid, user.displayName || 'N/A', store as GroceryStore, cart, finalTotal, orderDetails);
             setOrderPlaced(true);
             clearCart();
         } catch (error: any) {

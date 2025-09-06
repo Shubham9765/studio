@@ -4,9 +4,9 @@
 
 import { db } from './firebase';
 import { collection, doc, addDoc, serverTimestamp, runTransaction, updateDoc, getDoc } from 'firebase/firestore';
-import type { Order } from '@/lib/types';
+import type { Order, Restaurant, GroceryStore } from '@/lib/types';
 import type { CartItem } from '@/hooks/use-cart';
-import type { Restaurant } from '@/lib/types';
+import type { GroceryCartItem } from '@/hooks/use-grocery-cart';
 import { getServiceableCities } from './adminService';
 import { getCoordinatesForAddress as getCoords } from './restaurantClientService';
 
@@ -46,23 +46,23 @@ async function getCityFromCoordinates(latitude: number, longitude: number): Prom
 export async function createOrder(
   customerId: string,
   customerName: string,
-  restaurant: Restaurant, 
-  items: CartItem[], 
+  vendor: Restaurant | GroceryStore, 
+  items: CartItem[] | GroceryCartItem[], 
   total: number,
   orderDetails: Partial<Order>
 ): Promise<string> {
   // Serviceability Check (only if coordinates are present)
   if (orderDetails.customerAddress?.latitude && orderDetails.customerAddress?.longitude) {
       // 1. Check distance
-      if (restaurant.latitude && restaurant.longitude) {
+      if (vendor.latitude && vendor.longitude) {
         const distance = getDistanceFromLatLonInKm(
           orderDetails.customerAddress.latitude,
           orderDetails.customerAddress.longitude,
-          restaurant.latitude,
-          restaurant.longitude
+          vendor.latitude,
+          vendor.longitude
         );
         if (distance > 7) {
-          throw new Error(`This restaurant is ${distance.toFixed(1)}km away and does not deliver to your location.`);
+          throw new Error(`This vendor is ${distance.toFixed(1)}km away and does not deliver to your location.`);
         }
       }
 
@@ -80,16 +80,18 @@ export async function createOrder(
       }
   }
   // --- End Serviceability Check ---
+  
+  const deliveryOtp = Math.floor(1000 + Math.random() * 9000).toString();
 
   const ordersCollection = collection(db, 'orders');
 
   const newOrder: Omit<Order, 'id'> = {
       customerId,
       customerName,
-      restaurantId: restaurant.id,
-      restaurantName: restaurant.name,
-      orderType: 'food',
-      items,
+      restaurantId: vendor.id,
+      restaurantName: vendor.name,
+      orderType: orderDetails.orderType || 'food',
+      items: items,
       total,
       status: 'pending',
       createdAt: serverTimestamp() as any, // Let Firestore handle the timestamp
@@ -98,16 +100,17 @@ export async function createOrder(
       paymentDetails: orderDetails.paymentDetails || {},
       deliveryAddress: orderDetails.deliveryAddress || 'N/A',
       customerPhone: orderDetails.customerPhone || 'N/A',
-      customerAddress: orderDetails.customerAddress, // This now correctly saves the full address object
+      customerAddress: orderDetails.customerAddress,
       notes: orderDetails.notes || '',
+      deliveryOtp,
   };
 
   const docRef = await addDoc(ordersCollection, newOrder);
   
-  if(restaurant.ownerId) {
+  if(vendor.ownerId) {
     const title = 'New Order Received!';
     const body = `You have a new order from ${customerName} for a total of Rs.${total.toFixed(2)}`;
-    console.log(`(Notification Stub) To: ${restaurant.ownerId}, Title: ${title}, Body: ${body}`);
+    console.log(`(Notification Stub) To: ${vendor.ownerId}, Title: ${title}, Body: ${body}`);
   }
 
   return docRef.id;
@@ -155,4 +158,3 @@ export async function rateRestaurant(orderId: string, restaurantId: string, newR
 export async function getCoordinatesForAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
     return getCoords(address);
 }
-
