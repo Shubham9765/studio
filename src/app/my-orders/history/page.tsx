@@ -139,9 +139,7 @@ export default function OrderHistoryPage() {
                     <Skeleton className="h-8 w-1/3 mb-8" />
                     <Card>
                         <CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader>
-                        <CardContent>
-                            <Skeleton className="h-40 w-full" />
-                        </CardContent>
+                        <CardContent><Skeleton className="h-40 w-full" /></CardContent>
                     </Card>
                 </main>
             </div>
@@ -178,7 +176,7 @@ export default function OrderHistoryPage() {
                                             <div className="flex justify-between w-full items-center">
                                                 <div className="flex flex-col text-left">
                                                     <span className="font-bold">Order #{order.id.substring(0, 6)}...</span>
-                                                    <span className="text-sm text-muted-foreground">{order.restaurantName || 'Restaurant'}</span>
+                                                    <span className="text-sm text-muted-foreground">{order.restaurantName}</span>
                                                 </div>
                                                 <div className="hidden sm:block text-sm">{format(order.createdAt.toDate(), 'PP')}</div>
                                                 <div><Badge variant={order.status === 'delivered' ? 'default' : 'destructive'} className="capitalize">{order.status.replace('-', ' ')}</Badge></div>

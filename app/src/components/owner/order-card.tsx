@@ -2,7 +2,7 @@
 
 'use client';
 
-import type { Order, Restaurant } from '@/lib/types';
+import type { Order, Restaurant, GroceryStore } from '@/lib/types';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -27,7 +27,7 @@ import Image from 'next/image';
 
 interface OrderCardProps {
   order: Order;
-  restaurant: Restaurant;
+  vendor: Restaurant | GroceryStore;
   isUpdating: boolean;
   onStatusChange: (orderId: string, status: Order['status']) => void;
   onCancelOrder: (orderId: string) => void;
@@ -55,7 +55,7 @@ const statusTimeline: { status: Order['status']; label: string }[] = [
 
 export function OrderCard({
   order,
-  restaurant,
+  vendor,
   isUpdating,
   onStatusChange,
   onCancelOrder,
@@ -77,15 +77,15 @@ export function OrderCard({
             return {
                 label: `Assign for Delivery`,
                 action: () => {}, // Action is handled by Select dropdown
-                disabled: isUpdating || !restaurant.deliveryBoys || restaurant.deliveryBoys.length === 0,
+                disabled: isUpdating || !vendor.deliveryBoys || vendor.deliveryBoys.length === 0,
                 icon: Bike
             }
         case 'preparing':
              return {
-                label: `Food is Preparing`,
+                label: order.orderType === 'grocery' ? `Items are being packed` : `Food is Preparing`,
                 action: () => {},
                 disabled: true,
-                icon: ChefHat,
+                icon: order.orderType === 'grocery' ? Package : ChefHat,
                 isNote: true
             }
         default:
@@ -96,18 +96,19 @@ export function OrderCard({
   const PrimaryAction = () => {
       const action = getNextAction();
       if(!action) return null;
+      const ActionIcon = action.icon;
 
       if (action.isNote) {
           return (
               <div className="flex items-center justify-center gap-2 text-center p-3 h-12 text-base bg-secondary rounded-md text-secondary-foreground">
-                  <ChefHat className="mr-2 h-5 w-5 animate-pulse" />
+                  <ActionIcon className="mr-2 h-5 w-5 animate-pulse" />
                   <span className="font-semibold">{action.label}...</span>
               </div>
           )
       }
 
       if (order.status === 'accepted') {
-        if (!restaurant.deliveryBoys || restaurant.deliveryBoys.length === 0) {
+        if (!vendor.deliveryBoys || vendor.deliveryBoys.length === 0) {
             return <p className="text-xs text-destructive text-center p-2 bg-destructive/10 rounded-md">Add delivery staff to assign orders.</p>
         }
         return (
@@ -121,7 +122,7 @@ export function OrderCard({
                 } />
               </SelectTrigger>
               <SelectContent>
-                {restaurant.deliveryBoys?.map(boy => (
+                {vendor.deliveryBoys?.map(boy => (
                   <SelectItem key={boy.id} value={boy.id}>{boy.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -129,7 +130,6 @@ export function OrderCard({
         )
       }
 
-      const ActionIcon = action.icon;
       return (
         <div className="flex gap-2">
             <Button onClick={action.action} disabled={action.disabled} className="w-full h-12 text-base">
@@ -154,8 +154,8 @@ export function OrderCard({
         {/* Left Column: Order Details */}
         <div className="space-y-3">
             <Badge variant="outline" className="text-primary border-primary">SELF DELIVERY</Badge>
-            <h3 className="font-bold text-lg">{restaurant.name}</h3>
-            <p className="text-sm text-muted-foreground">{restaurant.address}</p>
+            <h3 className="font-bold text-lg">{vendor.name}</h3>
+            <p className="text-sm text-muted-foreground">{vendor.address}</p>
             <Separator />
             <div>
                 <p className="font-bold">ID: {order.id.substring(0, 12).replace(/(.{6})/, "$1 ")}</p>
@@ -207,8 +207,8 @@ export function OrderCard({
                         </div>
                     </PopoverTrigger>
                     <PopoverContent className="w-56 text-sm space-y-2">
-                        <div className="flex justify-between"><span>Subtotal</span> <span>Rs.{(order.total - (restaurant.deliveryCharge || 0)).toFixed(2)}</span></div>
-                        <div className="flex justify-between"><span>Delivery</span> <span>Rs.{(restaurant.deliveryCharge || 0).toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>Subtotal</span> <span>Rs.{(order.total - (vendor.deliveryCharge || 0)).toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>Delivery</span> <span>Rs.{(vendor.deliveryCharge || 0).toFixed(2)}</span></div>
                     </PopoverContent>
                 </Popover>
                  <Button variant="ghost" onClick={() => onPrintKOT(order)}>
