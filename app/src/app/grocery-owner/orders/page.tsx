@@ -4,13 +4,13 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import type { Order, Restaurant } from '@/lib/types';
+import type { Order, GroceryStore } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { assignDeliveryBoy, updateOrderPaymentStatus, updateOrderStatus } from '@/services/ownerService';
-import { getRestaurantByOwnerId, listenToOrdersForRestaurant } from '@/services/ownerClientService';
+import { getGroceryStoreByOwnerId, listenToOrdersForStore } from '@/services/ownerClientService';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, BookOpen, History } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -20,11 +20,11 @@ import { OrderCard } from '@/components/owner/order-card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
-export default function ManageOrdersPage() {
+export default function ManageGroceryOrdersPage() {
     const { user, loading: authLoading } = useAuth();
     const { toast } = useToast();
     const { print } = usePrint();
-    const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+    const [store, setStore] = useState<GroceryStore | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -60,14 +60,14 @@ export default function ManageOrdersPage() {
             }
             setLoading(true);
             try {
-                const rest = await getRestaurantByOwnerId(user.uid);
-                setRestaurant(rest);
-                if (rest) {
-                    unsubscribe = listenToOrdersForRestaurant(rest.id, (fetchedOrders) => {
-                        const foodOrders = fetchedOrders.filter(o => o.orderType === 'food');
-                        setOrders(foodOrders);
+                const storeData = await getGroceryStoreByOwnerId(user.uid);
+                setStore(storeData);
+                if (storeData) {
+                    unsubscribe = listenToOrdersForStore(storeData.id, (fetchedOrders) => {
+                        const groceryOrders = fetchedOrders.filter(o => o.orderType === 'grocery');
+                        setOrders(groceryOrders);
                         
-                        const hasPendingOrders = foodOrders.some(o => o.status === 'pending');
+                        const hasPendingOrders = groceryOrders.some(o => o.status === 'pending');
                         setIsNewOrderPending(hasPendingOrders);
                         manageAudioPlayback(hasPendingOrders);
                         
@@ -78,11 +78,11 @@ export default function ManageOrdersPage() {
                         setLoading(false);
                     });
                 } else {
-                    setError('No restaurant found for this owner.');
+                    setError('No store found for this owner.');
                     setLoading(false);
                 }
             } catch (e: any) {
-                setError('Failed to fetch restaurant data.');
+                setError('Failed to fetch store data.');
                 toast({ variant: 'destructive', title: 'Error', description: e.message });
                 setLoading(false);
             }
@@ -102,8 +102,10 @@ export default function ManageOrdersPage() {
 
 
     const handlePrintKOT = (order: Order) => {
-        if (!restaurant) return;
-        print(order, restaurant);
+        if (!store) return;
+        // The KOT component expects a restaurant, but we can adapt it or create a new one.
+        // For now, we'll pass the store data cast as a restaurant.
+        print(order, store as any);
     };
 
     const handleAction = async (orderId: string, action: Promise<any>, successToast: { title: string, description: string }) => {
@@ -141,7 +143,7 @@ export default function ManageOrdersPage() {
     };
 
     const handleAssignDelivery = (orderId: string, deliveryBoyId: string) => {
-        const deliveryBoy = restaurant?.deliveryBoys?.find(db => db.id === deliveryBoyId);
+        const deliveryBoy = store?.deliveryBoys?.find(db => db.id === deliveryBoyId);
         if (!deliveryBoy) return;
         handleAction(orderId, assignDeliveryBoy(orderId, deliveryBoy), {
             title: 'Delivery Assigned',
@@ -198,15 +200,15 @@ export default function ManageOrdersPage() {
         )
     }
 
-     if (!restaurant) {
+     if (!store) {
         return (
              <div className="min-h-screen bg-background">
                 <Header />
                 <main className="container py-8 flex items-center justify-center">
                     <Alert>
                         <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle>No Restaurant Found</AlertTitle>
-                        <AlertDescription>You must register a restaurant before you can view orders.</AlertDescription>
+                        <AlertTitle>No Store Found</AlertTitle>
+                        <AlertDescription>You must register a store before you can view orders.</AlertDescription>
                     </Alert>
                 </main>
             </div>
@@ -225,7 +227,7 @@ export default function ManageOrdersPage() {
                         <OrderCard
                             key={order.id}
                             order={order}
-                            restaurant={restaurant}
+                            restaurant={store as any}
                             isUpdating={updatingOrderId === order.id}
                             onStatusChange={handleStatusChange}
                             onCancelOrder={handleCancelOrder}
@@ -252,7 +254,7 @@ export default function ManageOrdersPage() {
                         )}
                     </div>
                     <Button asChild variant="outline">
-                        <Link href="/owner/orders/history">
+                        <Link href="/grocery-owner/orders/history">
                             <History className="mr-2 h-4 w-4" />
                             View Order History
                         </Link>
