@@ -109,6 +109,7 @@ export interface Order {
         id: string;
         name: string;
     };
+    deliveryBoyResponded?: boolean;
     ratingGiven?: boolean;
     customerAddress?: {
         id: string;

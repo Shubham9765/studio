@@ -3,6 +3,7 @@
 
 
 
+
 'use server';
 
 import { db } from './firebase';
@@ -165,10 +166,21 @@ export async function removeDeliveryBoyFromRestaurant(restaurantId: string, deli
 
 export async function assignDeliveryBoy(orderId: string, deliveryBoy: {id: string, name: string}): Promise<void> {
     const orderRef = doc(db, 'orders', orderId);
+    const orderSnap = await getDoc(orderRef);
+
+    if (!orderSnap.exists()) {
+        throw new Error('Order not found');
+    }
+
+    const order = orderSnap.data() as Order;
+    
+    const statusUpdate = order.orderType === 'grocery' ? 'out-for-delivery' : 'preparing';
+    const deliveryOtp = order.deliveryOtp || Math.floor(1000 + Math.random() * 9000).toString();
 
     await updateDoc(orderRef, { 
         deliveryBoy,
-        status: 'preparing',
+        status: statusUpdate,
+        deliveryOtp
     });
 }
 

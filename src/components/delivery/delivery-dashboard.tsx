@@ -210,7 +210,7 @@ export default function DeliveryDashboard() {
     setLoading(true);
     const unsubscribe = listenToOrdersForDeliveryBoy(user.uid, (allOrders) => {
         setOrders(allOrders);
-        const hasIncomingOrders = allOrders.some(o => o.status === 'accepted');
+        const hasIncomingOrders = allOrders.some(o => o.status === 'preparing' || (o.status === 'out-for-delivery' && o.orderType === 'grocery' && !o.deliveryBoyResponded));
         manageAudioPlayback(hasIncomingOrders);
         if(hasIncomingOrders) {
             // This is a simple browser notification
@@ -252,8 +252,8 @@ export default function DeliveryDashboard() {
     // The real-time listener will automatically remove the order from the active list.
   };
   
-  const incomingOrders = orders.filter(o => o.status === 'accepted');
-  const activeDeliveries = orders.filter(o => o.status === 'out-for-delivery');
+  const incomingOrders = orders.filter(o => o.status === 'preparing' || (o.orderType === 'grocery' && o.status === 'out-for-delivery' && !o.deliveryBoyResponded));
+  const activeDeliveries = orders.filter(o => o.status === 'out-for-delivery' && (o.orderType === 'food' || o.deliveryBoyResponded));
 
   if (authLoading || loading) {
     return (
