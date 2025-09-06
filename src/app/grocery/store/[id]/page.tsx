@@ -156,7 +156,7 @@ export default function GroceryStorePage() {
                 Object.entries(groupedItems).map(([category, catItems]) => (
                     <section key={category} className="mb-12">
                         <h2 className="text-3xl font-bold font-headline mb-6 border-b-2 border-primary pb-2">{category}</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                             {catItems.map(item => (
                                 <GroceryItemCard key={item.id} item={item} storeId={store.id} />
                             ))}
