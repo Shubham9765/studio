@@ -1,4 +1,5 @@
 
+
 'use client';
 
 
@@ -64,9 +65,10 @@ export default function ManageGroceryOrdersPage() {
                 setStore(storeData);
                 if (storeData) {
                     unsubscribe = listenToOrdersForStore(storeData.id, (fetchedOrders) => {
-                        setOrders(fetchedOrders);
+                        const groceryOrders = fetchedOrders.filter(o => o.orderType === 'grocery');
+                        setOrders(groceryOrders);
                         
-                        const hasPendingOrders = fetchedOrders.some(o => o.status === 'pending');
+                        const hasPendingOrders = groceryOrders.some(o => o.status === 'pending');
                         setIsNewOrderPending(hasPendingOrders);
                         manageAudioPlayback(hasPendingOrders);
                         
@@ -226,7 +228,7 @@ export default function ManageGroceryOrdersPage() {
                         <OrderCard
                             key={order.id}
                             order={order}
-                            restaurant={store as any}
+                            vendor={store}
                             isUpdating={updatingOrderId === order.id}
                             onStatusChange={handleStatusChange}
                             onCancelOrder={handleCancelOrder}

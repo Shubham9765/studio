@@ -1,4 +1,5 @@
 
+
 'use client';
 
 
@@ -225,7 +226,7 @@ export default function ManageOrdersPage() {
                         <OrderCard
                             key={order.id}
                             order={order}
-                            restaurant={restaurant}
+                            vendor={restaurant}
                             isUpdating={updatingOrderId === order.id}
                             onStatusChange={handleStatusChange}
                             onCancelOrder={handleCancelOrder}
