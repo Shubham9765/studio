@@ -15,6 +15,9 @@ import { GroceryStoreCard } from '@/components/grocery-owner/grocery-store-card'
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { GroceryItemSearchCard } from '@/components/customer/grocery-item-search-card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { useGroceryCart } from '@/hooks/use-grocery-cart';
+import { GroceryCart } from '@/components/customer/grocery-cart';
+import { FloatingGroceryCartBar } from '@/components/customer/floating-grocery-cart-bar';
 
 
 function SectionHeading({ children, className }: { children: React.ReactNode, className?: string }) {
@@ -95,6 +98,9 @@ export default function GroceryPage() {
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [categoryItems, setCategoryItems] = useState<GroceryItem[]>([]);
     const [isCategoryLoading, setIsCategoryLoading] = useState(false);
+    const { cart, store: cartStore } = useGroceryCart();
+
+    const isCartVisible = cart.length > 0 && cartStore;
 
     useEffect(() => {
         const fetchData = async () => {
@@ -132,7 +138,6 @@ export default function GroceryPage() {
                 item.category.toLowerCase() === categoryName.toLowerCase()
             );
             
-            // Enrich items with store info, which is needed for adding to cart
             const enrichedItems = await Promise.all(
                 allItems.map(async item => {
                     const store = stores.find(s => s.id === item.storeId);
@@ -152,107 +157,125 @@ export default function GroceryPage() {
         }
     };
 
+    const mainContent = (
+      <>
+        <MobileSearch />
+        
+        {loading && (
+             <div className="space-y-4">
+              <Skeleton className="h-8 w-1/3" />
+               <div className="flex gap-4 overflow-hidden">
+                   {Array.from({length: 5}).map((_, i) => <div key={i} className="space-y-2"><Skeleton className="h-20 w-20 rounded-full" /><Skeleton className="h-4 w-20" /></div>)}
+               </div>
+          </div>
+        )}
+        
+        {!loading && categories.length > 0 && (
+          <section className="py-2">
+              <SectionHeading>Shop by Category</SectionHeading>
+                 <Carousel opts={{ align: "start", dragFree: true }} className="w-full">
+                   <CarouselContent className="-ml-2">
+                    {categories.map((cat) => (
+                      <CarouselItem key={cat.name} className="basis-auto pl-2">
+                        <CategoryItem 
+                            key={cat.name}
+                            name={cat.name} 
+                            imageUrl={cat.imageUrl}
+                            isSelected={selectedCategory === cat.name}
+                            onSelect={() => handleCategoryClick(cat.name)}
+                        />
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+              </Carousel>
+          </section>
+      )}
+
+         {isCategoryLoading && (
+          <div className="space-y-4 mt-8">
+              <Skeleton className="h-8 w-1/3" />
+               <div className="flex gap-4 overflow-hidden">
+                   {Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-64 w-48 rounded-lg flex-shrink-0" />)}
+               </div>
+          </div>
+        )}
+
+        {selectedCategory && !isCategoryLoading && categoryItems.length > 0 && (
+           <section className="mt-8">
+              <SectionHeading>
+                Top Picks for {selectedCategory}
+              </SectionHeading>
+               <Carousel opts={{ align: "start", dragFree: true }} className="w-full">
+                   <CarouselContent>
+                      {categoryItems.map((item) => (
+                      <CarouselItem key={item.id} className="basis-4/5 sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
+                          <div className="p-1 h-full">
+                            <GroceryItemSearchCard item={item} />
+                          </div>
+                      </CarouselItem>
+                      ))}
+                  </CarouselContent>
+                   <CarouselPrevious className="hidden sm:flex" />
+                  <CarouselNext className="hidden sm:flex" />
+              </Carousel>
+          </section>
+      )}
+      
+       {selectedCategory && !isCategoryLoading && categoryItems.length === 0 && (
+         <Alert className="mt-8">
+            <Carrot className="h-4 w-4" />
+            <AlertTitle>No Items Found</AlertTitle>
+            <AlertDescription>
+                There are no items available for {selectedCategory} at the moment. Try another category!
+            </AlertDescription>
+         </Alert>
+       )}
+
+
+       <section className="mt-12">
+         <SectionHeading>All Stores</SectionHeading>
+         {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-lg" />)}
+              </div>
+         ) : stores.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {stores.map(store => (
+                    <GroceryStoreCard key={store.id} store={store} />
+                ))}
+             </div>
+         ) : (
+            <div className="text-center py-16">
+                <Carrot className="mx-auto h-16 w-16 text-muted-foreground" />
+                <h3 className="mt-4 text-xl font-medium">No Grocery Stores Found</h3>
+                <p className="mt-1 text-muted-foreground">
+                    There are no available grocery stores in your area at the moment.
+                </p>
+            </div>
+         )}
+       </section>
+      </>
+    );
+
 
     return (
         <div className="min-h-screen bg-background">
             <Header />
             <main className="container py-8">
-                <MobileSearch />
-                
-                {loading && (
-                     <div className="space-y-4">
-                      <Skeleton className="h-8 w-1/3" />
-                       <div className="flex gap-4 overflow-hidden">
-                           {Array.from({length: 5}).map((_, i) => <div key={i} className="space-y-2"><Skeleton className="h-20 w-20 rounded-full" /><Skeleton className="h-4 w-20" /></div>)}
-                       </div>
-                  </div>
-                )}
-                
-                {!loading && categories.length > 0 && (
-                  <section className="py-2">
-                      <SectionHeading>Shop by Category</SectionHeading>
-                         <Carousel opts={{ align: "start", dragFree: true }} className="w-full">
-                           <CarouselContent className="-ml-2">
-                            {categories.map((cat) => (
-                              <CarouselItem key={cat.name} className="basis-auto pl-2">
-                                <CategoryItem 
-                                    key={cat.name}
-                                    name={cat.name} 
-                                    imageUrl={cat.imageUrl}
-                                    isSelected={selectedCategory === cat.name}
-                                    onSelect={() => handleCategoryClick(cat.name)}
-                                />
-                              </CarouselItem>
-                            ))}
-                          </CarouselContent>
-                      </Carousel>
-                  </section>
-              )}
-
-                 {isCategoryLoading && (
-                  <div className="space-y-4 mt-8">
-                      <Skeleton className="h-8 w-1/3" />
-                       <div className="flex gap-4 overflow-hidden">
-                           {Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-64 w-48 rounded-lg flex-shrink-0" />)}
-                       </div>
-                  </div>
-                )}
-
-                {selectedCategory && !isCategoryLoading && categoryItems.length > 0 && (
-                   <section className="mt-8">
-                      <SectionHeading>
-                        Top Picks for {selectedCategory}
-                      </SectionHeading>
-                       <Carousel opts={{ align: "start", dragFree: true }} className="w-full">
-                           <CarouselContent>
-                              {categoryItems.map((item) => (
-                              <CarouselItem key={item.id} className="basis-4/5 sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
-                                  <div className="p-1 h-full">
-                                    <GroceryItemSearchCard item={item} />
-                                  </div>
-                              </CarouselItem>
-                              ))}
-                          </CarouselContent>
-                           <CarouselPrevious className="hidden sm:flex" />
-                          <CarouselNext className="hidden sm:flex" />
-                      </Carousel>
-                  </section>
-              )}
-              
-               {selectedCategory && !isCategoryLoading && categoryItems.length === 0 && (
-                 <Alert className="mt-8">
-                    <Carrot className="h-4 w-4" />
-                    <AlertTitle>No Items Found</AlertTitle>
-                    <AlertDescription>
-                        There are no items available for {selectedCategory} at the moment. Try another category!
-                    </AlertDescription>
-                 </Alert>
-               )}
-
-
-               <section className="mt-12">
-                 <SectionHeading>All Stores</SectionHeading>
-                 {loading ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-lg" />)}
-                      </div>
-                 ) : stores.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {stores.map(store => (
-                            <GroceryStoreCard key={store.id} store={store} />
-                        ))}
-                     </div>
-                 ) : (
-                    <div className="text-center py-16">
-                        <Carrot className="mx-auto h-16 w-16 text-muted-foreground" />
-                        <h3 className="mt-4 text-xl font-medium">No Grocery Stores Found</h3>
-                        <p className="mt-1 text-muted-foreground">
-                            There are no available grocery stores in your area at the moment.
-                        </p>
+                <div className={cn("grid lg:gap-8", isCartVisible ? "lg:grid-cols-4" : "lg:grid-cols-1")}>
+                    <div className={cn(isCartVisible ? "lg:col-span-3" : "lg:col-span-4")}>
+                        {mainContent}
                     </div>
-                 )}
-               </section>
+                    {isCartVisible && (
+                        <aside className="hidden lg:block lg:col-span-1">
+                            <div className="sticky top-24">
+                                <GroceryCart store={cartStore!} />
+                            </div>
+                        </aside>
+                    )}
+                </div>
             </main>
+            <FloatingGroceryCartBar />
         </div>
     )
 }
